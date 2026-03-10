@@ -220,9 +220,9 @@
         const grid = document.getElementById('kds-grid');
         const orders = new Map(); // Store orders to update timers
 
-        // Connect WebSocket (using native ws proxy over regular ws://)
-        // Since we implemented pure 'ws' on backend, we use native WebSocket
-        const wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws/kds?restaurantId=1';
+        // Connect WebSocket to RENDER backend (not Vercel frontend)
+        const RENDER_HOST = 'express-pizza-antigravity.onrender.com';
+        const wsUrl = `wss://${RENDER_HOST}/ws/kds?restaurantId=1`;
         let ws;
 
         function connectWS() {

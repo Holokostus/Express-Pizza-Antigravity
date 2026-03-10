@@ -118,5 +118,6 @@ async function updateOrderStatus(orderId, newStatus) {
 
 module.exports = {
     initKDSWebSocket,
-    broadcastOrderToKDS
+    broadcastOrderToKDS,
+    updateOrderStatus
 };
