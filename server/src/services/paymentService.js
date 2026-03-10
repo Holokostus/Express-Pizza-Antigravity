@@ -18,6 +18,17 @@ const WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET || 'WEBHOOK_SECRET_PLAC
  * @returns {string} checkout_url
  */
 async function createPaymentSession(externalOrderId, amount, customer = {}) {
+    // ── STUB MODE: skip real bePaid if keys are not configured ──
+    const isStub = !SHOP_ID || !SECRET_KEY
+        || SHOP_ID === 'SHOP_ID_PLACEHOLDER' || SECRET_KEY === 'SECRET_KEY_PLACEHOLDER'
+        || SHOP_ID === 'test' || SECRET_KEY === 'test';
+
+    if (isStub) {
+        console.warn(`[bePaid STUB] Keys not configured — returning fake checkout URL for order ${externalOrderId}`);
+        return `/order-success.html?order=${externalOrderId}&stub=true`;
+    }
+
+    // ── REAL MODE: call bePaid API ──
     const amountInCents = Math.round(amount * 100);
 
     const payload = {
