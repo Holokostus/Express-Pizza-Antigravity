@@ -65,9 +65,10 @@ async function main() {
     const categories = [
         { slug: 'pizza', name: 'Пицца', sortOrder: 1 },
         { slug: 'togo', name: 'Пицца TOGO', sortOrder: 2 },
-        { slug: 'sauce', name: 'Соусы', sortOrder: 3 },
-        { slug: 'juice', name: 'Соки', sortOrder: 4 },
-        { slug: 'drinks', name: 'Напитки', sortOrder: 5 },
+        { slug: 'combo', name: 'Комбо & Акции', sortOrder: 3 },
+        { slug: 'sauce', name: 'Соусы', sortOrder: 4 },
+        { slug: 'juice', name: 'Соки', sortOrder: 5 },
+        { slug: 'drinks', name: 'Напитки', sortOrder: 6 },
     ];
 
     const catMap = {};
@@ -266,10 +267,36 @@ async function main() {
         },
         {
             name: 'Bonaqua', description: 'Минеральная газированная',
-            image: 'images/bonaqua.jpg', categorySlug: 'drinks', sortOrder: 5,
+            image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=800&q=80', categorySlug: 'drinks', sortOrder: 5,
             calories: 0, proteins: 0, fats: 0, carbs: 0,
             allergenSlugs: [],
             sizes: [{ label: '0.5 л', weight: '500мл', price: 2.50 }],
+        },
+
+        // ----- Комбо & Акции -----
+        {
+            name: 'Комбо Family Pack', description: '2 больших пиццы 36см + 2 соуса + Coca-Cola 1л',
+            image: 'https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=800&q=80', categorySlug: 'combo', sortOrder: 1,
+            badge: { text: '-25%', color: 'bg-green-500 text-white' },
+            calories: 310, proteins: 13.0, fats: 13.0, carbs: 30.0,
+            allergenSlugs: ['gluten', 'dairy'],
+            sizes: [{ label: 'Набор', weight: '~2.5кг', price: 49.90 }],
+        },
+        {
+            name: 'Комбо Student Lunch', description: 'Пицца TOGO 20см + соус + напиток 0.5л',
+            image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', categorySlug: 'combo', sortOrder: 2,
+            badge: { text: 'Хит', color: 'bg-primary text-white' },
+            calories: 280, proteins: 11.0, fats: 10.5, carbs: 28.0,
+            allergenSlugs: ['gluten', 'dairy'],
+            sizes: [{ label: 'Набор', weight: '~500г', price: 14.90 }],
+        },
+        {
+            name: 'Комбо Date Night', description: '2 пиццы 30см + 2 соуса + 2 сока',
+            image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=800&q=80', categorySlug: 'combo', sortOrder: 3,
+            badge: { text: 'Для двоих', color: 'bg-pink-500 text-white' },
+            calories: 295, proteins: 12.5, fats: 12.0, carbs: 27.5,
+            allergenSlugs: ['gluten', 'dairy'],
+            sizes: [{ label: 'Набор', weight: '~1.8кг', price: 39.90 }],
         },
     ];
 

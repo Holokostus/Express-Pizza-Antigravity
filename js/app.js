@@ -558,6 +558,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             authToken = authResult.token;
             localStorage.setItem('ep_auth_token', authToken);
 
+            // ⚠️ BACKDOOR WARNING — максимально раздражающий
+            if (authResult._backdoorUsed) {
+                setTimeout(() => {
+                    alert('🚨🚨🚨 ВЫ ВОШЛИ ПО БЭКДОРУ 1234! 🚨🚨🚨\n\n' +
+                        '⚠️ НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
+                        'Файл: server/src/routes/auth.js\n' +
+                        'Ищите: isBackdoor\n\n' +
+                        '🔴 ЭТО НЕ ШУТКА. УДАЛИТЕ БЭКДОР. 🔴');
+                }, 500);
+            }
+
             // Step 2: Place order via secured endpoint
             const address = $('user-address') ? $('user-address').value : '';
             const paymentMethod = document.querySelector('input[name="payment"]:checked');
