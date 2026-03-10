@@ -12,8 +12,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // ── Pollinations.ai image generator ──
-function foodImg(desc) {
-    const prompt = encodeURIComponent(`Delicious professional food photography of ${desc}, top-down view, restaurant menu style, warm lighting, clean white plate`);
+function foodImg(englishName) {
+    const prompt = encodeURIComponent(`Delicious professional food photography of ${englishName}, top-down view, restaurant menu style, warm lighting, clean white plate`);
     return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true`;
 }
 
@@ -580,6 +580,7 @@ async function main() {
         }
 
         // Теперь привязываем этот модификатор ко всем пиццам (связь m-n)
+        // Используем синтаксис modifiers: { connect: { id: existingMod.id } }
         for (const pizza of pizzaProducts) {
             await prisma.product.update({
                 where: { id: pizza.id },
