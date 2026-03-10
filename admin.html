@@ -435,466 +435,530 @@
     </div>
 
     <!-- Fetch and JWT Logic -->
-   const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000'
-    : ''; // Adjust for production deployment
+    const API_BASE = 'https://express-pizza-antigravity.onrender.com';
 
 
-        let authToken = localStorage.getItem('ep_admin_token');
-        let appData = { orders: [], menu: [], customers: [] };
+    let authToken = localStorage.getItem('ep_admin_token');
+    let appData = { orders: [], menu: [], customers: [] };
 
-        async function api(path, options = {}) {
-            const headers = { 'Content-Type': 'application/json', ...options.headers };
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    async function api(path, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-            const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-            const data = await res.json();
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    const data = await res.json();
 
-            if (res.status === 401 || res.status === 403) {
-                showLoginPrompt();
-                throw new Error('Unauthorized');
-            }
-            if (!res.ok) throw new Error(data.error || 'API Error');
-            return data;
-        }
+    if (res.status === 401 || res.status === 403) {
+    showLoginPrompt();
+    throw new Error('Unauthorized');
+    }
+    if (!res.ok) throw new Error(data.error || 'API Error');
+    return data;
+    }
 
-        function showLoginPrompt() {
-            // Simple MVP prompt based Admin Login
-            const phone = prompt('🔒 Доступ запрещен. \n\nДля входа в панель администратора введите номер телефона:');
-            if (!phone) return;
+    function showLoginPrompt() {
+    // Simple MVP prompt based Admin Login
+    const phone = prompt('🔒 Доступ запрещен. \n\nДля входа в панель администратора введите номер телефона:');
+    if (!phone) return;
 
-            fetch(`${API_BASE}/api/auth/send-sms`, { method: 'POST', body: JSON.stringify({ phone }), headers: { 'Content-Type': 'application/json' } })
-                .then(() => {
-                    const code = prompt('📱 Введите код из SMS (для локального демо введите 1111):');
-                    return fetch(`${API_BASE}/api/auth/verify`, {
-                        method: 'POST',
-                        body: JSON.stringify({ phone, code, name: 'Admin' }),
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.token) {
-                        localStorage.setItem('ep_admin_token', data.token);
-                        authToken = data.token;
-                        alert('✅ Авторизация успешна. Вы должны выдать этому номеру роль ADMIN в БД через Prisma Studio или DBeaver.');
-                        window.location.reload();
-                    } else {
-                        alert('❌ Ошибка: неверный код');
-                    }
-                })
-                .catch(err => alert('Ошибка сети: ' + err.message));
-        }
+    fetch(`${API_BASE}/api/auth/send-sms`, { method: 'POST', body: JSON.stringify({ phone }), headers: { 'Content-Type':
+    'application/json' } })
+    .then(() => {
+    const code = prompt('📱 Введите код из SMS (для локального демо введите 1111):');
+    return fetch(`${API_BASE}/api/auth/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ phone, code, name: 'Admin' }),
+    headers: { 'Content-Type': 'application/json' }
+    });
+    })
+    .then(res => res.json())
+    .then(data => {
+    if (data.token) {
+    localStorage.setItem('ep_admin_token', data.token);
+    authToken = data.token;
+    alert('✅ Авторизация успешна. Вы должны выдать этому номеру роль ADMIN в БД через Prisma Studio или DBeaver.');
+    window.location.reload();
+    } else {
+    alert('❌ Ошибка: неверный код');
+    }
+    })
+    .catch(err => alert('Ошибка сети: ' + err.message));
+    }
 
-        // ============================================================
-        // Admin Logic
-        // ============================================================
-        let adminMenuFilter = 'all';
+    // ============================================================
+    // Admin Logic
+    // ============================================================
+    let adminMenuFilter = 'all';
 
-        // ---- Tab Navigation ----
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-' + tab).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'text-white', 'bg-white/10'));
-            const activeBtn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
-            if (activeBtn) activeBtn.classList.add('active', 'text-white', 'bg-white/10');
+    // ---- Tab Navigation ----
+    function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'text-white', 'bg-white/10'));
+    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+    if (activeBtn) activeBtn.classList.add('active', 'text-white', 'bg-white/10');
 
-            const titles = { dashboard: 'Дашборд', orders: 'Заказы (KDS)', menu: 'Управление меню', crm: 'База клиентов (CRM)', integrations: 'Интеграции', settings: 'Настройки' };
-            document.getElementById('page-title').textContent = titles[tab] || tab;
-            if (tab === 'integrations') renderIntegrations();
-            if (tab === 'crm') refreshCRM();
-            refreshAll();
-        }
+    const titles = { dashboard: 'Дашборд', orders: 'Заказы (KDS)', menu: 'Управление меню', crm: 'База клиентов (CRM)',
+    integrations: 'Интеграции', settings: 'Настройки' };
+    document.getElementById('page-title').textContent = titles[tab] || tab;
+    if (tab === 'integrations') renderIntegrations();
+    if (tab === 'crm') refreshCRM();
+    refreshAll();
+    }
 
-        // ---- Dashboard (Phase 6 Analytics) ----
-        function refreshDashboard() {
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
+    // ---- Dashboard (Phase 6 Analytics) ----
+    function refreshDashboard() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-            const todayOrders = appData.orders.filter(o => o.timestamp >= todayStart.getTime());
+    const todayOrders = appData.orders.filter(o => {
+    const ts = new Date(o.createdAt || o.timestamp).getTime();
+    return ts >= todayStart.getTime();
+    });
 
-            let revenue = 0;
-            const itemCounts = {};
+    let revenue = 0;
+    const itemCounts = {};
 
-            todayOrders.forEach(o => {
-                if (o.status !== 'CANCELLED') {
-                    // Compute total from items if o.total is missed, otherwise use standard sum
-                    const orderTotal = o.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-                    revenue += orderTotal;
+    todayOrders.forEach(o => {
+    if (o.status !== 'CANCELLED') {
+    const orderTotal = parseFloat(o.totalAmount) || (o.items || []).reduce((sum, i) => {
+    const price = i.productSize ? parseFloat(i.productSize.price) : (parseFloat(i.price) || 0);
+    return sum + price * (i.quantity || 1);
+    }, 0);
+    revenue += orderTotal;
 
-                    o.items.forEach(item => {
-                        itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
-                    });
-                }
-            });
+    (o.items || []).forEach(item => {
+    const name = item.product ? item.product.name : (item.name || 'Товар');
+    itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 1);
+    });
+    }
+    });
 
-            const newOrders = appData.orders.filter(o => o.status === 'NEW').length;
-            const aov = todayOrders.length > 0 ? (revenue / todayOrders.length) : 0;
+    const newOrders = appData.orders.filter(o => o.status === 'NEW').length;
+    const aov = todayOrders.length > 0 ? (revenue / todayOrders.length) : 0;
 
-            const top3 = Object.entries(itemCounts)
-                .map(([name, qty]) => ({ name, qty }))
-                .sort((a, b) => b.qty - a.qty)
-                .slice(0, 3);
+    const top3 = Object.entries(itemCounts)
+    .map(([name, qty]) => ({ name, qty }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 3);
 
-            document.getElementById('stat-revenue').textContent = revenue.toFixed(2) + ' р.';
-            document.getElementById('stat-orders').textContent = todayOrders.length;
-            document.getElementById('stat-aov').textContent = aov.toFixed(2) + ' р.';
-            document.getElementById('stat-new').textContent = newOrders;
+    document.getElementById('stat-revenue').textContent = revenue.toFixed(2) + ' р.';
+    document.getElementById('stat-orders').textContent = todayOrders.length;
+    document.getElementById('stat-aov').textContent = aov.toFixed(2) + ' р.';
+    document.getElementById('stat-new').textContent = newOrders;
 
-            // Update nav badge
-            const badge = document.getElementById('nav-orders-badge');
-            if (newOrders > 0) {
-                badge.textContent = newOrders;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
+    const badge = document.getElementById('nav-orders-badge');
+    if (newOrders > 0) {
+    badge.textContent = newOrders;
+    badge.classList.remove('hidden');
+    } else {
+    badge.classList.add('hidden');
+    }
 
-            // Top-3 items
-            const top3Html = top3.length === 0
-                ? '<p class="text-gray-600 text-sm">Нет продаж сегодня</p>'
-                : top3.map((item, idx) => `
-                    <div class="flex items-center justify-between p-3 bg-[#111] rounded-xl">
-                        <div class="flex items-center gap-3">
-                            <span class="font-black text-xl text-gray-700 w-4">${idx + 1}</span>
-                            <span class="font-bold text-sm">${item.name}</span>
-                        </div>
-                        <span class="text-accent font-bold text-sm text-right">${item.qty} шт</span>
-                    </div>
-                `).join('');
-            document.getElementById('top-items').innerHTML = top3Html;
+    const top3Html = top3.length === 0
+    ? '<p class="text-gray-600 text-sm">Нет продаж сегодня</p>'
+    : top3.map((item, idx) => `
+    <div class="flex items-center justify-between p-3 bg-[#111] rounded-xl">
+        <div class="flex items-center gap-3">
+            <span class="font-black text-xl text-gray-700 w-4">${idx + 1}</span>
+            <span class="font-bold text-sm">${item.name}</span>
+        </div>
+        <span class="text-accent font-bold text-sm text-right">${item.qty} шт</span>
+    </div>
+    `).join('');
+    document.getElementById('top-items').innerHTML = top3Html;
 
-            // Recent orders
-            const orders = appData.orders.slice(0, 10);
-            document.getElementById('recent-orders').innerHTML = orders.length === 0
-                ? '<p class="text-gray-600 text-sm">Нет заказов</p>'
-                : orders.map(o => `
-                <div class="flex items-center justify-between p-3 bg-[#111] rounded-xl">
-                    <div>
-                        <span class="font-bold text-sm">#${o.id}</span>
-                        <span class="text-gray-500 text-xs ml-2">${o.customer?.name || '—'}</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs text-gray-500">${new Date(o.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-bold ${statusStyle(o.status)}">${statusLabel(o.status)}</span>
-                    </div>
+    const orders = appData.orders.slice(0, 10);
+    document.getElementById('recent-orders').innerHTML = orders.length === 0
+    ? '<p class="text-gray-600 text-sm">Нет заказов</p>'
+    : orders.map(o => {
+    const ts = new Date(o.createdAt || o.timestamp);
+    return `
+    <div class="flex items-center justify-between p-3 bg-[#111] rounded-xl">
+        <div>
+            <span class="font-bold text-sm">#${o.orderNumber || o.id}</span>
+            <span class="text-gray-500 text-xs ml-2">${o.customer?.name || o.customer?.phone || '—'}</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-500">${ts.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit'
+                })}</span>
+            <span
+                class="text-xs px-2 py-0.5 rounded-full font-bold ${statusStyle(o.status)}">${statusLabel(o.status)}</span>
+        </div>
+    </div>
+    `;
+    }).join('');
+    }
+
+    // ---- Kanban Orders ----
+    function refreshOrders() {
+    const statuses = ['new', 'cooking', 'delivery', 'completed'];
+    const dbStatusMap = { 'new': 'NEW', 'cooking': 'COOKING', 'delivery': 'DELIVERING', 'completed': 'COMPLETED' };
+    const nextStatus = { 'NEW': 'COOKING', 'COOKING': 'DELIVERING', 'DELIVERING': 'COMPLETED' };
+    const btnLabels = { 'NEW': 'Начать готовить', 'COOKING': 'Отправить', 'DELIVERING': 'Завершить' };
+
+    statuses.forEach(status => {
+    const mappedStatus = dbStatusMap[status];
+    const orders = appData.orders.filter(o => o.status === mappedStatus);
+    const container = document.getElementById('kanban-' + status);
+    container.innerHTML = orders.length === 0
+    ? '<p class="text-gray-700 text-xs text-center py-8">Пусто</p>'
+    : orders.map(o => {
+    const ts = new Date(o.createdAt || o.timestamp).getTime();
+    const elapsed = Math.floor((Date.now() - ts) / 60000);
+    const items = (o.items || []).map(i => {
+    const name = i.product ? i.product.name : (i.name || 'Товар');
+    return `${name} ×${i.quantity}`;
+    }).join(', ');
+    const next = nextStatus[mappedStatus];
+    return `
+    <div class="bg-card rounded-xl p-4 border border-gray-800 anim-in">
+        <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm">#${o.orderNumber || o.id}</span>
+            <span class="text-xs text-gray-500">${elapsed} мин назад</span>
+        </div>
+        <p class="text-sm font-medium mb-1">${o.customer?.name || 'Клиент'}</p>
+        <p class="text-xs text-gray-500 mb-1">${o.customer?.phone || ''}</p>
+        <p class="text-xs text-gray-400 mb-3 line-clamp-2">${items || 'Нет позиций'}</p>
+        ${next ? `<button onclick="advanceOrder(${o.id}, '${next}')"
+            class="w-full bg-white/5 hover:bg-white/10 text-white text-xs font-bold py-2 rounded-lg transition-all">${btnLabels[mappedStatus]}
+            →</button>` : ''}
+    </div>`;
+    }).join('');
+    });
+    }
+
+    window.advanceOrder = async (id, newStatus) => {
+    try {
+    await api(`/api/orders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus })
+    });
+    refreshAll();
+    } catch (err) {
+    alert('Ошибка обновления статуса: ' + err.message);
+    }
+    };
+
+    // ---- Menu Manager ----
+    function refreshMenu() {
+    const items = adminMenuFilter === 'all'
+    ? appData.menu
+    : appData.menu.filter(item => item.categorySlug === adminMenuFilter);
+
+    const cats = { pizza: 'Пицца', togo: 'TOGO', sauce: 'Соусы', juice: 'Соки', drinks: 'Напитки' };
+
+    document.getElementById('menu-table-body').innerHTML = items.map(item => {
+    const minPrice = item.sizes.length > 0 ? Math.min(...item.sizes.map(s => parseFloat(s.price))) : 0;
+    return `
+    <tr class="border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors">
+        <td class="p-4">
+            <div class="flex items-center gap-3">
+                <img src="${item.image}" alt="" class="w-10 h-10 rounded-lg object-cover bg-gray-800">
+                <div>
+                    <p class="font-bold text-sm">${item.name}</p>
+                    <p class="text-xs text-gray-600 truncate max-w-[200px]">${item.description || ''}</p>
                 </div>
-            `).join('');
-        }
+            </div>
+        </td>
+        <td class="p-4 text-gray-400 text-xs">${cats[item.categorySlug] || item.categorySlug}</td>
+        <td class="p-4 font-bold text-sm">${minPrice.toFixed(2)} р.</td>
+        <td class="p-4 text-center">
+            <label class="toggle-switch inline-block">
+                <input type="checkbox" ${item.isAvailable ? 'checked' : '' } onchange="toggleItem(${item.id}, this)">
+                <span class="toggle-slider"></span>
+            </label>
+        </td>
+        <td class="p-4 text-right">
+            <button onclick="editItem(${item.id})"
+                class="text-gray-500 hover:text-white transition-colors p-1.5 opacity-50 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                    </path>
+                </svg>
+            </button>
+            <button onclick="deleteItem(${item.id})"
+                class="text-gray-500 hover:text-red-400 transition-colors p-1.5 opacity-50 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                    </path>
+                </svg>
+            </button>
+        </td>
+    </tr>`;
+    }).join('');
+    }
 
-        // ---- Kanban Orders ----
-        function refreshOrders() {
-            const statuses = ['new', 'cooking', 'delivery', 'completed'];
-            const dbStatusMap = { 'new': 'NEW', 'cooking': 'COOKING', 'delivery': 'DELIVERING', 'completed': 'COMPLETED' };
-            const nextStatus = { 'NEW': 'COOKING', 'COOKING': 'DELIVERING', 'DELIVERING': 'COMPLETED' };
-            const btnLabels = { 'NEW': 'Начать готовить', 'COOKING': 'Отправить', 'DELIVERING': 'Завершить' };
+    window.filterAdminMenu = (cat) => {
+    adminMenuFilter = cat;
+    document.querySelectorAll('.admin-cat-btn').forEach(b => { b.classList.remove('bg-primary', 'text-white');
+    b.classList.add('bg-card', 'text-gray-400'); });
+    document.querySelector(`.admin-cat-btn[data-cat="${cat}"]`)?.classList.replace('bg-card', 'bg-primary');
+    document.querySelector(`.admin-cat-btn[data-cat="${cat}"]`)?.classList.replace('text-gray-400', 'text-white');
+    refreshMenu();
+    };
 
-            statuses.forEach(status => {
-                const mappedStatus = dbStatusMap[status];
-                const orders = appData.orders.filter(o => o.status === mappedStatus);
-                const container = document.getElementById('kanban-' + status);
-                container.innerHTML = orders.length === 0
-                    ? '<p class="text-gray-700 text-xs text-center py-8">Пусто</p>'
-                    : orders.map(o => {
-                        const elapsed = Math.floor((Date.now() - o.timestamp) / 60000);
-                        const items = (o.items || []).map(i => `${i.name} ×${i.quantity}`).join(', ');
-                        const next = nextStatus[mappedStatus];
-                        return `
-                    <div class="bg-card rounded-xl p-4 border border-gray-800 anim-in">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-bold text-sm">#${o.id}</span>
-                            <span class="text-xs text-gray-500">${elapsed} мин назад</span>
-                        </div>
-                        <p class="text-sm font-medium mb-1">${o.customer?.name || 'Клиент'}</p>
-                        <p class="text-xs text-gray-500 mb-1">${o.customer?.phone || ''}</p>
-                        <p class="text-xs text-gray-400 mb-3 line-clamp-2">${items || 'Нет позиций'}</p>
-                        ${next ? `<button onclick="advanceOrder(${o.id}, '${next}')" class="w-full bg-white/5 hover:bg-white/10 text-white text-xs font-bold py-2 rounded-lg transition-all">${btnLabels[mappedStatus]} →</button>` : ''}
-                    </div>`;
-                    }).join('');
-            });
-        }
+    window.toggleItem = async (id, checkbox) => {
+    const isAvailable = checkbox.checked;
+    try {
+    await api(`/api/menu/${id}/availability`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isAvailable })
+    });
+    refreshAll();
+    } catch (err) {
+    alert('Ошибка: ' + err.message);
+    checkbox.checked = !isAvailable; // revert
+    }
+    };
+    window.deleteItem = (id) => { alert('Удаление товаров доступно через Prisma Studio'); };
 
-        window.advanceOrder = async (id, newStatus) => {
-            try {
-                await api(`/api/orders/${id}/status`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ status: newStatus })
-                });
-                refreshAll();
-            } catch (err) {
-                alert('Ошибка обновления статуса: ' + err.message);
-            }
-        };
+    window.editItem = (id) => {
+    const item = db.getMenuItem(id);
+    if (!item) return;
+    document.getElementById('modal-title').textContent = 'Редактировать';
+    document.getElementById('edit-item-id').value = id;
+    document.getElementById('item-name').value = item.name;
+    document.getElementById('item-category').value = item.category;
+    document.getElementById('item-desc').value = item.description;
+    document.getElementById('item-image').value = item.image;
+    document.getElementById('item-price').value = item.sizes[0]?.price || 0;
+    document.getElementById('item-size').value = item.sizes[0]?.label || '';
+    document.getElementById('item-weight').value = item.sizes[0]?.weight || '';
+    document.getElementById('item-modal').classList.remove('hidden');
+    document.getElementById('item-modal').classList.add('flex');
+    };
 
-        // ---- Menu Manager ----
-        function refreshMenu() {
-            const items = adminMenuFilter === 'all'
-                ? appData.menu
-                : appData.menu.filter(item => item.categorySlug === adminMenuFilter);
+    window.openAddItemModal = () => {
+    document.getElementById('modal-title').textContent = 'Добавить товар';
+    document.getElementById('item-form').reset();
+    document.getElementById('edit-item-id').value = '';
+    document.getElementById('item-modal').classList.remove('hidden');
+    document.getElementById('item-modal').classList.add('flex');
+    };
 
-            const cats = { pizza: 'Пицца', togo: 'TOGO', sauce: 'Соусы', juice: 'Соки', drinks: 'Напитки' };
+    window.closeModal = () => {
+    document.getElementById('item-modal').classList.add('hidden');
+    document.getElementById('item-modal').classList.remove('flex');
+    };
 
-            document.getElementById('menu-table-body').innerHTML = items.map(item => {
-                const minPrice = item.sizes.length > 0 ? Math.min(...item.sizes.map(s => s.price)) : 0;
-                return `
-            <tr class="border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors">
-                <td class="p-4">
-                    <div class="flex items-center gap-3">
-                        <img src="${item.image}" alt="" class="w-10 h-10 rounded-lg object-cover bg-gray-800">
-                        <div>
-                            <p class="font-bold text-sm">${item.name}</p>
-                            <p class="text-xs text-gray-600 truncate max-w-[200px]">${item.description || ''}</p>
-                        </div>
-                    </div>
-                </td>
-                <td class="p-4 text-gray-400 text-xs">${cats[item.categorySlug] || item.categorySlug}</td>
-                <td class="p-4 font-bold text-sm">${minPrice.toFixed(2)} р.</td>
-                <td class="p-4 text-center">
-                    <label class="toggle-switch inline-block">
-                        <input type="checkbox" ${item.isAvailable ? 'checked' : ''} onchange="toggleItem(${item.id}, this)">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </td>
-                <td class="p-4 text-right">
-                    <button onclick="editItem(${item.id})" class="text-gray-500 hover:text-white transition-colors p-1.5 opacity-50 cursor-not-allowed">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    </button>
-                    <button onclick="deleteItem(${item.id})" class="text-gray-500 hover:text-red-400 transition-colors p-1.5 opacity-50 cursor-not-allowed">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </td>
-            </tr>`;
-            }).join('');
-        }
+    document.getElementById('item-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const editId = document.getElementById('edit-item-id').value;
+    const data = {
+    name: document.getElementById('item-name').value,
+    category: document.getElementById('item-category').value,
+    description: document.getElementById('item-desc').value,
+    image: document.getElementById('item-image').value || 'images/pepperoni.png',
+    badge: null,
+    isAvailable: true,
+    sizes: [{
+    label: document.getElementById('item-size').value || '1 шт',
+    weight: document.getElementById('item-weight').value || '',
+    price: parseFloat(document.getElementById('item-price').value) || 0
+    }]
+    };
+    if (editId) {
+    db.updateMenuItem(parseInt(editId), data);
+    } else {
+    db.addMenuItem(data);
+    }
+    closeModal();
+    refreshMenu();
+    });
 
-        window.filterAdminMenu = (cat) => {
-            adminMenuFilter = cat;
-            document.querySelectorAll('.admin-cat-btn').forEach(b => { b.classList.remove('bg-primary', 'text-white'); b.classList.add('bg-card', 'text-gray-400'); });
-            document.querySelector(`.admin-cat-btn[data-cat="${cat}"]`)?.classList.replace('bg-card', 'bg-primary');
-            document.querySelector(`.admin-cat-btn[data-cat="${cat}"]`)?.classList.replace('text-gray-400', 'text-white');
-            refreshMenu();
-        };
+    // ---- Helpers ----
+    function statusLabel(s) {
+    return { 'NEW': 'Новый', 'COOKING': 'Готовится', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен' }[s] || s;
+    }
+    function statusStyle(s) {
+    return {
+    'NEW': 'bg-blue-500/20 text-blue-400',
+    'COOKING': 'bg-amber-500/20 text-amber-400',
+    'DELIVERING': 'bg-violet-500/20 text-violet-400',
+    'COMPLETED': 'bg-green-500/20 text-green-400'
+    }[s] || '';
+    }
 
-        window.toggleItem = async (id, checkbox) => {
-            const isAvailable = checkbox.checked;
-            try {
-                await api(`/api/menu/${id}/availability`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ isAvailable })
-                });
-                refreshAll();
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-                checkbox.checked = !isAvailable; // revert
-            }
-        };
-        window.deleteItem = (id) => { if (confirm('Удалить позицию?')) { db.deleteMenuItem(id); refreshMenu(); } };
+    async function refreshAll() {
+    try {
+    // Fetch real data from secured API
+    const [ordersRes, menuRes] = await Promise.all([
+    api('/api/orders'),
+    api('/api/menu')
+    ]);
 
-        window.editItem = (id) => {
-            const item = db.getMenuItem(id);
-            if (!item) return;
-            document.getElementById('modal-title').textContent = 'Редактировать';
-            document.getElementById('edit-item-id').value = id;
-            document.getElementById('item-name').value = item.name;
-            document.getElementById('item-category').value = item.category;
-            document.getElementById('item-desc').value = item.description;
-            document.getElementById('item-image').value = item.image;
-            document.getElementById('item-price').value = item.sizes[0]?.price || 0;
-            document.getElementById('item-size').value = item.sizes[0]?.label || '';
-            document.getElementById('item-weight').value = item.sizes[0]?.weight || '';
-            document.getElementById('item-modal').classList.remove('hidden');
-            document.getElementById('item-modal').classList.add('flex');
-        };
+    appData.orders = (ordersRes.orders || ordersRes || []).map(o => {
+    // Normalize: ensure timestamp and items are accessible
+    o.timestamp = new Date(o.createdAt).getTime();
+    return o;
+    });
 
-        window.openAddItemModal = () => {
-            document.getElementById('modal-title').textContent = 'Добавить товар';
-            document.getElementById('item-form').reset();
-            document.getElementById('edit-item-id').value = '';
-            document.getElementById('item-modal').classList.remove('hidden');
-            document.getElementById('item-modal').classList.add('flex');
-        };
+    // Flatten category tree for admin simple view
+    appData.menu = [];
+    const menuData = menuRes.categories || menuRes || [];
+    if (Array.isArray(menuData)) {
+    menuData.forEach(cat => {
+    if (cat.products) {
+    cat.products.forEach(p => {
+    p.categorySlug = cat.slug;
+    appData.menu.push(p);
+    });
+    } else {
+    // Flat array response
+    cat.categorySlug = cat.category?.slug || '';
+    appData.menu.push(cat);
+    }
+    });
+    }
 
-        window.closeModal = () => {
-            document.getElementById('item-modal').classList.add('hidden');
-            document.getElementById('item-modal').classList.remove('flex');
-        };
+    refreshDashboard();
+    refreshOrders();
+    refreshMenu();
+    } catch (e) {
+    console.warn('[Admin] Refresh aborted', e.message);
+    }
+    }
 
-        document.getElementById('item-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const editId = document.getElementById('edit-item-id').value;
-            const data = {
-                name: document.getElementById('item-name').value,
-                category: document.getElementById('item-category').value,
-                description: document.getElementById('item-desc').value,
-                image: document.getElementById('item-image').value || 'images/pepperoni.png',
-                badge: null,
-                isAvailable: true,
-                sizes: [{
-                    label: document.getElementById('item-size').value || '1 шт',
-                    weight: document.getElementById('item-weight').value || '',
-                    price: parseFloat(document.getElementById('item-price').value) || 0
-                }]
-            };
-            if (editId) {
-                db.updateMenuItem(parseInt(editId), data);
-            } else {
-                db.addMenuItem(data);
-            }
-            closeModal();
-            refreshMenu();
-        });
+    // ---- Phase 6: Export & CRM ----
+    async function refreshCRM() {
+    try {
+    const orders = appData.orders;
+    // Auto-build customer list from orders
+    const customerMap = {};
+    orders.forEach(o => {
+    const phone = o.customer?.phone || o.customerPhone;
+    if (!phone) return;
+    if (!customerMap[phone]) customerMap[phone] = { name: o.customer?.name || '—', phone, ordersCount: 0, ltv: 0 };
+    customerMap[phone].ordersCount++;
+    customerMap[phone].ltv += parseFloat(o.totalAmount) || 0;
+    });
+    const customers = Object.values(customerMap).sort((a, b) => b.ltv - a.ltv);
 
-        // ---- Helpers ----
-        function statusLabel(s) {
-            return { 'NEW': 'Новый', 'COOKING': 'Готовится', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен' }[s] || s;
-        }
-        function statusStyle(s) {
-            return {
-                'NEW': 'bg-blue-500/20 text-blue-400',
-                'COOKING': 'bg-amber-500/20 text-amber-400',
-                'DELIVERING': 'bg-violet-500/20 text-violet-400',
-                'COMPLETED': 'bg-green-500/20 text-green-400'
-            }[s] || '';
-        }
+    const tbody = document.getElementById('crm-table-body');
+    tbody.innerHTML = customers.length === 0
+    ? '<tr>
+        <td colspan="4" class="p-8 text-center text-gray-500">База клиентов пуста</td>
+    </tr>'
+    : customers.map(c => `
+    <tr class="border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors">
+        <td class="p-4 font-bold text-sm">${c.name}</td>
+        <td class="p-4 text-gray-400 text-sm font-mono">${c.phone}</td>
+        <td class="p-4 text-center">
+            <span class="bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-bold">${c.ordersCount}</span>
+        </td>
+        <td class="p-4 text-right font-bold text-green-400 text-sm">${c.ltv.toFixed(2)} р.</td>
+    </tr>
+    `).join('');
+    } catch (err) {
+    console.warn('[CRM] Error:', err.message);
+    }
+    }
 
-        async function refreshAll() {
-            try {
-                // Fetch real data from secured API
-                const [ordersRes, menuRes] = await Promise.all([
-                    api('/api/orders'),
-                    api('/api/menu')
-                ]);
+    window.exportOrdersToCSV = () => {
+    const orders = appData.orders;
+    if (orders.length === 0) return alert('Нет заказов для выгрузки');
 
-                appData.orders = ordersRes.orders || [];
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    // Headers
+    csvContent += "ВРЕМЯ,ID ЗАКАЗА,ИМЯ КЛИЕНТА,ТЕЛЕФОН,АДРЕС,СТАТУС,ОПЛАТА,СУММА (BYN)\n";
 
-                // Flatten tree for admin simple view
-                appData.menu = [];
-                (menuRes.categories || []).forEach(cat => {
-                    cat.products.forEach(p => {
-                        p.categorySlug = cat.slug;
-                        appData.menu.push(p);
-                    });
-                });
+    orders.forEach(o => {
+    const time = new Date(o.timestamp).toLocaleString('ru-RU');
+    const cost = (o.items || []).reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2);
+    const address = (o.customer?.address || '').replace(/,/g, ' '); // remove commas from address
 
-                refreshDashboard();
-                refreshOrders();
-                refreshMenu();
-            } catch (e) {
-                console.warn('[Admin] Refresh aborted', e.message);
-            }
-        }
+    const row = [
+    time, o.id, o.customer?.name || '', o.customer?.phone || '',
+    address, o.status, o.payment, cost
+    ].join(",");
 
-        // ---- Phase 6: Export & CRM ----
-        function refreshCRM() {
-            const customers = db.getCustomers();
-            const tbody = document.getElementById('crm-table-body');
-            tbody.innerHTML = customers.length === 0
-                ? '<tr><td colspan="4" class="p-8 text-center text-gray-500">База клиентов пуста</td></tr>'
-                : customers.map(c => `
-                    <tr class="border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors">
-                        <td class="p-4 font-bold text-sm">${c.name || '—'}</td>
-                        <td class="p-4 text-gray-400 text-sm font-mono">${c.phone}</td>
-                        <td class="p-4 text-center">
-                            <span class="bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-bold">${c.ordersCount}</span>
-                        </td>
-                        <td class="p-4 text-right font-bold text-green-400 text-sm">${c.ltv.toFixed(2)} р.</td>
-                    </tr>
-                `).join('');
-        }
+    csvContent += row + "\n";
+    });
 
-        window.exportOrdersToCSV = () => {
-            const orders = appData.orders;
-            if (orders.length === 0) return alert('Нет заказов для выгрузки');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `orders_express_pizza_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    };
 
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            // Headers
-            csvContent += "ВРЕМЯ,ID ЗАКАЗА,ИМЯ КЛИЕНТА,ТЕЛЕФОН,АДРЕС,СТАТУС,ОПЛАТА,СУММА (BYN)\n";
+    // ---- Integrations UI ----
+    const INTEGRATION_META = [
+    { id: 'telegram', name: 'Telegram Bot', icon: '📲', color: 'border-sky-500/30', desc: 'Уведомления о заказах в
+    Telegram чат менеджера', keyLabel: 'Bot Token' },
+    { id: 'iiko', name: 'iikoCloud POS', icon: '🏪', color: 'border-orange-500/30', desc: 'Синхронизация заказов и
+    стоп-листа с POS-системой iiko', keyLabel: 'API Key' },
+    { id: 'rkeeper', name: 'r_keeper POS', icon: '🖥️', color: 'border-blue-500/30', desc: 'Альтернативная POS-система.
+    XML-RPC интеграция', keyLabel: 'API Key' },
+    { id: 'bepaid', name: 'bePaid Acquiring', icon: '💳', color: 'border-green-500/30', desc: 'Онлайн-оплата картами
+    Visa/Mastercard через bePaid', keyLabel: 'Shop ID : Secret' },
+    { id: 'yandex_go', name: 'Yandex.Go (Eats)', icon: '🚀', color: 'border-red-500/30', desc: 'Агрегатор доставки еды.
+    Синхронизация меню и заказов', keyLabel: 'Partner Token' },
+    { id: 'delivio', name: 'Delivio', icon: '📦', color: 'border-purple-500/30', desc: 'Белорусский агрегатор доставки.
+    Webhook-интеграция', keyLabel: 'Webhook URL' },
+    { id: 'slivki', name: 'Slivki.by', icon: '🏷️', color: 'border-amber-500/30', desc: 'Промо-коды и купоны от
+    агрегатора скидок Slivki.by', keyLabel: 'Partner ID' },
+    ];
 
-            orders.forEach(o => {
-                const time = new Date(o.timestamp).toLocaleString('ru-RU');
-                const cost = (o.items || []).reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2);
-                const address = (o.customer?.address || '').replace(/,/g, ' '); // remove commas from address
+    function renderIntegrations() {
+    const grid = document.getElementById('integrations-grid');
+    if (!grid) return;
+    grid.innerHTML = INTEGRATION_META.map(meta => {
+    const cfg = integrations.getConfig(meta.id);
+    return `
+    <div class="bg-card rounded-2xl border ${meta.color} p-6 anim-in transition-all hover:border-opacity-60">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">${meta.icon}</span>
+                <div>
+                    <h3 class="font-bold text-sm">${meta.name}</h3>
+                    <p class="text-xs text-gray-600">${cfg.enabled ? '✅ Активна' : '⏸ Отключена'}</p>
+                </div>
+            </div>
+            <label class="toggle-switch inline-block">
+                <input type="checkbox" ${cfg.enabled ? 'checked' : '' }
+                    onchange="toggleIntegration('${meta.id}', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">${meta.desc}</p>
+        <div>
+            <label class="block text-xs text-gray-600 mb-1">${meta.keyLabel}</label>
+            <input type="text" value="${cfg.apiKey || ''}" placeholder="Вставьте ключ..."
+                onchange="saveIntegrationKey('${meta.id}', this.value)"
+                class="w-full bg-[#111] border border-gray-700 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-primary/50 focus:outline-none">
+        </div>
+    </div>`;
+    }).join('');
+    }
 
-                const row = [
-                    time, o.id, o.customer?.name || '', o.customer?.phone || '',
-                    address, o.status, o.payment, cost
-                ].join(",");
+    window.toggleIntegration = (id, enabled) => {
+    if (enabled) integrations.enable(id);
+    else integrations.disable(id);
+    renderIntegrations();
+    };
 
-                csvContent += row + "\n";
-            });
+    window.saveIntegrationKey = (id, key) => {
+    integrations.setConfig(id, { apiKey: key });
+    console.log(`[Admin] API key saved for ${id}`);
+    };
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `orders_express_pizza_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
+    // ---- Clock ----
+    function updateClock() {
+    document.getElementById('clock').textContent = new Date().toLocaleString('ru-RU', { hour: '2-digit', minute:
+    '2-digit', second: '2-digit' });
+    }
 
-        // ---- Integrations UI ----
-        const INTEGRATION_META = [
-            { id: 'telegram', name: 'Telegram Bot', icon: '📲', color: 'border-sky-500/30', desc: 'Уведомления о заказах в Telegram чат менеджера', keyLabel: 'Bot Token' },
-            { id: 'iiko', name: 'iikoCloud POS', icon: '🏪', color: 'border-orange-500/30', desc: 'Синхронизация заказов и стоп-листа с POS-системой iiko', keyLabel: 'API Key' },
-            { id: 'rkeeper', name: 'r_keeper POS', icon: '🖥️', color: 'border-blue-500/30', desc: 'Альтернативная POS-система. XML-RPC интеграция', keyLabel: 'API Key' },
-            { id: 'bepaid', name: 'bePaid Acquiring', icon: '💳', color: 'border-green-500/30', desc: 'Онлайн-оплата картами Visa/Mastercard через bePaid', keyLabel: 'Shop ID : Secret' },
-            { id: 'yandex_go', name: 'Yandex.Go (Eats)', icon: '🚀', color: 'border-red-500/30', desc: 'Агрегатор доставки еды. Синхронизация меню и заказов', keyLabel: 'Partner Token' },
-            { id: 'delivio', name: 'Delivio', icon: '📦', color: 'border-purple-500/30', desc: 'Белорусский агрегатор доставки. Webhook-интеграция', keyLabel: 'Webhook URL' },
-            { id: 'slivki', name: 'Slivki.by', icon: '🏷️', color: 'border-amber-500/30', desc: 'Промо-коды и купоны от агрегатора скидок Slivki.by', keyLabel: 'Partner ID' },
-        ];
-
-        function renderIntegrations() {
-            const grid = document.getElementById('integrations-grid');
-            if (!grid) return;
-            grid.innerHTML = INTEGRATION_META.map(meta => {
-                const cfg = integrations.getConfig(meta.id);
-                return `
-                <div class="bg-card rounded-2xl border ${meta.color} p-6 anim-in transition-all hover:border-opacity-60">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-3xl">${meta.icon}</span>
-                            <div>
-                                <h3 class="font-bold text-sm">${meta.name}</h3>
-                                <p class="text-xs text-gray-600">${cfg.enabled ? '✅ Активна' : '⏸ Отключена'}</p>
-                            </div>
-                        </div>
-                        <label class="toggle-switch inline-block">
-                            <input type="checkbox" ${cfg.enabled ? 'checked' : ''} onchange="toggleIntegration('${meta.id}', this.checked)">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <p class="text-xs text-gray-500 mb-4">${meta.desc}</p>
-                    <div>
-                        <label class="block text-xs text-gray-600 mb-1">${meta.keyLabel}</label>
-                        <input type="text" value="${cfg.apiKey || ''}" placeholder="Вставьте ключ..."
-                            onchange="saveIntegrationKey('${meta.id}', this.value)"
-                            class="w-full bg-[#111] border border-gray-700 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-primary/50 focus:outline-none">
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        window.toggleIntegration = (id, enabled) => {
-            if (enabled) integrations.enable(id);
-            else integrations.disable(id);
-            renderIntegrations();
-        };
-
-        window.saveIntegrationKey = (id, key) => {
-            integrations.setConfig(id, { apiKey: key });
-            console.log(`[Admin] API key saved for ${id}`);
-        };
-
-        // ---- Clock ----
-        function updateClock() {
-            document.getElementById('clock').textContent = new Date().toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
-
-        // ---- Init ----
-        refreshAll();
-        updateClock();
-        setInterval(updateClock, 1000);
-        setInterval(refreshAll, 3000); // Poll for new orders every 3s
+    // ---- Init ----
+    refreshAll();
+    updateClock();
+    setInterval(updateClock, 1000);
+    setInterval(refreshAll, 3000); // Poll for new orders every 3s
     </script>
 </body>
 

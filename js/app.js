@@ -394,8 +394,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Pizza → customizer
-        if (item.category === 'pizza') {
+        // Product with modifiers → customizer
+        if (item.modifiers && item.modifiers.length > 0) {
             openCustomizer(id);
             return;
         }
@@ -657,39 +657,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentCustomizerItem = null;
     let customizerBasePrice = 0;
 
-    // Modifier ID map (must match DB seed)
-    const MODIFIER_MAP = {
-        'mod-cheese-crust': { dbName: 'Сырный бортик', previewPrice: 4.0 },
-        'mod-jalapeno': { dbName: 'Халапеньо', previewPrice: 1.5 },
-        'mod-double-cheese': { dbName: 'Двойной сыр', previewPrice: 3.0 },
-        'mod-no-onion': { dbName: 'Без лука', previewPrice: 0.0 },
-    };
+    // Modifier data comes from the product itself (product.modifiers[]).
+    // No hardcoded map needed — the customizer builds UI dynamically.
 
     function openCustomizer(itemId) {
         const itemInfo = db.getMenuItem(itemId);
-        if (!itemInfo) return;
+        if (!itemInfo || !itemInfo.modifiers || itemInfo.modifiers.length === 0) return;
 
         currentCustomizerItem = itemInfo;
         const sizeIdx = selectedSizeIndex[itemId] || 0;
         customizerBasePrice = parseFloat(itemInfo.sizes[sizeIdx].price);
 
-        Object.keys(MODIFIER_MAP).forEach(id => {
-            const cb = $(id); if (cb) cb.checked = false;
+        // Build modal HTML dynamically
+        const groups = {};
+        itemInfo.modifiers.forEach(m => {
+            const g = m.groupName || 'Дополнительно';
+            if (!groups[g]) groups[g] = [];
+            groups[g].push(m);
         });
 
-        const title = $('cust-title');
-        if (title) title.textContent = `${itemInfo.name} | ${itemInfo.sizes[sizeIdx].label}`;
-        const img = $('cust-img');
-        if (img) img.src = itemInfo.image;
-        const desc = $('cust-desc');
-        if (desc) desc.textContent = itemInfo.description || 'Идеальное сочетание ингредиентов по фирменному рецепту.';
-        updateCustomizerTotal();
+        let modsHtml = '';
+        for (const [group, mods] of Object.entries(groups)) {
+            modsHtml += `<p class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-3 mb-1">${group}</p>`;
+            mods.forEach(m => {
+                const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} р.`;
+                const colorClass = m.isRemoval ? 'text-red-400' : 'text-green-400';
+                modsHtml += `
+                    <label class="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}"
+                                   class="cust-mod-cb w-5 h-5 rounded accent-primary" onchange="updateCustomizerTotal()">
+                            <span class="text-sm font-medium ${m.isRemoval ? 'text-red-400' : ''}">${m.name}</span>
+                        </div>
+                        <span class="text-xs font-bold ${colorClass}">${priceLabel}</span>
+                    </label>`;
+            });
+        }
 
-        const modal = $('pizza-customizer-modal');
-        const sheet = $('customizer-sheet');
-        if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        // Check if modal already exists, create if not
+        let modal = $('pizza-customizer-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pizza-customizer-modal';
+            document.body.appendChild(modal);
+        }
+
+        modal.className = 'fixed inset-0 z-[200] flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300';
+        modal.innerHTML = `
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
+            <div id="customizer-sheet" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[420px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl translate-y-full transition-transform duration-300 p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <img id="cust-img" src="${itemInfo.image || ''}" class="w-20 h-20 rounded-2xl object-cover bg-gray-200" onerror="this.src='images/placeholder.png'">
+                    <div class="flex-1">
+                        <h3 id="cust-title" class="font-bold text-lg">${itemInfo.name} | ${itemInfo.sizes[sizeIdx].label}</h3>
+                        <p id="cust-desc" class="text-xs text-gray-400 mt-1 line-clamp-2">${itemInfo.description || ''}</p>
+                    </div>
+                    <button onclick="closeCustomizer()" class="text-gray-400 hover:text-white p-1">✕</button>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-800 pt-3">
+                    ${modsHtml}
+                </div>
+                <div class="mt-5 flex items-center justify-between">
+                    <span class="text-lg font-black text-primary" id="cust-total">${customizerBasePrice.toFixed(2)} р.</span>
+                    <button onclick="addCustomizedItem()" class="bg-primary text-white font-bold py-3 px-8 rounded-2xl hover:bg-red-700 transition-colors active:scale-95">В корзину</button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
         requestAnimationFrame(() => {
-            if (modal) modal.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0');
+            const sheet = $('customizer-sheet');
             if (sheet) sheet.classList.remove('translate-y-full');
         });
     }
@@ -707,10 +746,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Preview price in customizer (cosmetic only — server recalculates)
     window.updateCustomizerTotal = () => {
         let price = customizerBasePrice;
-        for (const [elemId, mod] of Object.entries(MODIFIER_MAP)) {
-            const cb = $(elemId);
-            if (cb && cb.checked) price += mod.previewPrice;
-        }
+        document.querySelectorAll('.cust-mod-cb:checked').forEach(cb => {
+            price += parseFloat(cb.dataset.modPrice) || 0;
+        });
         const ct = $('cust-total');
         if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' р.';
     };
@@ -721,24 +759,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modifierNames = [];
         const modifierIds = [];
 
-        // Collect checked modifiers — we need their DB IDs
-        // The IDs will be resolved when the product's modifiers are available
-        for (const [elemId, mod] of Object.entries(MODIFIER_MAP)) {
-            const cb = $(elemId);
-            if (cb && cb.checked) {
-                modifierNames.push(mod.dbName);
-                // Find modifier ID from the product's available modifiers (from localStorage/db)
-                const dbMod = (currentCustomizerItem.modifiers || []).find(m => m.name === mod.dbName);
-                if (dbMod) modifierIds.push(dbMod.id);
-            }
-        }
+        document.querySelectorAll('.cust-mod-cb:checked').forEach(cb => {
+            modifierIds.push(parseInt(cb.dataset.modId));
+            modifierNames.push(cb.dataset.modName);
+        });
 
         const sizeIdx = selectedSizeIndex[currentCustomizerItem.id] || 0;
         const size = currentCustomizerItem.sizes[sizeIdx];
 
         cart.push({
-            productSizeId: size.id,          // DB ProductSize.id
-            modifierIds,                      // DB ProductModifier.id[]
+            productSizeId: size.id,
+            modifierIds,
             quantity: 1,
             _display: {
                 name: currentCustomizerItem.name,
