@@ -1,0 +1,37 @@
+{
+  "name": "express-pizza-server",
+  "version": "1.0.0",
+  "description": "Express Pizza — Backend API (Node.js + Prisma + PostgreSQL)",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:studio": "npx prisma studio",
+    "db:reset": "npx prisma migrate reset --force"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "keywords": [
+    "pizza",
+    "delivery",
+    "express",
+    "prisma"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^7.4.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "iconv-lite": "^0.7.2",
+    "jsonwebtoken": "^9.0.3",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.4.2"
+  }
+}

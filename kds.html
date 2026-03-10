@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Pizza — KDS (Kitchen Display System)</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent-red: #ff3b30;
+            --accent-green: #34c759;
+            --accent-orange: #ff9500;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .clock {
+            font-size: 20px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* KDS Grid */
+        .kds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Order Card */
+        .order-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            border-top: 6px solid var(--accent-orange);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .order-id {
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .timer {
+            font-size: 20px;
+            font-weight: bold;
+            background: #333;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer.warning {
+            background: var(--accent-orange);
+            color: #000;
+        }
+
+        .timer.danger {
+            background: var(--accent-red);
+            color: #fff;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0.7;
+            }
+        }
+
+        /* Items List */
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px 0;
+        }
+
+        .item {
+            padding: 12px 0;
+            border-bottom: 1px dashed #444;
+            font-size: 18px;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-qty {
+            display: inline-block;
+            background: var(--text-main);
+            color: var(--bg-dark);
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        /* Modifiers - HIGH CONTRAST */
+        .modifier {
+            display: block;
+            margin-top: 6px;
+            margin-left: 36px;
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        .modifier.removal {
+            color: var(--accent-red);
+            font-weight: bold;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        .modifier.addition {
+            color: var(--accent-green);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-ready {
+            background-color: var(--accent-green);
+            color: white;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>👨‍🍳 EXPRESS PIZZA KDS (Ресторан #1)</h1>
+        <div class="clock" id="clock">00:00:00</div>
+    </div>
+
+    <div class="kds-grid" id="kds-grid">
+        <!-- Order Cards will be injected here via WebSocket -->
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Setup clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU', { timeZone: 'Europe/Minsk' });
+        }, 1000);
+
+        const grid = document.getElementById('kds-grid');
+        const orders = new Map(); // Store orders to update timers
+
+        // Connect WebSocket (using native ws proxy over regular ws://)
+        // Since we implemented pure 'ws' on backend, we use native WebSocket
+        const wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws/kds?restaurantId=1';
+        let ws;
+
+        function connectWS() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => console.log('[KDS] Connected to kitchen server');
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'NEW_ORDER') {
+                    renderOrder(msg.data);
+                } else if (msg.type === 'STATUS_SYNC') {
+                    // Remove if another tablet marked it ready
+                    if (msg.data.status === 'READY') {
+                        const card = document.getElementById(`order-${msg.data.orderId}`);
+                        if (card) {
+                            card.style.transform = 'scale(0.9)';
+                            card.style.opacity = '0';
+                            setTimeout(() => card.remove(), 200);
+                            orders.delete(msg.data.orderId);
+                        }
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('[KDS] Disconnected. Reconnecting in 3s...');
+                setTimeout(connectWS, 3000);
+            };
+        }
+        connectWS();
+
+        function renderOrder(order) {
+            if (document.getElementById(`order-${order.id}`)) return; // Duplicate
+
+            // Track start time
+            orders.set(order.id, { created: new Date(order.createdAt), el: null });
+
+            const card = document.createElement('div');
+            card.className = 'order-card';
+            card.id = `order-${order.id}`;
+
+            let itemsHtml = order.items.map(item => {
+                const sizeLabel = item.productSize ? ` (${item.productSize.label})` : '';
+
+                let modsHtml = '';
+                if (item.modifiers) {
+                    modsHtml = item.modifiers.map(m => {
+                        const name = m.modifier ? m.modifier.name : 'Опция';
+                        const isRemoval = m.modifier && m.modifier.isRemoval;
+                        const modVal = isRemoval ? `!!! БЕЗ: ${name.replace('Без ', '')} !!!` : `+ ${name}`;
+                        const cssClass = isRemoval ? 'modifier removal' : 'modifier addition';
+                        return `<span class="${cssClass}">${modVal}</span>`;
+                    }).join('');
+                }
+
+                const noteHtml = item.note ? `<span class="modifier removal">💬 ${item.note}</span>` : '';
+
+                return `
+                    <li class="item">
+                        <div style="display:flex; align-items:flex-start;">
+                            <span class="item-qty">${item.quantity}</span>
+                            <span style="font-weight:bold;">${item.product ? item.product.name : 'Товар'}${sizeLabel}</span>
+                        </div>
+                        ${modsHtml}
+                        ${noteHtml}
+                    </li>
+                `;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="order-header">
+                    <span class="order-id">#${order.orderNumber || order.id}</span>
+                    <span class="timer" id="timer-${order.id}">00:00</span>
+                </div>
+                <ul class="item-list">
+                    ${itemsHtml}
+                </ul>
+                <div class="actions">
+                    <button class="btn btn-ready" onclick="markReady(${order.id})">✅ Готово</button>
+                </div>
+            `;
+
+            grid.appendChild(card);
+            orders.get(order.id).el = document.getElementById(`timer-${order.id}`);
+        }
+
+        function markReady(orderId) {
+            // Send STATUS_UPDATE to WS Server
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'STATUS_UPDATE',
+                    data: { orderId, status: 'READY' }
+                }));
+            }
+
+            const card = document.getElementById(`order-${orderId}`);
+            if (card) {
+                card.style.transform = 'scale(0.9)';
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 200);
+            }
+            orders.delete(orderId);
+        }
+
+        // Timer Loop UI Update
+        setInterval(() => {
+            const now = new Date();
+            orders.forEach((data, id) => {
+                if (!data.el) return;
+
+                const diffSec = Math.floor((now - data.created) / 1000);
+                const m = Math.floor(diffSec / 60).toString().padStart(2, '0');
+                const s = (diffSec % 60).toString().padStart(2, '0');
+
+                data.el.textContent = `${m}:${s}`;
+
+                // Color coding warnings (10 min orange, 15 min red)
+                if (diffSec > 15 * 60) {
+                    data.el.className = 'timer danger';
+                } else if (diffSec > 10 * 60) {
+                    data.el.className = 'timer warning';
+                }
+            });
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

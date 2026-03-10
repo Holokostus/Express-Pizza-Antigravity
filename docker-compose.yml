@@ -1,0 +1,110 @@
+# ============================================================
+# Express Pizza — Docker Compose (Production Stack)
+# ============================================================
+# Services: PostgreSQL, Redis, API Server, Local Node
+# Usage: docker-compose up -d
+# ============================================================
+
+version: '3.9'
+
+services:
+  # ---- PostgreSQL ----
+  postgres:
+    image: postgres:16-alpine
+    container_name: pizza-postgres
+    environment:
+      POSTGRES_DB: express_pizza
+      POSTGRES_USER: pizza_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pizza_secret_2024}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pizza_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---- Redis (Cache + PubSub) ----
+  redis:
+    image: redis:7-alpine
+    container_name: pizza-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---- API Server (Cloud) ----
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: pizza-api
+    environment:
+      DATABASE_URL: postgresql://pizza_admin:${DB_PASSWORD:-pizza_secret_2024}@postgres:5432/express_pizza?schema=public
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-YOUR_BOT_TOKEN_HERE}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-YOUR_CHAT_ID}
+      BEPAID_SHOP_ID: ${BEPAID_SHOP_ID:-YOUR_SHOP_ID}
+      BEPAID_SECRET_KEY: ${BEPAID_SECRET_KEY:-YOUR_SECRET_KEY}
+      BEPAID_WEBHOOK_SECRET: ${BEPAID_WEBHOOK_SECRET:-YOUR_WEBHOOK_SECRET}
+      IIKO_API_LOGIN: ${IIKO_API_LOGIN:-YOUR_IIKO_LOGIN}
+      IIKO_ORGANIZATION_ID: ${IIKO_ORGANIZATION_ID:-YOUR_ORG_ID}
+      RKEEPER_URL: ${RKEEPER_URL:-http://localhost:8080/jsonrpc}
+      RKEEPER_API_KEY: ${RKEEPER_API_KEY:-YOUR_RKEEPER_KEY}
+      SMSB_API_KEY: ${SMSB_API_KEY:-YOUR_SMSB_API_KEY}
+      YANDEX_ROUTING_API_KEY: ${YANDEX_ROUTING_API_KEY:-}
+      YANDEX_DELIVERY_API_KEY: ${YANDEX_DELIVERY_API_KEY:-}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ---- Local Node (Restaurant) ----
+  local-node:
+    build:
+      context: ./local-node
+      dockerfile: Dockerfile
+    container_name: pizza-local-node
+    environment:
+      LOCAL_PORT: 3001
+      RESTAURANT_ID: 1
+      CLOUD_API_URL: http://api:3000
+      SYNC_INTERVAL_MS: 10000
+      PRINTER_IP: ${PRINTER_IP:-}
+      PRINTER_PORT: ${PRINTER_PORT:-9100}
+    ports:
+      - "3001:3001"
+    volumes:
+      - localdata:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  localdata:
+    driver: local

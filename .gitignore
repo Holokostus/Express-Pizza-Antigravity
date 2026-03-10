@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.production
+.env.local
+
+# Build / Temp Files
+dist/
+build/
+.next/
+out/
+coverage/
+.nyc_output/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / OS specific
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Database / SQLite
+*.sqlite
+*.sqlite3
+
+# Uploads / Temp generated
+server/uploads/

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Pizza - Быстрая доставка пиццы в Минске</title>
+    <meta name="description"
+        content="Вкусная пицца с быстрой доставкой по Минску. Заказывайте прямо сейчас и получите скидку 50% на вторую пиццу!">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E30613',
+                        accent: '#FFED00',
+                        bgElementLight: '#ffffff',
+                        bgElementDark: '#1e1e1e',
+                        textMainLight: '#111827',
+                        textMainDark: '#f3f4f6',
+                        textMutedLight: '#6b7280',
+                        textMutedDark: '#9ca3af',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'glow': '0 0 20px rgba(227, 6, 19, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-gray-900 text-textMainLight dark:text-textMainDark transition-colors duration-300 font-sans antialiased overflow-x-hidden">
+
+    <!-- Header -->
+    <header
+        class="fixed top-0 w-full z-40 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
+        <div class="container mx-auto px-4 lg:px-6 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-2 group">
+                <div
+                    class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display font-bold text-xl shadow-glow group-hover:scale-105 transition-transform">
+                    EP
+                </div>
+                <span class="font-display font-black text-2xl tracking-tight hidden sm:block"><span
+                        class="text-primary">EXPRESS</span> PIZZA</span>
+            </a>
+
+            <!-- Info (Timer & Phones) -->
+            <div class="hidden lg:flex items-center gap-6">
+                <div
+                    class="flex items-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 px-4 py-2 rounded-full font-medium text-sm timer-glow">
+                    <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="delivery-timer">Среднее время: 24 мин</span>
+                </div>
+                <div class="flex flex-col text-sm font-semibold">
+                    <a href="tel:+375445891111" class="hover:text-primary transition-colors">+375 44 589 11 11</a>
+                    <a href="tel:+375333891111"
+                        class="hover:text-primary transition-colors text-textMutedLight dark:text-textMutedDark">+375 33
+                        389 11 11</a>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3">
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    aria-label="Toggle Dark Mode">
+                    <!-- Sun Icon (Light Mode) -->
+                    <svg id="theme-toggle-light-icon" class="w-6 h-6 hidden dark:block text-accent" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                        </path>
+                    </svg>
+                    <!-- Moon Icon (Dark Mode) -->
+                    <svg id="theme-toggle-dark-icon" class="w-6 h-6 block dark:hidden text-gray-700" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20">
+        <!-- Hero Section -->
+        <section class="relative h-[500px] overflow-hidden">
+            <img src="images/hero_banner.png" alt="Promo" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+            <div class="container mx-auto px-4 lg:px-6 relative h-full flex flex-col justify-center items-start">
+                <div class="max-w-xl animate-fade-in-up">
+                    <span
+                        class="inline-block bg-accent text-black font-black px-4 py-1 rounded-md text-sm uppercase tracking-wider mb-4">Акция
+                        месяца</span>
+                    <h1 class="text-white font-display font-black text-5xl md:text-7xl leading-tight mb-6">СКИДКА <span
+                            class="text-primary">50%</span><br>НА ВТОРУЮ ПИЦЦУ</h1>
+                    <p class="text-gray-200 text-lg mb-8 max-w-md">Закажи любую большую пиццу и забери вторую за
+                        полцены. Акция действует на доставку и самовывоз.</p>
+                    <a href="#menu"
+                        class="bg-primary hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full transition-all hover:scale-105 shadow-glow inline-block text-lg">Выбрать
+                        пиццу</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Menu Navigation -->
+        <nav id="menu"
+            class="sticky top-20 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4">
+            <div class="container mx-auto px-4 lg:px-6">
+                <div class="flex items-center gap-4 overflow-x-auto hide-scrollbar py-2">
+                    <button
+                        class="menu-tab active bg-primary text-white px-6 py-2 rounded-full font-bold whitespace-nowrap transition-all"
+                        data-category="pizza">Пицца</button>
+                    <button
+                        class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-6 py-2 rounded-full font-bold whitespace-nowrap transition-all"
+                        data-category="togo">Пицца TOGO</button>
+                    <button
+                        class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-6 py-2 rounded-full font-bold whitespace-nowrap transition-all"
+                        data-category="sauce">Соусы</button>
+                    <button
+                        class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-6 py-2 rounded-full font-bold whitespace-nowrap transition-all"
+                        data-category="juice">Соки</button>
+                    <button
+                        class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-6 py-2 rounded-full font-bold whitespace-nowrap transition-all"
+                        data-category="drinks">Напитки</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Menu Grid -->
+        <section class="container mx-auto px-4 lg:px-6 py-12">
+            <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <!-- Menu items will be injected by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+        <div id="cart-overlay"
+            class="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 pointer-events-none"></div>
+        <div id="cart-panel"
+            class="absolute top-0 right-0 w-full max-w-md h-full bg-white dark:bg-bgElementDark shadow-2xl transform translate-x-full transition-transform duration-300 pointer-events-auto flex flex-col">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h2 class="font-display font-black text-2xl uppercase tracking-tight">Корзина</h2>
+                <button id="close-cart"
+                    class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="cart-items" class="flex-grow overflow-y-auto p-6 space-y-6">
+                <!-- Cart items will be injected here -->
+                <div id="empty-cart" class="text-center py-12">
+                    <div class="text-6xl mb-4">🍕</div>
+                    <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
+                    <button id="back-to-menu" class="mt-4 text-primary font-bold hover:underline">Вернуться в
+                        меню</button>
+                </div>
+            </div>
+
+            <div id="cart-footer"
+                class="p-6 border-t border-gray-100 dark:border-gray-800 hidden overflow-y-auto max-h-[55vh]">
+                <!-- Promo Code -->
+                <div class="mb-4">
+                    <label
+                        class="block text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-1.5">Промокод
+                        Slivki.by</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="promo-input" placeholder="Введите код"
+                            class="flex-grow bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                        <button type="button" id="promo-btn" onclick="applyPromoCode()"
+                            class="bg-primary hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all text-sm">OK</button>
+                    </div>
+                </div>
+
+                <!-- Upsell Widget (Phase 7) -->
+                <div id="upsell-widget" class="mb-5 hidden">
+                    <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Идеально к
+                        пицце</p>
+                    <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2" id="upsell-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Totals (dynamically rendered by JS) -->
+                <div id="cart-totals-area" class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-lg">Итого:</span>
+                        <span class="font-display font-black text-2xl text-primary" id="cart-total-display">0
+                            руб.</span>
+                    </div>
+                </div>
+
+                <!-- Order Form -->
+                <form id="order-form" class="space-y-3">
+                    <input type="text" id="user-name" placeholder="Ваше имя" required
+                        class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                    <input type="tel" id="user-phone" placeholder="+375 (__) ___-__-__" required
+                        class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                    <textarea id="user-address" placeholder="Адрес доставки (улица, дом, кв)" required
+                        class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all h-20 resize-none"></textarea>
+
+                    <!-- Payment Method -->
+                    <div class="pt-2">
+                        <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Способ
+                            оплаты</p>
+                        <!-- Option 1: bePaid Online -->
+                        <label
+                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all mb-2 group">
+                            <input type="radio" name="payment" value="bepaid_online" class="mt-0.5 accent-primary"
+                                checked>
+                            <div class="flex-grow">
+                                <span class="font-bold text-sm">Картой онлайн через bePaid</span>
+                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Visa,
+                                    Mastercard, Белкарт, Мир</span>
+                                <div class="flex items-center gap-1.5 mt-1.5">
+                                    <span
+                                        class="inline-block bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">VISA</span>
+                                    <span
+                                        class="inline-block bg-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded">MC</span>
+                                    <span
+                                        class="inline-block bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">БЕЛКАРТ</span>
+                                    <span
+                                        class="inline-block bg-sky-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded">МИР</span>
+                                </div>
+                            </div>
+                        </label>
+                        <!-- Option 2: Оплати QR -->
+                        <label
+                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all mb-2 group">
+                            <input type="radio" name="payment" value="oplati_qr" class="mt-0.5 accent-primary">
+                            <div class="flex-grow">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-sm">Через приложение Оплати</span>
+                                    <span
+                                        class="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full">QR</span>
+                                </div>
+                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Отсканируйте
+                                    QR-код в приложении банка</span>
+                            </div>
+                        </label>
+                        <!-- Option 3: Cash on Delivery -->
+                        <label id="payment-cash-label"
+                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
+                            <input type="radio" name="payment" id="payment-cash-radio" value="cash_ikassa"
+                                class="mt-0.5 accent-primary">
+                            <div>
+                                <span class="font-bold text-sm">При получении <span id="cash-limit-warning"
+                                        class="hidden text-xs text-primary ml-1">(Недоступно > 100 р.)</span></span>
+                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Наличные курьеру
+                                    или терминал iKassa</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Legal consent checkbox (Belarus law requirement) -->
+                    <label class="flex items-start gap-3 mt-4 cursor-pointer group">
+                        <input type="checkbox" id="consent-checkbox" required
+                            class="mt-0.5 w-4 h-4 accent-primary rounded flex-shrink-0">
+                        <span class="text-[11px] leading-relaxed text-textMutedLight dark:text-textMutedDark">
+                            Я согласен(-а) с условиями
+                            <a href="/oferta" target="_blank"
+                                class="text-primary underline hover:no-underline">публичного договора</a>
+                            и даю согласие на
+                            <a href="/oferta#privacy" target="_blank"
+                                class="text-primary underline hover:no-underline">обработку персональных данных</a>
+                            в соответствии с Законом Республики Беларусь «О защите персональных данных».
+                        </span>
+                    </label>
+
+                    <button type="button" id="btn-request-otp" onclick="requestOTP()"
+                        class="w-full bg-primary hover:bg-hover active:scale-95 text-white font-display font-black text-lg py-4 rounded-xl transition-all shadow-lg mt-4">
+                        К Оформлению
+                    </button>
+                </form>
+
+                <!-- OTP Step (Phase 5.1) -->
+                <div id="otp-step" class="hidden space-y-4 pt-4 text-center">
+                    <p class="font-bold text-lg">Подтверждение номера</p>
+                    <p class="text-sm text-textMutedLight dark:text-textMutedDark">Мы отправили SMS с кодом на номер
+                        <br><span id="otp-phone-display" class="font-bold text-black dark:text-white"></span>
+                    </p>
+                    <input type="text" id="otp-input" placeholder="1234" maxlength="4"
+                        class="w-32 mx-auto text-center font-display font-black text-2xl tracking-[0.5em] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                    <button type="button" id="btn-verify-otp" onclick="verifyOTPAndSubmit()"
+                        class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg mt-2 flex items-center justify-center gap-2">
+                        <span>Подтвердить и Заказать</span>
+                    </button>
+                    <p class="text-xs text-gray-400 mt-2">P.S. Для демо введите код 1234</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <button id="floating-cart"
+        class="fixed bottom-24 lg:bottom-6 right-6 z-40 bg-primary text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group">
+        <div id="cart-badge"
+            class="absolute -top-1 -right-1 bg-accent text-black text-xs font-black min-w-[20px] h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 opacity-0 transition-opacity">
+            0</div>
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+        </svg>
+    </button>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobile-nav"
+        class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 lg:hidden bottom-nav">
+        <div class="flex items-center justify-around h-16">
+            <a href="#" class="flex flex-col items-center gap-0.5 text-primary">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                <span class="text-[10px] font-bold">Главная</span>
+            </a>
+            <a href="#menu"
+                class="flex flex-col items-center gap-0.5 text-textMutedLight dark:text-textMutedDark hover:text-primary transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                    </path>
+                </svg>
+                <span class="text-[10px] font-bold">Меню</span>
+            </a>
+            <button onclick="document.getElementById('floating-cart').click()"
+                class="flex flex-col items-center gap-0.5 text-textMutedLight dark:text-textMutedDark hover:text-primary transition-colors relative">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+                <div id="cart-badge-mobile"
+                    class="absolute -top-1 right-2 bg-primary text-white text-[9px] font-black min-w-[16px] h-4 rounded-full flex items-center justify-center opacity-0 transition-opacity">
+                    0</div>
+                <span class="text-[10px] font-bold">Корзина</span>
+            </button>
+            <a href="#footer-contacts"
+                class="flex flex-col items-center gap-0.5 text-textMutedLight dark:text-textMutedDark hover:text-primary transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                    </path>
+                </svg>
+                <span class="text-[10px] font-bold">Контакты</span>
+            </a>
+        </div>
+    </nav>
+    <footer id="footer-contacts"
+        class="bg-white dark:bg-bgElementDark border-t border-gray-100 dark:border-gray-800 py-12 mt-20 mb-16 lg:mb-0 transition-colors duration-300">
+        <div class="container mx-auto px-4 lg:px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
+                <div>
+                    <h3 class="font-display font-black text-2xl mb-4"><span class="text-primary">EXPRESS</span> PIZZA
+                    </h3>
+                    <p class="text-textMutedLight dark:text-textMutedDark mb-4">Быстрая доставка вкусной пиццы в Минске.
+                        Горячая, свежая, твоя!</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Телефоны</h4>
+                    <p class="mb-2"><a href="tel:+375445891111" class="hover:text-primary transition-colors">+375 44 589
+                            11 11</a></p>
+                    <p class="mb-2"><a href="tel:+375333891111" class="hover:text-primary transition-colors">+375 33 389
+                            11 11</a></p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Адреса</h4>
+                    <p class="mb-2 flex items-start gap-1.5 justify-center md:justify-start">
+                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>пр-т Партизанский, 19</span>
+                    </p>
+                    <p class="mb-2 flex items-start gap-1.5 justify-center md:justify-start">
+                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>пр-т Дзержинского, 115</span>
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Время работы</h4>
+                    <p>Пн-Вс: 10:00 — 23:00</p>
+                    <p class="text-sm text-textMutedLight dark:text-textMutedDark mt-2">Без выходных</p>
+                </div>
+            </div>
+            <div
+                class="text-center mt-12 pt-8 border-t border-gray-100 dark:border-gray-800 text-sm text-textMutedLight dark:text-textMutedDark">
+                &copy; 2026 Express Pizza. Все права защищены.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar & Form will be built here -->
+
+    <!-- Floating Cart Button will be built here -->
+
+    <!-- Phase 7: Customizer Bottom Sheet -->
+    <div id="pizza-customizer-modal"
+        class="fixed inset-0 z-[60] hidden flex-col justify-end bg-black/60 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="bg-white dark:bg-bgElementDark w-full max-w-lg mx-auto rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col max-h-[90vh]"
+            id="customizer-sheet">
+            <div
+                class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-bgElementDark rounded-t-3xl z-10">
+                <h3 class="font-display font-black text-xl" id="cust-title">Настроить пиццу</h3>
+                <button onclick="closeCustomizer()"
+                    class="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto hide-scrollbar flex-grow">
+                <div class="flex items-center gap-4 mb-6">
+                    <img id="cust-img" src="" class="w-24 h-24 object-cover rounded-xl" alt="">
+                    <div>
+                        <p id="cust-desc" class="text-sm text-textMutedLight dark:text-textMutedDark leading-snug"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="font-bold mb-3">Сделать вкуснее</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="mod-cheese-crust"
+                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    onchange="updateCustomizerTotal()">
+                                <span class="font-medium text-sm">Сырный бортик</span>
+                            </div>
+                            <span class="font-bold text-sm">+4.00 р.</span>
+                        </label>
+                        <label
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="mod-jalapeno"
+                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    onchange="updateCustomizerTotal()">
+                                <span class="font-medium text-sm">Халапеньо (острые)</span>
+                            </div>
+                            <span class="font-bold text-sm">+1.50 р.</span>
+                        </label>
+                        <label
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="mod-double-cheese"
+                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    onchange="updateCustomizerTotal()">
+                                <span class="font-medium text-sm">Двойной сыр</span>
+                            </div>
+                            <span class="font-bold text-sm">+3.00 р.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="font-bold mb-3">Убрать ингредиенты</h4>
+                    <label
+                        class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="mod-no-onion" class="w-5 h-5 rounded text-red-500 accent-red-500">
+                        <span class="font-medium text-sm text-red-600 dark:text-red-400">Без лука</span>
+                    </label>
+                </div>
+            </div>
+            <div
+                class="p-4 border-t border-gray-100 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-bgElementDark">
+                <button id="btn-customizer-add" onclick="addCustomizedItem()"
+                    class="w-full bg-primary hover:bg-hover text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-between px-6 items-center">
+                    <span>Добавить</span>
+                    <span id="cust-total">0.00 р.</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 7: Order Tracker Overlay -->
+    <div id="order-tracker" class="fixed inset-0 z-[70] hidden bg-bgLight dark:bg-[#111] flex-col overflow-y-auto">
+        <div class="container mx-auto max-w-md px-6 py-12 flex flex-col h-full items-center justify-center relative">
+            <button onclick="closeTracker()"
+                class="absolute top-6 right-6 p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <div
+                class="w-24 h-24 bg-primary text-white rounded-full flex items-center justify-center mb-8 shadow-primary/30 shadow-2xl relative">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div class="absolute inset-0 rounded-full border-4 border-primary animate-ping opacity-20"></div>
+            </div>
+
+            <h2 class="font-display font-black text-3xl mb-2 text-center" id="tracker-title">Заказ №<span
+                    id="tracker-id">100</span> оформлен!</h2>
+            <p class="text-textMutedLight dark:text-textMutedDark text-center mb-12">Следите за статусом в реальном
+                времени</p>
+
+            <div
+                class="w-full space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 dark:before:via-gray-700 before:to-transparent">
+                <!-- Step 1 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group transition-all duration-500"
+                    id="step-new">
+                    <div
+                        class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white shadow relative z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div
+                        class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] md:group-odd:text-right p-4 rounded-xl border border-primary/30 bg-primary/5">
+                        <h4 class="font-bold text-primary">Принят</h4>
+                        <p class="text-xs text-textMutedLight mt-1">Ожидает подтверждения кухни</p>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group opacity-50 grayscale transition-all duration-500"
+                    id="step-cooking">
+                    <div
+                        class="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500 text-white shadow relative z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                            </path>
+                        </svg>
+                    </div>
+                    <div
+                        class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] md:group-odd:text-right p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-cardDark">
+                        <h4 class="font-bold text-amber-500">Готовится</h4>
+                        <p class="text-xs text-textMutedLight mt-1">Пиццайоло раскатывает тесто</p>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group opacity-50 grayscale transition-all duration-500"
+                    id="step-baking">
+                    <div
+                        class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500 text-white shadow relative z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div
+                        class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] md:group-odd:text-right p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-cardDark">
+                        <h4 class="font-bold text-orange-500">В печи</h4>
+                        <p class="text-xs text-textMutedLight mt-1">300 градусов, сыр плавится</p>
+                    </div>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group opacity-50 grayscale transition-all duration-500"
+                    id="step-delivery">
+                    <div
+                        class="flex items-center justify-center w-10 h-10 rounded-full bg-violet-500 text-white shadow relative z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div
+                        class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] md:group-odd:text-right p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-cardDark">
+                        <h4 class="font-bold text-violet-500">В пути</h4>
+                        <p class="text-xs text-textMutedLight mt-1">Курьер уже мчится к вам!</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeTracker()"
+                class="mt-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-bold py-3 px-8 rounded-full transition-colors text-sm">Вернуться
+                на главную</button>
+        </div>
+    </div>
+
+    <!-- Legal Footer (Belarus compliance) -->
+    <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-16 py-8 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-textMutedLight dark:text-textMutedDark">
+                <!-- Company Info -->
+                <div>
+                    <p class="font-bold text-sm text-textMainLight dark:text-textMainDark mb-2">ООО «Экспресс Пицца»</p>
+                    <p>УНП: <span class="font-mono">100000000</span></p>
+                    <p>Юридический адрес: г. Минск,<br>ул. Примерная, д. 1, каб. 101</p>
+                    <p class="mt-1">Регистрация в Торговом реестре<br>от ДД.ММ.ГГГГ</p>
+                </div>
+                <!-- Contacts -->
+                <div>
+                    <p class="font-bold text-sm text-textMainLight dark:text-textMainDark mb-2">Контакты</p>
+                    <p>📞 <a href="tel:+375445891111" class="hover:text-primary">+375 (44) 589-11-11</a></p>
+                    <p>✉️ info@expresspizza.by</p>
+                    <p class="mt-1">Режим работы: 10:00 – 23:00</p>
+                    <p>Без выходных</p>
+                </div>
+                <!-- Legal Links -->
+                <div>
+                    <p class="font-bold text-sm text-textMainLight dark:text-textMainDark mb-2">Документы</p>
+                    <p><a href="/oferta" class="hover:text-primary underline">Публичный договор (оферта)</a></p>
+                    <p><a href="/oferta#privacy" class="hover:text-primary underline">Политика обработки персональных
+                            данных</a></p>
+                    <p><a href="/oferta#delivery" class="hover:text-primary underline">Условия доставки и возврата</a>
+                    </p>
+                </div>
+            </div>
+            <div
+                class="border-t border-gray-200 dark:border-gray-800 mt-6 pt-4 text-center text-[10px] text-textMutedLight dark:text-textMutedDark">
+                <p>© 2024–2026 Express Pizza. Все права защищены. Информация на сайте не является публичной офертой,
+                    если не указано иное.</p>
+                <p class="mt-1">Платежи обрабатываются ОАО «Банк» через систему bePaid. Приём оплаты соответствует
+                    требованиям Закона Республики Беларусь № 231-З.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 transform translate-y-[150%] opacity-0 bg-gray-900 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-xl transition-all duration-300 z-50">
+        <span id="toast-icon"></span>
+        <span id="toast-message" class="font-medium text-sm"></span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/IntegrationManager.js"></script>
+    <script src="js/api-integrations.js"></script>
+    <script src="js/telegram.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

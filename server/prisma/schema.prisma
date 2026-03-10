@@ -1,0 +1,603 @@
+// =====================================================================================
+// Express Pizza — Prisma Schema v3 (SaaS Platform — Definitive)
+// =====================================================================================
+//
+//   17 Models  |  10 Enums  |  Event Sourcing (append-only)
+//   КБЖУ + 14 Allergens (BY law)  |  Multi-Restaurant  |  POS Sync (iiko / r_keeper)
+//   KDS Metrics  |  ESC/POS Receipts  |  Aggregator Channels (Delivio, Wolt)
+//
+//   Reference: project_overview.md → §2.3 (Architecture), §6 (Legal), §9 (Schema)
+//
+//   Migration:   npx prisma migrate dev --name "v3-saas-definitive"
+//   Seed:        npx prisma db seed
+//   Introspect:  npx prisma db pull
+//
+// =====================================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================================
+//  E N U M S  (10 enums)
+// =====================================================================================
+
+// --- User roles ---
+// CUSTOMER: end-user placing orders
+// ADMIN:    full platform admin access
+// MANAGER:  restaurant-level manager (KDS, menu, orders dashboard)
+// COURIER:  delivery driver
+enum Role {
+  CUSTOMER
+  ADMIN
+  MANAGER
+  COURIER
+}
+
+// --- POS system type per restaurant ---
+enum PosType {
+  IIKO       // iiko Cloud API v2 (REST + Webhooks)
+  RKEEPER    // r_keeper White Server (JSON-RPC 2.0)
+  NONE       // No POS connected
+}
+
+// --- Order lifecycle statuses (Kanban flow) ---
+// NEW → CONFIRMED → COOKING → BAKING → READY → DELIVERY → COMPLETED
+//                                                        → CANCELLED (any stage)
+enum OrderStatus {
+  NEW           // Just placed, pending POS confirmation
+  CONFIRMED     // POS accepted (r_keeper ValidateOrder OK / iiko ACK)
+  COOKING       // Kitchen started preparation
+  BAKING        // In the oven (pizza-specific)
+  READY         // Ready for courier pickup
+  DELIVERY      // Courier en route to customer
+  COMPLETED     // Delivered successfully
+  CANCELLED     // Cancelled at any stage
+}
+
+// --- Payment methods supported in Belarus ---
+enum PaymentMethod {
+  BEPAID_ONLINE  // Visa, Mastercard, Белкарт, Мир (via bePaid gateway)
+  OPLATI_QR      // «Оплати» QR-code payment (via bePaid)
+  CASH_IKASSA    // Cash or terminal on delivery (fiscal: iKassa / LightKassa)
+}
+
+// --- Order origin channel ---
+enum OrderSource {
+  WEBSITE       // Customer placed via web SPA
+  DELIVIO       // Webhook from Delivio aggregator
+  WOLT          // Webhook from Wolt aggregator
+  PHONE         // Manager placed via admin panel (phone call)
+  LOCAL_NODE    // Offline order from restaurant's Local Node
+}
+
+// --- Promo code discount type ---
+enum DiscountType {
+  PERCENT  // e.g., 10% off subtotal
+  FIXED    // e.g., 5 BYN flat discount
+}
+
+// --- POS synchronization status ---
+enum SyncStatus {
+  PENDING      // Queued for POS push
+  VALIDATING   // r_keeper ValidateOrder in progress
+  SYNCED       // Successfully pushed to POS
+  FAILED       // Push failed (will retry)
+  RETRY        // Scheduled for retry
+}
+
+// --- Receipt type for thermal ESC/POS printer ---
+enum ReceiptType {
+  SERVICE   // Full receipt for customer (totals, УНП, payment method)
+  KITCHEN   // Kitchen ticket (items + modifiers only, for prep)
+  CUSTOMER  // Customer copy (simplified, for delivery handoff)
+}
+
+// --- Stock availability event type ---
+enum StockEventType {
+  OUT_OF_STOCK   // Product removed from menu
+  BACK_IN_STOCK  // Product restored to menu
+  LOW_STOCK      // Warning: limited quantity remaining
+}
+
+
+// =====================================================================================
+//  M O D E L S  (17 models)
+// =====================================================================================
+
+
+// =====================================================================================
+// 1. USER — Customers, Admins, Managers, Couriers
+// =====================================================================================
+// JWT auth via SMS OTP. Phone is the primary identifier.
+// Allergies stored per-user for personalized warnings.
+
+model User {
+  id            Int       @id @default(autoincrement())
+  phone         String    @unique                       // +375 44 589 11 11 (login key)
+  name          String    @default("")
+  email         String?   @unique
+  role          Role      @default(CUSTOMER)
+  address       String?                                 // Last used delivery address
+  loyaltyPoints Int       @default(0)                   // Loyalty program balance
+  allergies     Json      @default("[]")                // Personal allergen slugs: ["gluten","dairy"]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@map("users")
+}
+
+
+// =====================================================================================
+// 2. RESTAURANT — Multi-location support
+// =====================================================================================
+// Each restaurant has its own POS type, printer, and KDS metrics.
+// Local Node connects to API via restaurantId.
+
+model Restaurant {
+  id          Int       @id @default(autoincrement())
+  name        String                                    // "Express Pizza — Партизанский"
+  address     String                                    // Legal address (shown on receipts)
+  phone       String                                    // Contact phone
+  isActive    Boolean   @default(true)                  // Soft disable (stop accepting orders)
+  timezone    String    @default("Europe/Minsk")
+
+  // POS Configuration
+  posType     PosType   @default(IIKO)                  // Which POS adapter to use
+  posConfig   Json?                                     // { apiLogin, orgId, terminalId, ... }
+
+  // ESC/POS Thermal Printer (LAN)
+  printerIp   String?                                   // e.g., "192.168.1.100"
+  printerPort Int       @default(9100)                  // Standard ESC/POS port
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  orders      Order[]
+  events      EventLog[]
+  kdsMetrics  KdsMetric[]
+  receipts    Receipt[]
+  stockEvents StockEvent[]
+
+  @@map("restaurants")
+}
+
+
+// =====================================================================================
+// 3. CATEGORY — Menu categories (Pizza, Drinks, Sauces, etc.)
+// =====================================================================================
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique                           // "pizza", "togo", "sauce", "juice", "drinks"
+  name      String                                      // "Пицца", "Пицца TOGO", "Соусы"
+  sortOrder Int       @default(0)                       // Display order in menu tabs
+
+  // Relations
+  products  Product[]
+
+  @@map("categories")
+}
+
+
+// =====================================================================================
+// 4. PRODUCT — Menu items with КБЖУ, Allergens, and POS mapping
+// =====================================================================================
+// Legal requirement (ТР ЕАЭС 022/2011): every food product MUST have КБЖУ per 100g.
+// Legal requirement (BY + EU): 14 mandatory allergens must be declared.
+// See: project_overview.md §6.1, §6.2
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  name          String                                  // "Маргарита", "Пепперони"
+  description   String    @default("")                  // Ingredient list
+  image         String    @default("")                  // "/images/pizza_margherita.png"
+  badge         Json?                                   // { "text": "Хит", "color": "#EF4444" }
+  isAvailable   Boolean   @default(true)                // false = stop-listed
+  sortOrder     Int       @default(0)                   // Display order within category
+
+  // ── POS Integration ──────────────────────────────────────────────
+  posExternalId String?   @unique                       // iiko/r_keeper product GUID for mapping
+
+  // ── КБЖУ (per 100g) — mandatory by ТР ЕАЭС 022/2011 ────────────
+  calories      Decimal?  @db.Decimal(8, 2)             // Калории (kcal)
+  proteins      Decimal?  @db.Decimal(8, 2)             // Белки (g)
+  fats          Decimal?  @db.Decimal(8, 2)             // Жиры (g)
+  carbs         Decimal?  @db.Decimal(8, 2)             // Углеводы (g)
+
+  // ── Allergens (14 mandatory — see Allergen table) ────────────────
+  // Stored as JSON array of slugs referencing Allergen.slug
+  // Example: ["gluten", "dairy", "eggs"]
+  allergenSlugs Json      @default("[]")                // String[] of allergen slugs
+
+  // ── Relations ────────────────────────────────────────────────────
+  categoryId    Int
+  category      Category  @relation(fields: [categoryId], references: [id])
+
+  sizes         ProductSize[]
+  modifiers     ProductModifier[]                       // Many-to-many (implicit)
+  orderItems    OrderItem[]
+  stockEvents   StockEvent[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("products")
+}
+
+
+// =====================================================================================
+// 5. PRODUCT SIZE — Size variants with SKU and POS mapping
+// =====================================================================================
+// Each product has 1+ sizes (e.g., Pizza: 30cm / 36cm / 60cm; Drink: 0.33L / 0.5L)
+// Each size has its own price and optional SKU (for fiscal receipts).
+
+model ProductSize {
+  id            Int     @id @default(autoincrement())
+  label         String                                  // "30 см", "0.5 л"
+  weight        String                                  // "540г", "0.5л" (for customer display)
+  price         Decimal @db.Decimal(10, 2)              // Price in BYN (authoritative)
+  sku           String?                                 // Fiscal receipt SKU (iKassa / LightKassa)
+  posExternalId String?                                 // iiko/r_keeper size GUID
+
+  productId     Int
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItems    OrderItem[]
+
+  @@map("product_sizes")
+}
+
+
+// =====================================================================================
+// 6. PRODUCT MODIFIER — Add-ons, removals, and grouping for POS
+// =====================================================================================
+// Supports both additive modifiers (Cheese Crust +4₽) and removals (No Onion = free).
+// Groups enable mandatory selection logic in iiko/r_keeper
+// (e.g., group "Crust Type": must pick one from { Classic, Thin, Cheese }).
+// kdsHighlight + kdsColor control visual emphasis on KDS screens and printed tickets.
+
+model ProductModifier {
+  id            Int     @id @default(autoincrement())
+  name          String  @unique                         // "Сырный бортик", "Без лука"
+  price         Decimal @db.Decimal(10, 2)              // 0.00 for removals
+  isRemoval     Boolean @default(false)                 // true = "без ...", false = "+ ..."
+
+  // ── POS Modifier Group Mapping ────────────────────────────────
+  groupName     String  @default("Допы")                // "Бортик", "Соус", "Допы"
+  isMandatory   Boolean @default(false)                 // Must pick from group? (iiko required)
+  maxQuantity   Int     @default(1)                     // Max allowed quantity per order item
+  posExternalId String? @unique                         // iiko/r_keeper modifier GUID
+
+  // ── KDS Display Configuration ────────────────────────────────
+  kdsHighlight  Boolean @default(false)                 // Bold/underline on kitchen ticket
+  kdsColor      String? @default("#FF6B00")             // Color code for KDS screen display
+
+  // ── Relations ────────────────────────────────────────────────
+  products           Product[]                          // Many-to-many (implicit join table)
+  orderItemModifiers OrderItemModifier[]
+
+  @@map("product_modifiers")
+}
+
+
+// =====================================================================================
+// 7. ORDER — Core order entity with idempotency, ETA, and source tracking
+// =====================================================================================
+// CRITICAL: externalOrderId (UUID) is the idempotency key for the entire system.
+// It prevents duplicate orders during:
+//   1. Local Node → Cloud sync (offline reconciliation)
+//   2. POS push (iiko orderExternalId / r_keeper externalOrderId)
+//   3. Aggregator webhook replay (Delivio/Wolt retries)
+
+model Order {
+  id              Int           @id @default(autoincrement())
+  orderNumber     Int           @unique @default(autoincrement()) // Human-readable #
+  externalOrderId String        @unique @default(uuid())          // UUID — IDEMPOTENCY KEY
+
+  source          OrderSource   @default(WEBSITE)                 // Where order originated
+
+  // Customer info (snapshot at order time — not FK to avoid coupling)
+  customerName    String
+  customerPhone   String
+  customerAddress String
+
+  // Payment & Status
+  payment         PaymentMethod @default(BEPAID_ONLINE)
+  status          OrderStatus   @default(NEW)
+
+  // Pricing (calculated on server — cartService.js)
+  subtotal        Decimal       @db.Decimal(10, 2)                // Before discount
+  discount        Decimal       @db.Decimal(10, 2) @default(0)    // Discount amount
+  total           Decimal       @db.Decimal(10, 2)                // Final charge
+
+  // ── ETA Engine Fields (etaService.js) ──────────────────────────
+  // Formula: ETA = now() + T_prep + T_route + T_handoff
+  etaPrepMinutes  Int?                                            // T_prep (from KdsMetric)
+  etaRouteMinutes Int?                                            // T_route (from Yandex Routing)
+  etaHandoff      Int           @default(3)                       // T_handoff (buffer minutes)
+  estimatedAt     DateTime?                                       // Calculated delivery time
+
+  // ── Relations ────────────────────────────────────────────────
+  restaurantId    Int?
+  restaurant      Restaurant?   @relation(fields: [restaurantId], references: [id])
+
+  userId          Int?
+  user            User?         @relation(fields: [userId], references: [id])
+
+  promoCodeId     Int?
+  promoCode       PromoCode?    @relation(fields: [promoCodeId], references: [id])
+
+  items           OrderItem[]
+  posSync         PosSync?                                        // One-to-one
+  receipts        Receipt[]
+
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  completedAt     DateTime?                                       // Set when status → COMPLETED
+
+  // Indexes for common queries
+  @@index([externalOrderId])                                      // Idempotency lookups
+  @@index([status])                                               // KDS: active orders
+  @@index([restaurantId, status])                                 // Per-restaurant KDS
+  @@index([customerPhone])                                        // CRM phone lookup
+  @@index([createdAt])                                            // Analytics/reporting
+  @@map("orders")
+}
+
+
+// =====================================================================================
+// 8. ORDER ITEM — Individual line item within an order
+// =====================================================================================
+// Stores unitPrice at order time (snapshot) so price changes don't affect past orders.
+
+model OrderItem {
+  id            Int     @id @default(autoincrement())
+  quantity      Int     @default(1)
+  unitPrice     Decimal @db.Decimal(10, 2)              // Price snapshot at order time
+  note          String? @default("")                    // "Без корочки", "Порежьте на 12"
+
+  orderId       Int
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId     Int
+  product       Product @relation(fields: [productId], references: [id])
+
+  productSizeId Int
+  productSize   ProductSize @relation(fields: [productSizeId], references: [id])
+
+  modifiers     OrderItemModifier[]
+
+  @@map("order_items")
+}
+
+
+// =====================================================================================
+// 9. ORDER ITEM MODIFIER — Selected modifier snapshot per line item
+// =====================================================================================
+// Stores priceAtOrder as a snapshot — if modifier price changes later, past orders
+// retain their original pricing for invoicing/fiscal accuracy.
+
+model OrderItemModifier {
+  id              Int             @id @default(autoincrement())
+  priceAtOrder    Decimal         @db.Decimal(10, 2)    // Price snapshot at order time
+
+  orderItemId     Int
+  orderItem       OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  modifierId      Int
+  modifier        ProductModifier @relation(fields: [modifierId], references: [id])
+
+  @@map("order_item_modifiers")
+}
+
+
+// =====================================================================================
+// 10. PROMO CODE — Coupons with validity window and usage limits
+// =====================================================================================
+// Validation order in cartService.js:
+//   exists → isActive → usageLimit → validFrom → validTo → minOrderAmount → apply
+
+model PromoCode {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique                 // "SLIVKI10", "WELCOME5"
+  discount        Decimal       @db.Decimal(10, 2)      // 10 (percent) or 5.00 (BYN)
+  type            DiscountType  @default(PERCENT)
+  label           String                                // "Скидка 10%" (display text)
+  isActive        Boolean       @default(true)          // Soft disable
+  usageLimit      Int?                                  // Max total uses (null = unlimited)
+  usageCount      Int           @default(0)             // Current usage count
+  minOrderAmount  Decimal?      @db.Decimal(10, 2)      // Min subtotal to qualify (null = no min)
+  validFrom       DateTime?                             // Activation date (null = immediate)
+  validTo         DateTime?                             // Expiration date (null = no expiry)
+
+  // Relations
+  orders          Order[]
+
+  createdAt       DateTime      @default(now())
+
+  @@map("promo_codes")
+}
+
+
+// =====================================================================================
+// 11. EVENT LOG — Append-Only Event Store (Local-First Core)
+// =====================================================================================
+// THE HEART OF THE SYSTEM. Every state change across the platform is recorded here.
+//
+// Architecture: Event Sourcing (see project_overview.md §2.3)
+//   - Append-only: rows are NEVER updated or deleted
+//   - sequenceNum: monotonically increasing, used for sync cursor ("give me events since N")
+//   - idempotencyKey: prevents duplicate events during Local Node → Cloud reconciliation
+//   - aggregateType + aggregateId: enables replaying events for a specific entity
+//
+// Sync flow (Local Node):
+//   Local SQLite queue → POST /api/sync/events → insert with idempotencyKey dedup
+//
+// Event types (defined in eventService.js):
+//   OrderPlaced, OrderConfirmed, OrderCooking, OrderReady, OrderDelivered, OrderCancelled
+//   PosSyncStarted, PosSyncSuccess, PosSyncFailed
+//   StockOut, StockBack
+//   PaymentReceived, PaymentFailed
+
+model EventLog {
+  id              Int       @id @default(autoincrement())
+  sequenceNum     BigInt    @unique @default(autoincrement()) // Monotonic sync cursor
+  eventType       String                                      // "OrderPlaced", "StockOut"
+  aggregateType   String                                      // "Order", "Product", "Stock"
+  aggregateId     String                                      // UUID or entity ID string
+  payload         Json                                        // Full event data (JSONB)
+  metadata        Json?                                       // { source: "local_node_1", userId: 42 }
+  idempotencyKey  String    @unique                           // Dedup on sync — NEVER DUPLICATED
+
+  restaurantId    Int?
+  restaurant      Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  createdAt       DateTime  @default(now())                   // Immutable — event timestamp
+
+  // Indexes for efficient queries
+  @@index([aggregateType, aggregateId])                       // Replay events for an entity
+  @@index([eventType])                                        // Filter by event type
+  @@index([createdAt])                                        // Time-range queries
+  @@index([restaurantId, createdAt])                          // Per-restaurant event feed
+  @@map("event_log")
+}
+
+
+// =====================================================================================
+// 12. POS SYNC — Track synchronization status with POS systems
+// =====================================================================================
+// One-to-one with Order. Tracks the lifecycle of pushing an order to iiko/r_keeper.
+// Used by posSyncService.js retry mechanism (retries up to 5 failed syncs).
+
+model PosSync {
+  id               Int        @id @default(autoincrement())
+  orderId          Int        @unique                   // One-to-one with Order
+  order            Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  posType          PosType                              // Which POS this was pushed to
+  posOrderId       String?                              // POS-side order ID (iiko GUID / r_keeper ID)
+  syncStatus       SyncStatus @default(PENDING)
+  lastAttemptAt    DateTime?                            // Last push attempt timestamp
+  attempts         Int        @default(0)               // Retry counter
+  errorMessage     String?                              // Last error (for debugging)
+  validationResult Json?                                // r_keeper ValidateOrder response JSON
+
+  @@index([syncStatus])                                 // Find failed syncs for retry
+  @@map("pos_sync")
+}
+
+
+// =====================================================================================
+// 13. KDS METRIC — Kitchen performance metrics for ETA calculation
+// =====================================================================================
+// Rolling average of preparation time per category per restaurant.
+// Updated by kdsService.js when order transitions COOKING → READY.
+// Read by etaService.js to calculate T_prep component of ETA.
+//
+// Formula: new_avg = (old_avg × count + new_value) / (count + 1)
+
+model KdsMetric {
+  id              Int        @id @default(autoincrement())
+  restaurantId    Int
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id])
+  categorySlug    String                                // "pizza", "drinks", "sauce"
+  avgPrepSeconds  Int                                   // Rolling average (seconds)
+  samplesCount    Int        @default(0)                // Number of data points
+  lastUpdated     DateTime   @default(now())            // When metric was last recalculated
+
+  @@unique([restaurantId, categorySlug])                // One metric per category per restaurant
+  @@map("kds_metrics")
+}
+
+
+// =====================================================================================
+// 14. RECEIPT — ESC/POS thermal receipt log
+// =====================================================================================
+// Stores the raw ESC/POS binary data so receipts can be reprinted at any time.
+// Generated by receiptService.js, sent to printer by printerService.js.
+
+model Receipt {
+  id            Int         @id @default(autoincrement())
+  orderId       Int
+  order         Order       @relation(fields: [orderId], references: [id])
+  restaurantId  Int
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id])
+  type          ReceiptType @default(SERVICE)            // SERVICE, KITCHEN, CUSTOMER
+  printedAt     DateTime    @default(now())
+  printerIp     String?                                  // IP of printer used (for audit)
+  rawData       Bytes?                                   // ESC/POS binary blob (for reprint)
+
+  @@index([orderId])                                     // Find all receipts for an order
+  @@map("receipts")
+}
+
+
+// =====================================================================================
+// 15. ALLERGEN — 14 mandatory allergens (BY / EU regulation)
+// =====================================================================================
+// Referenced by Product.allergenSlugs (JSON array of slugs).
+// Seeded once upon migration with all 14 entries.
+// See: project_overview.md §6.2 for the full list.
+
+model Allergen {
+  id        Int    @id @default(autoincrement())
+  slug      String @unique                               // "gluten", "dairy", "eggs"
+  nameRu    String                                       // "Глютен", "Молочные"
+  nameEn    String                                       // "Gluten", "Dairy"
+  icon      String @default("")                          // 🌾, 🥛, 🥚
+
+  @@map("allergens")
+}
+
+
+// =====================================================================================
+// 16. STOCK EVENT — Real-time product availability log (stop-list)
+// =====================================================================================
+// When kitchen runs out of an ingredient, sets Product.isAvailable = false
+// and creates an OUT_OF_STOCK event. stockService.js then broadcasts to
+// all active AggregatorChannels.
+
+model StockEvent {
+  id            Int            @id @default(autoincrement())
+  productId     Int
+  product       Product        @relation(fields: [productId], references: [id])
+  restaurantId  Int
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+  type          StockEventType                           // OUT_OF_STOCK / BACK_IN_STOCK / LOW_STOCK
+  reason        String?                                  // "Тесто закончилось", "Поставка задерживается"
+  createdAt     DateTime       @default(now())
+
+  @@index([productId, restaurantId])                     // Current status per product per restaurant
+  @@index([createdAt])                                   // Timeline queries
+  @@map("stock_events")
+}
+
+
+// =====================================================================================
+// 17. AGGREGATOR CHANNEL — Delivio / Wolt configuration
+// =====================================================================================
+// Stores webhook secrets and API keys for each aggregator.
+// Used by routes/aggregators.js for HMAC signature verification
+// and by stockService.js for broadcasting stop-list updates.
+
+model AggregatorChannel {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique                         // "delivio", "wolt"
+  isActive      Boolean  @default(true)                  // Enable/disable channel
+  webhookSecret String                                   // HMAC-SHA256 verification key
+  apiKey        String?                                  // Our key for THEIR outbound API
+  config        Json?                                    // { stockUpdateUrl, menuSyncUrl, ... }
+
+  @@map("aggregator_channels")
+}
