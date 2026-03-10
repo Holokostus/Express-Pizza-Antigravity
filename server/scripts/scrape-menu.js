@@ -473,6 +473,11 @@ async function main() {
     console.log('🌱 Express Pizza Menu Seeder v3\n');
     console.log('══════════════════════════════════════════');
 
+    // ── 0. Clean Test Orders (Fix for Foreign Key Constraint) ──
+    console.log('Cleaning up old test orders...');
+    await prisma.orderItem.deleteMany();
+    await prisma.order.deleteMany();
+
     // ── 1. Categories ──
     const catMap = {};
     for (const c of CATEGORIES) {
