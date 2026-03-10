@@ -8,6 +8,8 @@
 
 const API_BASE = 'https://express-pizza-antigravity.onrender.com';
 
+
+
 // ============================================================
 // 1. State (no prices — only identifiers!)
 // ============================================================
@@ -74,19 +76,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchMenu() {
         try {
             const data = await api('/api/menu');
-            // Flatten product tree
-            menuItems = [];
-            data.categories.forEach(cat => {
-                cat.products.forEach(p => {
-                    p.categorySlug = cat.slug; // ensure slug is mapped
-                    menuItems.push(p);
-                });
-            });
+            menuItems = data; // Наш новый бэкенд уже отдает готовый массив продуктов!
         } catch (err) {
             console.error('[Menu] Fetch error:', err);
             showToast('error', 'Не удалось загрузить меню');
         }
     }
+
 
     const menuGrid = $('menu-grid');
     const cartSidebar = $('cart-sidebar');
@@ -200,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
             <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-soft hover:shadow-xl card-lift group border border-gray-100 dark:border-gray-800 animate-fade-in-up ${staggerClass}">
                 <div class="relative overflow-hidden h-52 sm:h-48">
-                    <img src="${item.image || 'images/placeholder.png'}" alt="${item.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='images/placeholder.png'">
+                    <img src="${item.image || 'images/placeholder.png'}" alt="${item.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='images/placeholder.png'">
                     ${badgeHtml}
                     <div class="absolute bottom-3 left-3 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                         ${activeSize.weight || ''}
@@ -675,7 +671,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         currentCustomizerItem = itemInfo;
         const sizeIdx = selectedSizeIndex[itemId] || 0;
-        customizerBasePrice = itemInfo.sizes[sizeIdx].price;
+        customizerBasePrice = parseFloat(itemInfo.sizes[sizeIdx].price);
 
         Object.keys(MODIFIER_MAP).forEach(id => {
             const cb = $(id); if (cb) cb.checked = false;
@@ -716,7 +712,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cb && cb.checked) price += mod.previewPrice;
         }
         const ct = $('cust-total');
-        if (ct) ct.textContent = price.toFixed(2) + ' р.';
+        if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' р.';
     };
 
     window.addCustomizedItem = () => {
@@ -781,7 +777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
                 <img src="${item.image}" class="w-12 h-12 mx-auto object-cover rounded-lg mb-2">
                 <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${item.name}</p>
-                <div class="mt-2 text-primary text-[10px] font-bold">+ ${item.sizes[0].price.toFixed(2)} р.</div>
+                <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes[0].price).toFixed(2)} р.</div>
             </div>
         `).join('');
     }
