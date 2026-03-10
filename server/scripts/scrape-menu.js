@@ -565,20 +565,33 @@ async function main() {
     });
 
     let modCount = 0;
-    for (const pizza of pizzaProducts) {
-        for (const mod of MODIFIERS) {
-            const existing = await prisma.productModifier.findFirst({
-                where: { productId: pizza.id, name: mod.name },
+
+    // Сначала находим или создаем все модификаторы (без привязки к конкретной пицце)
+    for (const mod of MODIFIERS) {
+        let existingMod = await prisma.productModifier.findFirst({
+            where: { name: mod.name },
+        });
+
+        if (!existingMod) {
+            existingMod = await prisma.productModifier.create({
+                data: mod,
             });
-            if (!existing) {
-                await prisma.productModifier.create({
-                    data: { productId: pizza.id, ...mod },
-                });
-                modCount++;
-            }
+            modCount++;
+        }
+
+        // Теперь привязываем этот модификатор ко всем пиццам (связь m-n)
+        for (const pizza of pizzaProducts) {
+            await prisma.product.update({
+                where: { id: pizza.id },
+                data: {
+                    modifiers: {
+                        connect: { id: existingMod.id }
+                    }
+                }
+            });
         }
     }
-    console.log(`✓ Modifiers: ${modCount} new (${MODIFIERS.length} types × ${pizzaProducts.length} pizzas)`);
+    console.log(`✓ Modifiers: ${modCount} new, connected to ${pizzaProducts.length} pizzas`);
 
     console.log('\n══════════════════════════════════════════');
     console.log('🎉 Menu seeding complete!\n');
