@@ -212,7 +212,7 @@ app.get('/oferta', (req, res) => {
 });
 
 // ---- 404 for unknown API routes ----
-app.all('/api/*', (req, res) => {
+app.all('/api/(.*)', (req, res) => {
     res.status(404).json({ error: 'API endpoint not found' });
 });
 
