@@ -73,21 +73,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     async function fetchMenu() {
-        try {
-            const data = await api('/api/menu');
-            // Flatten product tree
-            menuItems = [];
-            data.categories.forEach(cat => {
-                cat.products.forEach(p => {
-                    p.categorySlug = cat.slug; // ensure slug is mapped
-                    menuItems.push(p);
-                });
-            });
-        } catch (err) {
-            console.error('[Menu] Fetch error:', err);
-            showToast('error', 'Не удалось загрузить меню');
-        }
+    try {
+        const data = await api('/api/menu');
+        menuItems = data; // Наш новый бэкенд уже отдает готовый массив продуктов!
+    } catch (err) {
+        console.error('[Menu] Fetch error:', err);
+        showToast('error', 'Не удалось загрузить меню');
     }
+}
+
 
     const menuGrid = $('menu-grid');
     const cartSidebar = $('cart-sidebar');
