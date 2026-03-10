@@ -182,3 +182,55 @@ html {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ═════════════════════════════════════════════════════
+   Sprint 9: UI Refresh — Micro-Animations & Glassmorphism
+   ═════════════════════════════════════════════════════ */
+
+/* Shimmer skeleton background */
+.shimmer-bg {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+[data-theme="dark"] .shimmer-bg {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+    background-size: 200% 100%;
+}
+
+/* Menu card entrance */
+.menu-card-anim {
+    opacity: 0;
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Cart badge bounce */
+@keyframes cartBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.4); }
+    50% { transform: scale(0.9); }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+.cart-bounce {
+    animation: cartBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Cart add button press */
+.cart-add-btn:active {
+    transform: scale(0.85) !important;
+    transition: transform 0.1s;
+}
+
+/* Glassmorphism modal */
+.glass-modal {
+    background: rgba(255, 255, 255, 0.95) !important;
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+[data-theme="dark"] .glass-modal {
+    background: rgba(26, 26, 26, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}

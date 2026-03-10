@@ -957,6 +957,25 @@
             console.log(`[Admin] API key saved for ${id}`);
         };
 
+        // ---- 🔑 Instant Admin Login ----
+        window.instantAdminLogin = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: '+375999999999', code: 'auto' })
+                });
+                const data = await res.json();
+                if (data.token) {
+                    localStorage.setItem('ep_admin_token', data.token);
+                    authToken = data.token;
+                    window.location.reload();
+                } else {
+                    alert('Ошибка входа: ' + (data.error || 'unknown'));
+                }
+            } catch (e) { alert('Сеть: ' + e.message); }
+        };
+
         // ---- Clock ----
         function updateClock() {
             document.getElementById('clock').textContent = new Date().toLocaleString('ru-RU', {
@@ -971,6 +990,12 @@
         setInterval(updateClock, 1000);
         setInterval(refreshAll, 3000); // Poll for new orders every 3s
     </script>
+
+    <!-- Instant Admin Login Button -->
+    <button onclick="instantAdminLogin()" title="Мгновенный вход (dev)"
+        class="fixed bottom-4 right-4 z-50 bg-amber-500 hover:bg-amber-400 text-black w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-95">
+        🔑
+    </button>
 </body>
 
 </html>

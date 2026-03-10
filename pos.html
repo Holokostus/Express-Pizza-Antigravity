@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Pizza — Virtual POS & Printer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter'], mono: ['JetBrains Mono'] },
+                    colors: { primary: '#E30613', posGreen: '#00FF41' },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ═══ Thermal Receipt Paper ═══ */
+        @keyframes printSlide {
+            from {
+                max-height: 0;
+                opacity: 0;
+            }
+
+            to {
+                max-height: 2000px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .receipt-paper {
+            background: #fefdf5;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            width: 280px;
+            padding: 16px 12px;
+            border: 1px dashed #ccc;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+            animation: printSlide 1.5s ease-out forwards;
+        }
+
+        .receipt-paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, transparent 0, transparent 4px, #e5e5e5 4px, #e5e5e5 8px);
+        }
+
+        .receipt-paper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, #fefdf5, transparent);
+        }
+
+        .receipt-divider {
+            border-top: 1px dashed #999;
+            margin: 6px 0;
+        }
+
+        .barcode {
+            display: flex;
+            gap: 1px;
+            justify-content: center;
+            margin: 8px 0;
+            height: 40px;
+            align-items: flex-end;
+        }
+
+        .barcode-bar {
+            background: #000;
+            width: 2px;
+        }
+
+        .order-card {
+            animation: fadeInUp 0.4s ease-out both;
+        }
+
+        .order-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .order-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+        }
+
+        .status-NEW {
+            color: #3B82F6;
+        }
+
+        .status-COOKING {
+            color: #F59E0B;
+        }
+
+        .status-DELIVERING {
+            color: #8B5CF6;
+        }
+
+        .status-COMPLETED {
+            color: #10B981;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans">
+    <!-- Header -->
+    <header
+        class="bg-black/80 backdrop-blur-md border-b border-gray-800 px-6 py-3 flex items-center justify-between fixed top-0 w-full z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm">EP
+            </div>
+            <div>
+                <h1 class="font-bold text-sm">Virtual POS Terminal</h1>
+                <p class="text-xs text-gray-500">Express Pizza — Партизанский, 19</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div id="ws-dot" class="pulse-dot bg-red-500"></div>
+                <span id="ws-status" class="text-xs text-gray-400">Подключение...</span>
+            </div>
+            <span id="pos-clock" class="text-sm font-mono text-gray-400"></span>
+        </div>
+    </header>
+
+    <!-- Main Content: 2-panel layout -->
+    <main class="pt-16 flex flex-col lg:flex-row min-h-screen">
+        <!-- LEFT: Cashier POS Panel -->
+        <section class="flex-1 p-6 overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">📋 Очередь заказов</h2>
+                <span id="order-count" class="bg-gray-800 text-xs font-bold px-3 py-1 rounded-full">0 заказов</span>
+            </div>
+            <div id="order-queue" class="space-y-4">
+                <div class="text-center py-20 text-gray-600">
+                    <p class="text-5xl mb-4">🖥️</p>
+                    <p class="font-bold">POS-терминал готов к работе</p>
+                    <p class="text-sm mt-1">Ожидание заказов через WebSocket...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Thermal Printer Panel -->
+        <section class="lg:w-[340px] bg-gray-900/50 border-l border-gray-800 p-6 overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">🖨️ Термопринтер 80mm</h2>
+                <span id="print-count" class="text-xs text-gray-500">0 чеков</span>
+            </div>
+            <div id="printer-feed" class="space-y-6 flex flex-col items-center">
+                <div class="text-center py-12 text-gray-600">
+                    <p class="text-4xl mb-2">📄</p>
+                    <p class="text-sm">Бумага загружена. Ожидание печати...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = 'https://express-pizza-antigravity.onrender.com';
+        let wsConn = null;
+        let orders = [];
+        let printCount = 0;
+
+        // ═══ WebSocket Connection ═══
+        function connectWS() {
+            const wsUrl = API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws/kds';
+            wsConn = new WebSocket(wsUrl);
+
+            wsConn.onopen = () => {
+                document.getElementById('ws-dot').className = 'pulse-dot bg-green-500';
+                document.getElementById('ws-status').textContent = 'Подключен к серверу';
+            };
+
+            wsConn.onclose = () => {
+                document.getElementById('ws-dot').className = 'pulse-dot bg-red-500';
+                document.getElementById('ws-status').textContent = 'Переподключение...';
+                setTimeout(connectWS, 3000);
+            };
+
+            wsConn.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'NEW_ORDER' || msg.type === 'new_order') {
+                        handleNewOrder(msg.order || msg.data || msg);
+                    } else if (msg.type === 'ORDER_UPDATE' || msg.type === 'order_update') {
+                        handleOrderUpdate(msg);
+                    }
+                } catch (e) { console.warn('[POS] WS parse error:', e); }
+            };
+        }
+
+        // ═══ Handle New Order ═══
+        function handleNewOrder(order) {
+            orders.unshift(order);
+            renderOrders();
+            printReceipt(order);
+
+            // Play print sound (click effect)
+            try {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 800; gain.gain.value = 0.15;
+                osc.start(); osc.stop(ctx.currentTime + 0.08);
+                setTimeout(() => {
+                    const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+                    o2.connect(g2); g2.connect(ctx.destination);
+                    o2.frequency.value = 1200; g2.gain.value = 0.1;
+                    o2.start(); o2.stop(ctx.currentTime + 0.06);
+                }, 120);
+            } catch (e) { }
+        }
+
+        function handleOrderUpdate(msg) {
+            const idx = orders.findIndex(o => o.id === msg.orderId || o.id === msg.id);
+            if (idx > -1 && msg.status) {
+                orders[idx].status = msg.status;
+                renderOrders();
+            }
+        }
+
+        // ═══ Render Order Queue (POS Left Panel) ═══
+        function renderOrders() {
+            const container = document.getElementById('order-queue');
+            document.getElementById('order-count').textContent = `${orders.length} заказов`;
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-gray-600">
+                <p class="text-5xl mb-4">🖥️</p>
+                <p class="font-bold">POS-терминал готов</p>
+            </div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map((o, i) => {
+                const statusLabels = { NEW: 'Новый', COOKING: 'Готовится', DELIVERING: 'Доставка', COMPLETED: 'Выполнен' };
+                const statusColors = { NEW: 'bg-blue-500/20 text-blue-400', COOKING: 'bg-amber-500/20 text-amber-400', DELIVERING: 'bg-violet-500/20 text-violet-400', COMPLETED: 'bg-green-500/20 text-green-400' };
+                const ts = new Date(o.createdAt || Date.now()).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const items = (o.items || []).map(it => {
+                    const name = it.product?.name || it.name || 'Товар';
+                    const price = it.productSize?.price || it.price || 0;
+                    return `<div class="flex justify-between text-sm"><span>${name} ×${it.quantity || 1}</span><span class="font-mono">${parseFloat(price).toFixed(2)}</span></div>`;
+                }).join('');
+
+                return `<div class="order-card bg-gray-800/60 backdrop-blur rounded-2xl border border-gray-700/50 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-lg">#${o.orderNumber || o.id}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-bold ${statusColors[o.status] || ''}">${statusLabels[o.status] || o.status}</span>
+                    </div>
+                    <span class="text-xs text-gray-500 font-mono">${ts}</span>
+                </div>
+                <div class="mb-2">
+                    <p class="text-sm font-medium">${o.customer?.name || 'Клиент'} <span class="text-gray-500">${o.customer?.phone || ''}</span></p>
+                    ${o.customer?.address ? `<p class="text-xs text-gray-500 mt-0.5">📍 ${o.customer.address}</p>` : ''}
+                </div>
+                <div class="space-y-1 border-t border-gray-700/50 pt-2 mb-3">${items || '<p class="text-xs text-gray-500">Нет позиций</p>'}</div>
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-posGreen">${parseFloat(o.totalAmount || o.total || 0).toFixed(2)} BYN</span>
+                    <div class="flex gap-2">
+                        <button onclick="printReceipt(orders[${i}])" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">🖨️ Чек</button>
+                        <button onclick="acceptOrder(${o.id})" class="bg-primary hover:bg-red-700 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors text-white">✓ Принять</button>
+                    </div>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        // ═══ Accept Order ═══
+        async function acceptOrder(orderId) {
+            try {
+                const token = localStorage.getItem('ep_admin_token');
+                await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: 'COOKING' }),
+                });
+                const idx = orders.findIndex(o => o.id === orderId);
+                if (idx > -1) orders[idx].status = 'COOKING';
+                renderOrders();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        // ═══ Generate Barcode (visual-only CSS bars) ═══
+        function generateBarcode(id) {
+            const seed = String(id || Date.now());
+            let bars = '';
+            for (let i = 0; i < 50; i++) {
+                const h = 20 + ((seed.charCodeAt(i % seed.length) * (i + 3)) % 20);
+                const w = (i % 3 === 0) ? 3 : 1;
+                bars += `<div class="barcode-bar" style="height:${h}px;width:${w}px"></div>`;
+            }
+            return bars;
+        }
+
+        // ═══ Print Receipt (Right Panel Animation) ═══
+        function printReceipt(order) {
+            if (!order) return;
+            printCount++;
+            document.getElementById('print-count').textContent = `${printCount} чеков`;
+
+            const feed = document.getElementById('printer-feed');
+            // Clear placeholder if first print
+            if (printCount === 1) feed.innerHTML = '';
+
+            const ts = new Date(order.createdAt || Date.now());
+            const timeStr = ts.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const items = (order.items || []).map(it => {
+                const name = (it.product?.name || it.name || 'Товар').substring(0, 20).padEnd(20);
+                const qty = String(it.quantity || 1).padStart(2);
+                const price = parseFloat(it.productSize?.price || it.price || 0).toFixed(2).padStart(7);
+                return `${name} ${qty} ${price}`;
+            }).join('\n');
+
+            const total = parseFloat(order.totalAmount || order.total || 0).toFixed(2);
+            const barcode = generateBarcode(order.orderNumber || order.id);
+
+            const receipt = document.createElement('div');
+            receipt.className = 'receipt-paper';
+            receipt.innerHTML = `
+<div style="text-align:center;font-weight:bold;font-size:14px">EXPRESS PIZZA</div>
+<div style="text-align:center;font-size:10px;color:#666">г. Минск, пр-т Партизанский, 19</div>
+<div style="text-align:center;font-size:10px;color:#666">Тел: +375 44 589 11 11</div>
+<div class="receipt-divider"></div>
+<div style="font-weight:bold">КАССОВЫЙ ЧЕК #${order.orderNumber || order.id}</div>
+<div style="font-size:10px;color:#666">${timeStr}</div>
+<div style="font-size:10px">Кассир: Терминал POS-01</div>
+<div class="receipt-divider"></div>
+<pre style="margin:0;font-size:11px;white-space:pre">${items || 'Нет позиций'}</pre>
+<div class="receipt-divider"></div>
+<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:13px">
+    <span>ИТОГО:</span>
+    <span>${total} BYN</span>
+</div>
+<div style="font-size:10px;color:#666">Способ: ${order.payment === 'CASH' ? 'Наличные' : 'Картой'}</div>
+<div class="receipt-divider"></div>
+<div class="barcode">${barcode}</div>
+<div style="text-align:center;font-size:10px;font-weight:bold">${String(order.orderNumber || order.id).padStart(8, '0')}</div>
+<div class="receipt-divider"></div>
+<div style="text-align:center;font-size:9px;color:#888">Спасибо за заказ!</div>
+<div style="text-align:center;font-size:9px;color:#888">www.express-pizza.by</div>
+<div style="text-align:center;font-size:8px;color:#aaa;margin-top:4px">УНП 123456789</div>`;
+
+            feed.insertBefore(receipt, feed.firstChild);
+        }
+
+        // ═══ Clock ═══
+        function updateClock() {
+            document.getElementById('pos-clock').textContent = new Date().toLocaleString('ru-RU', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+
+        // ═══ Poll orders (fallback if WS is down) ═══
+        async function pollOrders() {
+            try {
+                const token = localStorage.getItem('ep_admin_token');
+                if (!token) return;
+                const res = await fetch(`${API_BASE}/api/orders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const newOrders = (data.orders || []).filter(o => !orders.find(ex => ex.id === o.id));
+                newOrders.forEach(o => handleNewOrder(o));
+            } catch (e) { }
+        }
+
+        // ═══ Init ═══
+        connectWS();
+        updateClock();
+        setInterval(updateClock, 1000);
+        // Poll every 10s as backup to WS
+        setTimeout(pollOrders, 2000);
+        setInterval(pollOrders, 10000);
+    </script>
+</body>
+
+</html>
