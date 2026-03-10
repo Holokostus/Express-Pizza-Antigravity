@@ -6,7 +6,7 @@
 // All pricing is done server-side via POST /api/orders/calculate.
 // ============================================================
 
-const API_BASE = ''; // same origin — will be served from Express
+const API_BASE = 'https://express-pizza-antigravity.onrender.com';
 
 // ============================================================
 // 1. State (no prices — only identifiers!)
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const filteredItems = db.getAvailableMenu(currentCategory);
         menuGrid.innerHTML = filteredItems.map((item, idx) => {
             const sizeIdx = selectedSizeIndex[item.id] || 0;
-            const activeSize = item.sizes[sizeIdx];
+            const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
             const hasSizes = item.sizes.length > 1;
             const staggerClass = `stagger-${Math.min(idx + 1, 6)}`;
             const badgeHtml = item.badge
@@ -200,10 +200,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
             <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-soft hover:shadow-xl card-lift group border border-gray-100 dark:border-gray-800 animate-fade-in-up ${staggerClass}">
                 <div class="relative overflow-hidden h-52 sm:h-48">
-                    <img src="${item.image}" alt="${item.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <img src="${item.image || 'images/placeholder.png'}" alt="${item.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='images/placeholder.png'">
                     ${badgeHtml}
                     <div class="absolute bottom-3 left-3 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                        ${activeSize.weight}
+                        ${activeSize.weight || ''}
                     </div>
                 </div>
                 <div class="p-5">
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     ` : ''}
                     <div class="flex items-center justify-between">
-                        <span class="font-display font-black text-xl text-primary">${activeSize.price.toFixed(2)} <small class="text-xs">руб.</small></span>
+                        <span class="font-display font-black text-xl text-primary">${parseFloat(activeSize.price).toFixed(2)} <small class="text-xs">руб.</small></span>
                         <button onclick="addToCart(${item.id})" class="bg-gray-100 dark:bg-gray-800 hover:bg-primary hover:text-white dark:hover:bg-primary p-3 rounded-2xl transition-all duration-300 active:scale-95">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         </button>
