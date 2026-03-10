@@ -6,7 +6,7 @@
 // All pricing is done server-side via POST /api/orders/calculate.
 // ============================================================
 
-const API_BASE = ''; // same origin — will be served from Express
+const API_BASE = 'https://express-pizza-antigravity.onrender.com'; // same origin — will be served from Express
 
 // ============================================================
 // 1. State (no prices — only identifiers!)
