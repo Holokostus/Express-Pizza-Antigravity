@@ -435,8 +435,9 @@
     </div>
 
     <!-- Fetch and JWT Logic -->
-    const API_BASE = 'https://express-pizza-antigravity.onrender.com';
-
+   const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : ''; // Adjust for production deployment
 
 
         let authToken = localStorage.getItem('ep_admin_token');
