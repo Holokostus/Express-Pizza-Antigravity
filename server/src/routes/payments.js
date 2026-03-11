@@ -15,10 +15,10 @@ const prisma = new PrismaClient();
  * Receives synchronous callbacks from bePaid upon payment completion
  */
 // Use express.text() or raw-body to get exactly the raw payload for HMAC verification
-router.post('/webhook', express.text({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
     try {
         const signature = req.headers['content-signature'];
-        const rawBody = req.body; // text representation of JSON
+        const rawBody = req.rawBody; // raw buffer from express.json verify
 
         // 1. Verify HMAC Signature
         if (!verifyWebhookSignature(rawBody, signature)) {

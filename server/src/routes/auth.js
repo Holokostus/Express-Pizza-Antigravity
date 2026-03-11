@@ -28,8 +28,8 @@ router.post('/send-sms', async (req, res) => {
 
         // Rate limiting check
         const existing = otpStore.get(phone);
-        if (existing && existing.expiresAt > Date.now() + 50000) { // Sent within last 10 seconds
-            return res.status(429).json({ error: 'Please wait before requesting another code' });
+        if (existing && existing.lastSentAt && (Date.now() - existing.lastSentAt < 10000)) { // Sent within last 10 seconds
+            return res.status(429).json({ error: 'Подождите 10 секунд перед повторной отправкой' });
         }
 
         // Generate 4-digit code (always 1111 in dev for easy testing)
@@ -41,7 +41,8 @@ router.post('/send-sms', async (req, res) => {
         otpStore.set(phone, {
             code,
             attempts: 0,
-            expiresAt: Date.now() + 3 * 60 * 1000 // 3 minutes
+            expiresAt: Date.now() + 3 * 60 * 1000, // 3 minutes
+            lastSentAt: Date.now()
         });
 
         // STUB: Here we would call SMS.by API (smsService.js)
