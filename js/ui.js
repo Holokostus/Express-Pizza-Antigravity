@@ -335,3 +335,46 @@ window.userLogout = function () {
     showToast('success', 'Вышли из аккаунта');
     closeProfileModal();
 };
+
+// ── Stories Modal Logic ──
+const storiesData = [
+    { title: "Скидка 50% на вторую пиццу", desc: "При заказе любой большой пиццы, вторая (меньшая по стоимости) идет со скидкой 50%. Автоматически применяется при добавлении в корзину.", bg: "bg-gradient-to-br from-red-600 via-red-500 to-orange-500" },
+    { title: "4 пиццы по цене 3!", desc: "Собери компанию и закажи 4 любые пиццы. Самая дешевая будет в подарок! Акция суммируется с другими специальными предложениями.", bg: "bg-gradient-to-br from-violet-600 via-purple-500 to-pink-500" },
+    { title: "🎂 Пицца в подарок!", desc: "Празднуешь день рождения? Дарим любую среднюю пиццу при заказе от 30 р. Акция действует всю неделю после даты рождения.", bg: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600" },
+    { title: "🪙 ExpressCoins", desc: "Копи баллы (5% от каждого заказа) и оплачивай ими до 50% стоимости! Доступно после входа в профиль.", bg: "bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-500" }
+];
+
+window.openStory = function(index) {
+    const modal = $('story-modal');
+    const panel = $('story-panel');
+    const title = $('story-title');
+    const desc = $('story-desc');
+    const gradient = $('story-gradient');
+    
+    if (!modal || !storiesData[index]) return;
+    
+    const s = storiesData[index];
+    title.textContent = s.title;
+    desc.textContent = s.desc;
+    gradient.className = `h-48 flex items-end p-6 ${s.bg}`;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        panel.classList.remove('scale-95');
+        panel.classList.add('scale-100');
+    }, 10);
+};
+
+window.closeStory = function() {
+    const modal = $('story-modal');
+    const panel = $('story-panel');
+    if (!modal) return;
+    
+    panel.classList.remove('scale-100');
+    panel.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+};

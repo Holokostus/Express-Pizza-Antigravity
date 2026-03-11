@@ -55,7 +55,7 @@
 
     <!-- Header (hidden on mobile, visible on desktop) -->
     <header id="desktop-header"
-        class="fixed top-0 w-full z-40 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 transition-colors duration-300 hidden lg:block">
+        class="fixed top-0 w-full z-40 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 transition-colors duration-300 hidden md:block">
         <div class="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
             <a href="#" class="flex items-center gap-2 group">
                 <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center text-white font-display font-bold text-lg shadow-glow-red group-hover:scale-105 transition-transform">EP</div>
@@ -84,7 +84,7 @@
     </header>
 
     <!-- Mobile Top Bar (compact, app-style) -->
-    <header id="mobile-header" class="fixed top-0 w-full z-40 bg-white dark:bg-[#111] lg:hidden safe-area-top">
+    <header id="mobile-header" class="fixed top-0 w-full z-40 bg-white dark:bg-[#111] md:hidden safe-area-top">
         <div class="flex items-center justify-between px-4 h-14">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-white font-display font-bold text-sm shadow-glow-red">EP</div>
@@ -157,7 +157,7 @@
 
         <!-- Sticky Category Tabs -->
         <nav id="menu"
-            class="sticky top-14 lg:top-16 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5">
+            class="sticky top-14 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5 md:hidden">
             <div class="px-3 lg:container lg:mx-auto lg:px-6">
                 <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
                     <button class="menu-tab active bg-red-600 text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-red" data-category="pizza">🍕 Пицца</button>
@@ -345,7 +345,7 @@
     <!-- Floating Cart Button -->
     <!-- Floating Cart Button (desktop only) -->
     <button id="floating-cart"
-        class="fixed bottom-6 right-6 z-40 bg-red-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group hidden lg:flex">
+        class="fixed bottom-6 right-6 z-40 bg-red-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group hidden md:flex">
         <div id="cart-badge"
             class="absolute -top-1 -right-1 bg-primary text-white text-xs font-black min-w-[20px] h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 opacity-0 transition-opacity">
             0</div>
@@ -357,7 +357,7 @@
 
     <!-- Mobile Bottom Navigation (3 tabs: Menu, Profile, Cart) -->
     <nav id="mobile-nav"
-        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#111] border-t border-gray-200 dark:border-gray-800 lg:hidden safe-area-bottom">
+        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#111] border-t border-gray-200 dark:border-gray-800 md:hidden safe-area-bottom">
         <div class="flex items-center justify-around h-16 max-w-md mx-auto">
             <!-- Tab: Menu -->
             <a href="#menu"
@@ -472,7 +472,8 @@
                             class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-cheese-crust"
-                                    class="peer hidden"
+                                    class="peer hidden cust-mod-cb"
+                                    data-mod-id="1" data-mod-price="4.00" data-mod-name="🧀 Сырный бортик"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
@@ -486,7 +487,8 @@
                             class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-jalapeno"
-                                    class="peer hidden"
+                                    class="peer hidden cust-mod-cb"
+                                    data-mod-id="2" data-mod-price="1.50" data-mod-name="🌶️ Халапеньо"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
@@ -500,7 +502,8 @@
                             class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-double-cheese"
-                                    class="peer hidden"
+                                    class="peer hidden cust-mod-cb"
+                                    data-mod-id="3" data-mod-price="3.00" data-mod-name="🧀 Двойной сыр"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
@@ -517,7 +520,7 @@
                     <h4 class="font-bold mb-3">Убрать ингредиенты</h4>
                     <label
                         class="flex items-center gap-3 p-3 border border-red-100 dark:border-red-900/30 rounded-xl cursor-pointer transition-colors hover:border-red-500 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10 bg-red-50 dark:bg-red-900/10">
-                        <input type="checkbox" id="mod-no-onion" class="peer hidden">
+                        <input type="checkbox" id="mod-no-onion" class="peer hidden cust-mod-cb" data-mod-id="4" data-mod-price="0.00" data-mod-name="🧅 Без лука" onchange="updateCustomizerTotal()">
                         <div class="w-5 h-5 rounded border border-red-300 dark:border-red-700 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-red-400 peer-checked:text-white transition-all">
                             <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                         </div>
