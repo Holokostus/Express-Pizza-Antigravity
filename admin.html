@@ -760,29 +760,35 @@
             document.getElementById('item-modal').classList.remove('flex');
         };
 
-        document.getElementById('item-form').addEventListener('submit', (e) => {
+        document.getElementById('item-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const editId = document.getElementById('edit-item-id').value;
-            const data = {
+
+            const payload = {
                 name: document.getElementById('item-name').value,
-                category: document.getElementById('item-category').value,
+                categorySlug: document.getElementById('item-category').value, // Used categorySlug to match backend
                 description: document.getElementById('item-desc').value,
                 image: document.getElementById('item-image').value || 'images/pepperoni.png',
-                badge: null,
-                isAvailable: true,
-                sizes: [{
-                    label: document.getElementById('item-size').value || '1 шт',
-                    weight: document.getElementById('item-weight').value || '',
-                    price: parseFloat(document.getElementById('item-price').value) || 0
-                }]
+                sizeLabel: document.getElementById('item-size').value || '1 шт',
+                weight: document.getElementById('item-weight').value || '',
+                price: parseFloat(document.getElementById('item-price').value) || 0
             };
-            if (editId) {
-                alert('Редактирование через API пока недоступно. Используйте Prisma Studio.');
-            } else {
-                alert('Добавление товаров через API пока недоступно. Используйте Prisma Studio.');
+
+            try {
+                if (editId) {
+                    alert('Редактирование через API пока недоступно. Используйте Prisma Studio.');
+                } else {
+                    await api(`/api/menu`, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    alert('Товар успешно добавлен!');
+                }
+                closeModal();
+                refreshAll(); // Refresh menu table
+            } catch (err) {
+                alert('Ошибка сохранения: ' + err.message);
             }
-            closeModal();
-            refreshMenu();
         });
 
         // ---- Helpers ----

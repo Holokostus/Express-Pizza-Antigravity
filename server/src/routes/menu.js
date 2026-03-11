@@ -102,4 +102,50 @@ router.patch('/:id/availability', requireRole('ADMIN'), async (req, res) => {
     }
 });
 
+/**
+ * POST /api/menu
+ * Admin endpoint to create a new product
+ */
+router.post('/', requireRole('ADMIN'), async (req, res) => {
+    try {
+        const { name, description, price, categorySlug, image, sizeLabel, weight } = req.body;
+
+        if (!name || isNaN(price) || !categorySlug) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // We need to fetch the category ID based on the slug
+        const category = await prisma.category.findUnique({
+            where: { slug: categorySlug }
+        });
+
+        if (!category) {
+            return res.status(400).json({ error: 'Invalid category slug' });
+        }
+
+        const newProduct = await prisma.product.create({
+            data: {
+                categoryId: category.id,
+                name,
+                description: description || null,
+                image: image || 'images/pepperoni.png',
+                isAvailable: true,
+                sizes: {
+                    create: {
+                        label: sizeLabel || 'Стандарт',
+                        price: parseFloat(price),
+                        weight: weight || null
+                    }
+                }
+            },
+            include: { sizes: true }
+        });
+
+        res.status(201).json({ success: true, product: newProduct });
+    } catch (err) {
+        console.error('[Admin Create Product Error]', err);
+        res.status(500).json({ error: 'Failed to create product' });
+    }
+});
+
 module.exports = router;
