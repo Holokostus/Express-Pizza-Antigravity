@@ -23,7 +23,8 @@ const CATEGORIES = [
     { slug: 'snacks', name: 'Закуски', sortOrder: 5 },
     { slug: 'desserts', name: 'Десерты', sortOrder: 6 },
     { slug: 'drinks', name: 'Напитки', sortOrder: 7 },
-    { slug: 'sauce', name: 'Соусы', sortOrder: 8 },
+    { slug: 'juice', name: 'Соки', sortOrder: 8 },
+    { slug: 'sauce', name: 'Соусы', sortOrder: 9 },
 ];
 
 const PRODUCTS = [
@@ -165,9 +166,9 @@ const PRODUCTS = [
         ],
     },
 
-    // ═══════════════════════  НАПИТКИ  ═══════════════════════
+    // ═══════════════════════  НАПИТКИ И СОКИ  ═══════════════════════
     {
-        name: 'Сок Rich Яблочный', categorySlug: 'drinks', sortOrder: 1,
+        name: 'Сок Rich Яблочный', categorySlug: 'juice', sortOrder: 1,
         description: 'Натуральный яблочный сок 1л',
         image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=800&q=80',
         calories: 46, proteins: 0.1, fats: 0, carbs: 11,
@@ -175,7 +176,7 @@ const PRODUCTS = [
         sizes: [{ label: '1 л', weight: '1000мл', price: 5.90 }],
     },
     {
-        name: 'Сок Rich Апельсиновый', categorySlug: 'drinks', sortOrder: 2,
+        name: 'Сок Rich Апельсиновый', categorySlug: 'juice', sortOrder: 2,
         description: 'Натуральный апельсиновый сок 1л',
         image: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=800&q=80',
         calories: 45, proteins: 0.7, fats: 0, carbs: 10.4,

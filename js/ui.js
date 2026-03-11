@@ -112,8 +112,8 @@ function showOrderTracker(orderId) {
         customerWs.close();
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    customerWs = new WebSocket(`${protocol}//${window.location.host}/ws/kds?restaurantId=1`);
+    const wsUrl = typeof API_BASE !== 'undefined' ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') : 'wss://express-pizza-antigravity.onrender.com';
+    customerWs = new WebSocket(`${wsUrl}/ws/kds?restaurantId=1`);
 
     customerWs.onmessage = (event) => {
         try {

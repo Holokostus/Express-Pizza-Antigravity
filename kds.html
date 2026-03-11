@@ -133,8 +133,8 @@
         }
 
         function connectWS() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}/ws/kds?restaurantId=1`);
+            const wsUrl = 'wss://express-pizza-antigravity.onrender.com/ws/kds';
+            ws = new WebSocket(`${wsUrl}?restaurantId=1`);
 
             ws.onopen = () => {
                 const statusEl = document.getElementById('ws-status');
