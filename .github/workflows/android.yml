@@ -20,7 +20,10 @@ jobs:
         run: npm install
 
       - name: Build web assets
-        run: npm run build --if-present
+        run: |
+          mkdir -p dist
+          cp index.html dist/
+          cp -r js css images assets 2>/dev/null dist/ || true
 
       - name: Sync Capacitor Android
         run: |
