@@ -305,18 +305,11 @@ app.post('/api/print/reprint/:receiptId', async (req, res) => {
 
 // ---- Start Server (HTTP + WebSocket) ----
 const http = require('http');
-const { WebSocketServer } = require('ws');
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws/kds' });
 
-wss.on('connection', (ws, req) => {
-    const urlParams = new URL(req.url, `http://localhost:${PORT}`);
-    const restaurantId = parseInt(urlParams.searchParams.get('restaurantId')) || 1;
-    kdsService.registerClient(ws, restaurantId);
-
-    ws.send(JSON.stringify({ type: 'CONNECTED', data: { restaurantId } }));
-});
+// Initialize WebSocket for Kitchen Display System
+kdsService.initKDSWebSocket(server);
 
 server.listen(PORT, () => {
     console.log(`\n🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
@@ -337,7 +330,6 @@ server.listen(PORT, () => {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-    wss.close();
     server.close();
     await prisma.$disconnect();
     process.exit(0);
