@@ -25,7 +25,7 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
 
     if (isStub) {
         console.warn(`[bePaid STUB] Keys not configured — returning fake checkout URL for order ${externalOrderId}`);
-        return `/order-success.html?order=${externalOrderId}&stub=true`;
+        return `order-success.html?order=${externalOrderId}&stub=true`;
     }
 
     // ── REAL MODE: call bePaid API ──
@@ -42,10 +42,10 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
                 tracking_id: externalOrderId
             },
             settings: {
-                success_url: `https://express-pizza.by/success?order=${externalOrderId}`,
-                decline_url: `https://express-pizza.by/cart?error=declined`,
-                fail_url: `https://express-pizza.by/cart?error=failed`,
-                cancel_url: `https://express-pizza.by/cart`,
+                success_url: `https://express-pizza-antigravity.vercel.app/order-success.html?order=${externalOrderId}`,
+                decline_url: `https://express-pizza-antigravity.vercel.app/index.html?error=declined`,
+                fail_url: `https://express-pizza-antigravity.vercel.app/index.html?error=failed`,
+                cancel_url: `https://express-pizza-antigravity.vercel.app/index.html?error=cancelled`,
                 language: 'ru',
                 customer_fields: {
                     visible: ['first_name', 'phone'],

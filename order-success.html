@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ оформлен - Express Pizza</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E30613',
+                        accent: '#FFED00',
+                        bgElementDark: '#1e1e1e',
+                        textMainDark: '#f3f4f6',
+                        textMutedDark: '#9ca3af',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(227, 6, 19, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-[#111] text-textMainDark font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header (Simple) -->
+    <header class="w-full bg-black/90 border-b border-gray-800">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-center">
+            <a href="index.html" class="flex items-center gap-2 group">
+                <div
+                    class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display font-bold text-xl shadow-glow group-hover:scale-105 transition-transform">
+                    EP</div>
+                <span class="font-display font-black text-2xl tracking-tight"><span class="text-primary">EXPRESS</span>
+                    PIZZA</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center p-4">
+        <div
+            class="max-w-md w-full bg-bgElementDark p-8 rounded-3xl text-center border border-gray-800 shadow-2xl transform transition-all duration-500 scale-100 relative overflow-hidden">
+            <!-- Decorative circle -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
+
+            <!-- Success Icon -->
+            <div
+                class="w-24 h-24 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div
+                    class="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin opacity-20">
+                </div>
+            </div>
+
+            <!-- Content -->
+            <h1 class="font-display font-black text-3xl mb-4 text-white">Спасибо! <br><span class="text-primary">Ваш
+                    заказ принят</span></h1>
+
+            <div class="bg-black/50 rounded-2xl p-4 mb-8">
+                <p class="text-textMutedDark mb-1">Номер вашего заказа:</p>
+                <p id="order-number" class="text-3xl font-black font-display text-white">#---</p>
+                <p class="text-xs text-green-400 mt-2 font-bold animate-pulse">Заказ передан на кухню</p>
+            </div>
+
+            <p class="text-sm text-textMutedDark mb-8">Вы можете отслеживать статус заказа прямо на главной странице в
+                блоке трекера.</p>
+
+            <a href="index.html"
+                class="block w-full bg-primary hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-glow hover:scale-[1.02] active:scale-95 text-lg">
+                Вернуться к меню
+            </a>
+        </div>
+    </main>
+
+    <!-- Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order');
+
+            if (orderId) {
+                document.getElementById('order-number').textContent = '#' + orderId;
+            } else {
+                document.getElementById('order-number').textContent = 'Успешно';
+            }
+
+            // Clear cart from local storage to prevent duplicate orders
+            localStorage.removeItem('ep_cart');
+        });
+    </script>
+</body>
+
+</html>
