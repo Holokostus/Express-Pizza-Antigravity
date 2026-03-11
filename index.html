@@ -160,11 +160,22 @@
             class="sticky top-14 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5 md:hidden">
             <div class="px-3 lg:container lg:mx-auto lg:px-6">
                 <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                    <button class="menu-tab active bg-red-600 text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-red" data-category="pizza">🍕 Пицца</button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="togo">🥡 TOGO</button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="sauce">🫙 Соусы</button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="juice">🧃 Соки</button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="drinks">🥤 Напитки</button>
+                    <button class="menu-tab active bg-red-600 text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-red flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="pizza">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.928 11.928 0 0112 17.5c-3.15 0-6.012-1.215-8.156-3.2A8.958 8.958 0 013 12c0-.778.099-1.533.284-2.253m17.432 0c-.57-1.402-1.39-2.658-2.396-3.71m-15.036 0c.57-1.402 1.39-2.658 2.396-3.71M9 14.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm4.5-4a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
+                        Пицца
+                    </button>
+                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="togo">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        TOGO
+                    </button>
+                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="sauce">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                        Соусы
+                    </button>
+                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="drinks">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Напитки
+                    </button>
                 </div>
             </div>
         </nav>
@@ -473,13 +484,16 @@
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-cheese-crust"
                                     class="peer hidden cust-mod-cb"
-                                    data-mod-id="1" data-mod-price="4.00" data-mod-name="🧀 Сырный бортик"
+                                    data-mod-id="1" data-mod-price="4.00" data-mod-name="Сырный бортик"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
                                     <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
-                                <span class="font-medium text-sm">🧀 Сырный бортик</span>
+                                <span class="font-medium text-sm flex items-center gap-1.5 min-w-0">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.928 11.928 0 0112 17.5c-3.15 0-6.012-1.215-8.156-3.2A8.958 8.958 0 013 12c0-.778.099-1.533.284-2.253m17.432 0c-.57-1.402-1.39-2.658-2.396-3.71m-15.036 0c.57-1.402 1.39-2.658 2.396-3.71M9 14.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm4.5-4a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
+                                    <span class="truncate">Сырный бортик</span>
+                                </span>
                             </div>
                             <span class="font-bold text-sm">+4.00 р.</span>
                         </label>
@@ -488,13 +502,16 @@
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-jalapeno"
                                     class="peer hidden cust-mod-cb"
-                                    data-mod-id="2" data-mod-price="1.50" data-mod-name="🌶️ Халапеньо"
+                                    data-mod-id="2" data-mod-price="1.50" data-mod-name="Халапеньо (острые)"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
                                     <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
-                                <span class="font-medium text-sm">🌶️ Халапеньо (острые)</span>
+                                <span class="font-medium text-sm flex items-center gap-1.5 min-w-0">
+                                    <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
+                                    <span class="truncate">Халапеньо (острые)</span>
+                                </span>
                             </div>
                             <span class="font-bold text-sm">+1.50 р.</span>
                         </label>
@@ -503,13 +520,16 @@
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-double-cheese"
                                     class="peer hidden cust-mod-cb"
-                                    data-mod-id="3" data-mod-price="3.00" data-mod-name="🧀 Двойной сыр"
+                                    data-mod-id="3" data-mod-price="3.00" data-mod-name="Двойной сыр"
                                     onchange="updateCustomizerTotal()">
                                 <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
                                     <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
                                     <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
-                                <span class="font-medium text-sm">🧀 Двойной сыр</span>
+                                <span class="font-medium text-sm flex items-center gap-1.5 min-w-0">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.928 11.928 0 0112 17.5c-3.15 0-6.012-1.215-8.156-3.2A8.958 8.958 0 013 12c0-.778.099-1.533.284-2.253m17.432 0c-.57-1.402-1.39-2.658-2.396-3.71m-15.036 0c.57-1.402 1.39-2.658 2.396-3.71M9 14.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm4.5-4a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
+                                    <span class="truncate">Двойной сыр</span>
+                                </span>
                             </div>
                             <span class="font-bold text-sm">+3.00 р.</span>
                         </label>
@@ -520,11 +540,14 @@
                     <h4 class="font-bold mb-3">Убрать ингредиенты</h4>
                     <label
                         class="flex items-center gap-3 p-3 border border-red-100 dark:border-red-900/30 rounded-xl cursor-pointer transition-colors hover:border-red-500 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10 bg-red-50 dark:bg-red-900/10">
-                        <input type="checkbox" id="mod-no-onion" class="peer hidden cust-mod-cb" data-mod-id="4" data-mod-price="0.00" data-mod-name="🧅 Без лука" onchange="updateCustomizerTotal()">
+                        <input type="checkbox" id="mod-no-onion" class="peer hidden cust-mod-cb" data-mod-id="4" data-mod-price="0.00" data-mod-name="Без лука" onchange="updateCustomizerTotal()">
                         <div class="w-5 h-5 rounded border border-red-300 dark:border-red-700 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-red-400 peer-checked:text-white transition-all">
                             <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                         </div>
-                        <span class="font-medium text-sm text-red-600 dark:text-red-400">🧅 Без лука</span>
+                        <span class="font-medium text-sm text-red-600 dark:text-red-400 flex items-center gap-1.5 min-w-0">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                            <span class="truncate">Без лука</span>
+                        </span>
                     </label>
                 </div>
             </div>
@@ -683,8 +706,8 @@
 
     <!-- Profile / Login Modal -->
     <div id="profile-modal"
-        class="fixed inset-0 z-50 hidden opacity-0 transition-opacity bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-bgElementDark text-textMainLight dark:text-textMainDark rounded-2xl w-full max-w-md shadow-2xl relative transform scale-95 transition-transform"
+        class="fixed inset-0 z-50 hidden opacity-0 transition-opacity bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-bgElementDark text-textMainLight dark:text-textMainDark rounded-3xl w-full max-w-md shadow-2xl relative transform scale-95 transition-transform duration-300"
             id="profile-panel">
             <button onclick="closeProfileModal()"
                 class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-full bg-gray-100 dark:bg-gray-800 transition-colors z-10">
@@ -701,9 +724,9 @@
 
     <!-- Toast Notification -->
     <div id="toast"
-        class="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 transform translate-y-[150%] opacity-0 bg-gray-900 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-xl transition-all duration-300 z-50">
-        <span id="toast-icon"></span>
-        <span id="toast-message" class="font-medium text-sm"></span>
+        class="fixed bottom-24 lg:bottom-10 left-1/2 -translate-x-1/2 transform translate-y-[150%] opacity-0 bg-gray-900 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] min-w-[280px] justify-center backdrop-blur-md border border-gray-800">
+        <span id="toast-icon" class="text-lg"></span>
+        <span id="toast-message" class="font-bold text-sm tracking-wide"></span>
     </div>
 
     <!-- Scripts -->

@@ -219,14 +219,14 @@ function renderLoginView() {
         <p class="text-gray-500 text-sm mb-6">Введите номер телефона для входа в кабинет</p>
         
         <div id="login-step-1">
-            <input type="tel" id="login-phone" placeholder="+375 (XX) XXX-XX-XX" class="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-textMainLight dark:text-textMainDark">
-            <button onclick="requestLoginCode()" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-glow">Получить код</button>
+            <input type="tel" id="login-phone" placeholder="+375 (XX) XXX-XX-XX" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-textMainLight dark:text-textMainDark font-medium text-lg">
+            <button onclick="requestLoginCode()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-glow-red cursor-pointer">Получить код</button>
         </div>
         
         <div id="login-step-2" class="hidden">
-            <input type="text" id="login-code" placeholder="Код (например 1111)" class="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-center tracking-widest text-xl text-textMainLight dark:text-textMainDark">
-            <button onclick="verifyLoginCode()" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-glow mb-2">Войти</button>
-            <button onclick="renderLoginView()" class="w-full text-gray-500 text-sm py-2 hover:text-primary transition-colors">Изменить номер</button>
+            <input type="text" id="login-code" placeholder="Код из СМС" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-center tracking-widest text-2xl font-bold text-textMainLight dark:text-textMainDark">
+            <button onclick="verifyLoginCode()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-glow-red cursor-pointer mb-2">Войти</button>
+            <button onclick="renderLoginView()" class="w-full text-gray-500 font-medium py-3 hover:text-red-600 transition-colors active:scale-95 cursor-pointer">Изменить номер</button>
         </div>
     `;
 }
@@ -309,19 +309,25 @@ async function renderProfileView() {
         `).join('');
 
         body.innerHTML = `
-            <h2 class="text-2xl font-display font-black mb-2">Кабинет</h2>
-            <div class="flex items-center gap-2 mb-6 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-2xl">
-                <span class="text-2xl">🪙</span>
-                <div>
-                    <p class="font-bold text-amber-700 dark:text-amber-400 text-lg">${coins} ExpressCoins</p>
-                    <p class="text-xs text-amber-600/70 dark:text-amber-500/70">5% от каждого заказа</p>
+            <h2 class="text-2xl font-display font-black mb-4">Профиль</h2>
+            <div class="mb-6 bg-gradient-to-br from-gray-900 to-black p-5 rounded-3xl border border-gray-800 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-7xl opacity-20 filter blur-sm">🪙</div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-1">
+                        <span class="text-3xl">🪙</span>
+                        <div>
+                            <p class="font-bold text-white text-2xl leading-none">${coins}</p>
+                            <p class="text-xs text-gray-400 font-medium mt-1">ExpressCoins</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-4 leading-relaxed font-medium">Оплачивайте коинами до 50% заказа. 1 Coin = 1 BYN. Кэшбэк 5% с каждого заказа.</p>
                 </div>
             </div>
             <div class="mb-6">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">История</h3>
-                <div class="max-h-64 overflow-y-auto pr-2 custom-scrollbar">${html}</div>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">История заказов</h3>
+                <div class="max-h-64 overflow-y-auto pr-2 custom-scrollbar space-y-3">${html}</div>
             </div>
-            <button onclick="userLogout()" class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 font-bold py-3 rounded-xl transition-all">Выйти</button>
+            <button onclick="userLogout()" class="w-full bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 font-bold py-4 rounded-2xl transition-all active:scale-95 cursor-pointer">Выйти из аккаунта</button>
         `;
     } catch (e) {
         if (e.message.includes('Unauthorized')) userLogout();
