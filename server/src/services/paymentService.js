@@ -6,8 +6,8 @@ const crypto = require('crypto');
 const fetch = require('node-fetch'); // Assuming node-fetch is available in Node 20 or using native fetch
 
 // Using native fetch in Node 18+
-const SHOP_ID = process.env.BEPAID_SHOP_ID || 'SHOP_ID_PLACEHOLDER';
-const SECRET_KEY = process.env.BEPAID_SECRET_KEY || 'SECRET_KEY_PLACEHOLDER';
+const SHOP_ID = process.env.BEPAID_SHOP_ID || '361';
+const SECRET_KEY = process.env.BEPAID_SECRET_KEY || 'b8647b68898b084b836474ed8d61ffe117c9a01168d867f24953b720d2ff81af';
 const WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET || 'WEBHOOK_SECRET_PLACEHOLDER';
 
 /**
@@ -23,10 +23,11 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
         || SHOP_ID === 'SHOP_ID_PLACEHOLDER' || SECRET_KEY === 'SECRET_KEY_PLACEHOLDER'
         || SHOP_ID === 'test' || SECRET_KEY === 'test';
 
-    if (isStub) {
-        console.warn(`[bePaid STUB] Keys not configured — returning fake checkout URL for order ${externalOrderId}`);
-        return `order-success.html?order=${externalOrderId}&stub=true`;
-    }
+    // REMOVED STUB CHECK TO FORCE TEST TRANSACTIONS THROUGH REAL BEPAID GATEWAY
+    // if (isStub) {
+    //     console.warn(`[bePaid STUB] Keys not configured — returning fake checkout URL for order ${externalOrderId}`);
+    //     return `order-success.html?order=${externalOrderId}&stub=true`;
+    // }
 
     // ── REAL MODE: call bePaid API ──
     const amountInCents = Math.round(amount * 100);
