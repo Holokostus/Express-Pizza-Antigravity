@@ -6,9 +6,13 @@ const crypto = require('crypto');
 const fetch = require('node-fetch'); // Assuming node-fetch is available in Node 20 or using native fetch
 
 // Using native fetch in Node 18+
-const SHOP_ID = process.env.BEPAID_SHOP_ID || '361';
-const SECRET_KEY = process.env.BEPAID_SECRET_KEY || 'b8647b68898b084b836474ed8d61ffe117c9a01168d867f24953b720d2ff81af';
-const WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET || 'WEBHOOK_SECRET_PLACEHOLDER';
+const SHOP_ID = process.env.BEPAID_SHOP_ID;
+const SECRET_KEY = process.env.BEPAID_SECRET_KEY;
+const WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET;
+
+if (!SHOP_ID || !SECRET_KEY) {
+    throw new Error('FATAL: BEPAID_SHOP_ID or BEPAID_SECRET_KEY environment variables are missing.');
+}
 
 /**
  * Creates a bePaid checkout session URL
@@ -19,8 +23,7 @@ const WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET || 'WEBHOOK_SECRET_PLAC
  */
 async function createPaymentSession(externalOrderId, amount, customer = {}) {
     // ── STUB MODE: skip real bePaid if keys are not configured ──
-    const isStub = !SHOP_ID || !SECRET_KEY
-        || SHOP_ID === 'SHOP_ID_PLACEHOLDER' || SECRET_KEY === 'SECRET_KEY_PLACEHOLDER'
+    const isStub = SHOP_ID === 'SHOP_ID_PLACEHOLDER' || SECRET_KEY === 'SECRET_KEY_PLACEHOLDER'
         || SHOP_ID === 'test' || SECRET_KEY === 'test';
 
     // REMOVED STUB CHECK TO FORCE TEST TRANSACTIONS THROUGH REAL BEPAID GATEWAY

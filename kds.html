@@ -133,7 +133,7 @@
         }
 
         function connectWS() {
-            const wsUrl = 'wss://express-pizza-antigravity.onrender.com/ws/kds';
+            const wsUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'ws://localhost:5000' : `wss://${window.location.host}`) + '/ws/kds';
             ws = new WebSocket(`${wsUrl}?restaurantId=1`);
 
             ws.onopen = () => {

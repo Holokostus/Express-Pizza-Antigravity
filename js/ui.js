@@ -105,7 +105,7 @@ function showOrderTracker(orderId) {
         customerWs.close();
     }
 
-    const wsUrl = typeof API_BASE !== 'undefined' ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') : 'wss://express-pizza-antigravity.onrender.com';
+    const wsUrl = typeof API_BASE !== 'undefined' && API_BASE !== '' ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'ws://localhost:5000' : `wss://${window.location.host}`) + '/ws/kds';
     customerWs = new WebSocket(`${wsUrl}/ws/kds?restaurantId=1`);
 
     customerWs.onmessage = (event) => {
