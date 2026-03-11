@@ -16,21 +16,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Dependencies
-        run: npm install
-
       - name: Build web assets
         run: |
           mkdir -p dist
-          cp index.html dist/
-          cp -r js css images assets 2>/dev/null dist/ || true
+          cp index.html dist/ 2>/dev/null || true
+          cp -r js css images assets dist/ 2>/dev/null || true
 
-      - name: Sync Capacitor Android
-        run: |
-          if [ ! -d "./android" ]; then
-            npx cap add android
-          fi
-          npx cap sync android
+      - name: Sync Android Platform
+        run: npx cap sync android
 
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
