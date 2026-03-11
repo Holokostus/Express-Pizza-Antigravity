@@ -10,8 +10,7 @@
 // Всё общение через JSON-RPC 2.0 over HTTP.
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const { appendEvent, EventTypes } = require('./eventService');
 
 const RK_BASE_URL = process.env.RKEEPER_URL || 'http://localhost:8080/jsonrpc';

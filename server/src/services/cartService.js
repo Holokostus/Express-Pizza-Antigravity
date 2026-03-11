@@ -2,8 +2,7 @@
 // Express Pizza — Server-Side Cart Pricing (Sprint 2)
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 /**
  * Calculates authoritative cart totals based on DB prices.

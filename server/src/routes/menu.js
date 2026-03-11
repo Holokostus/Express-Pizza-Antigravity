@@ -3,11 +3,7 @@
 // ============================================================
 
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { requireRole } = require('../middleware/auth');
-
-const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 /**
  * GET /api/menu
@@ -81,7 +77,7 @@ router.get('/allergens', async (req, res) => {
  * PATCH /api/menu/:id/availability
  * Admin endpoint to toggle stop-list for a product
  */
-router.patch('/:id/availability', requireRole('ADMIN'), async (req, res) => {
+router.patch('/:id/availability', requireRole(['ADMIN']), async (req, res) => {
     try {
         const productId = parseInt(req.params.id);
         const { isAvailable } = req.body;
@@ -106,7 +102,7 @@ router.patch('/:id/availability', requireRole('ADMIN'), async (req, res) => {
  * POST /api/menu
  * Admin endpoint to create a new product
  */
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', requireRole(['ADMIN']), async (req, res) => {
     try {
         const { name, description, price, categorySlug, image, sizeLabel, weight } = req.body;
 

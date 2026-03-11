@@ -3,11 +3,7 @@
 // ============================================================
 
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { updateOrderStatus } = require('../services/kdsService');
-
-const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 /**
  * GET /api/kds/:restaurantId/orders

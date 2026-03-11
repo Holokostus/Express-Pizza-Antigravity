@@ -9,8 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const { calculateCart } = require('../services/cartService');
 const { pushToPos } = require('../services/posSyncService');
 const { notifyNewOrder } = require('../services/telegramService');

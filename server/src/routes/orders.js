@@ -239,7 +239,7 @@ router.get('/my', requireAuth, async (req, res) => {
  * GET /api/orders
  * Admin endpoint to list all orders
  */
-router.get('/', requireRole('ADMIN'), async (req, res) => {
+router.get('/', requireRole(['ADMIN']), async (req, res) => {
     try {
         const orders = await prisma.order.findMany({
             orderBy: { createdAt: 'desc' },
@@ -282,7 +282,7 @@ router.get('/', requireRole('ADMIN'), async (req, res) => {
  * PATCH /api/orders/:id/status
  * Admin endpoint to change order status
  */
-router.patch('/:id/status', requireRole('ADMIN'), async (req, res) => {
+router.patch('/:id/status', requireRole(['ADMIN']), async (req, res) => {
     try {
         const orderId = parseInt(req.params.id);
         const { status } = req.body;

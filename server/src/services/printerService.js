@@ -3,8 +3,7 @@
 // ============================================================
 
 const net = require('net');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 // In-memory queue to prevent overwhelming the printer with rapid tasks
 const printQueue = [];

@@ -5,8 +5,7 @@
 // Designed for integration with alerting (Telegram, email).
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const CHECK_INTERVAL_MS = parseInt(process.env.MONITOR_INTERVAL_MS) || 60000; // 1 min
 

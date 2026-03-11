@@ -5,8 +5,7 @@
 // Google/Yandex: FoodEstablishment, Menu, MenuItem, Offer
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 /**
  * Generate FoodEstablishment JSON-LD

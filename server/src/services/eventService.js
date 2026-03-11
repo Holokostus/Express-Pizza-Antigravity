@@ -6,9 +6,8 @@
 // Idempotency key prevents duplicates during reconciliation.
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
 const { randomUUID } = require('crypto');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 // ============================================================
 // Event Types Registry

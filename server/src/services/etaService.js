@@ -10,8 +10,7 @@
 // Supports spillover to Yandex Delivery API during peak hours.
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const YANDEX_ROUTING_KEY = process.env.YANDEX_ROUTING_API_KEY || '';
 const YANDEX_DELIVERY_KEY = process.env.YANDEX_DELIVERY_API_KEY || '';

@@ -5,8 +5,7 @@
 // config. Handles retries for failed syncs.
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const iikoService = require('./iikoService');
 const rkeeperService = require('./rkeeperService');
 const { appendEvent, EventTypes } = require('./eventService');

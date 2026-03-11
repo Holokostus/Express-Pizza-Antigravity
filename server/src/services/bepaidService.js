@@ -11,8 +11,7 @@
 // ============================================================
 
 const crypto = require('crypto');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const BEPAID_SECRET_KEY = process.env.BEPAID_SECRET_KEY || 'test';
 const BEPAID_WEBHOOK_SECRET = process.env.BEPAID_WEBHOOK_SECRET || 'test';

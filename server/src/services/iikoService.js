@@ -10,8 +10,7 @@
 // - Поддержка стоп-листа (out-of-stock)
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const { appendEvent, EventTypes } = require('./eventService');
 
 const IIKO_API_BASE = 'https://api-ru.iiko.services/api/1';

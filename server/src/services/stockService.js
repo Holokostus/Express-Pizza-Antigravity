@@ -8,8 +8,7 @@
 // - iiko/r_keeper (reverse sync)
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const { appendEvent, EventTypes } = require('./eventService');
 
 /**
