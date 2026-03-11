@@ -204,7 +204,7 @@
                     } else if (status === 'COOKING') {
                         actionBtn = `<button onclick="changeStatus(${order.id}, 'BAKING')" class="w-full mt-3 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg transition-colors">В печь</button>`;
                     } else if (status === 'BAKING') {
-                        actionBtn = `<button onclick="changeStatus(${order.id}, 'DELIVERING')" class="w-full mt-3 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg transition-colors">Готово</button>`;
+                        actionBtn = `<button onclick="changeStatus(${order.id}, 'DELIVERY')" class="w-full mt-3 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg transition-colors">Готово</button>`;
                     }
 
                     const itemsHtml = order.items.map(item => `

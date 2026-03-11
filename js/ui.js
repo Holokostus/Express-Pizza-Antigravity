@@ -125,7 +125,7 @@ function showOrderTracker(orderId) {
 
 function updateTrackerUI(status) {
     const steps = ['step-new', 'step-cooking', 'step-baking', 'step-delivery'];
-    const statuses = ['NEW', 'COOKING', 'BAKING', 'DELIVERING'];
+    const statuses = ['NEW', 'COOKING', 'BAKING', 'DELIVERY'];
 
     const currentIndex = statuses.indexOf(status);
     if (currentIndex === -1) return;
@@ -154,7 +154,7 @@ function updateTrackerUI(status) {
         }
     });
 
-    if (status === 'DELIVERING' || status === 'COMPLETED') {
+    if (status === 'DELIVERY' || status === 'COMPLETED') {
         if (customerWs) customerWs.close();
     }
 }
@@ -285,7 +285,7 @@ async function renderProfileView() {
 
         if (!data.success) throw new Error(data.error);
 
-        const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
+        const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
         // ExpressCoins: 5% of completed order totals
         const completedTotal = data.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + parseFloat(o.total), 0);

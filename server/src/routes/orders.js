@@ -249,8 +249,7 @@ router.get('/', requireRole('ADMIN'), async (req, res) => {
                     include: {
                         product: { select: { name: true } },
                     }
-                },
-                customer: true
+                }
             }
         });
 
@@ -296,7 +295,7 @@ router.patch('/:id/status', requireRole('ADMIN'), async (req, res) => {
             'new': 'NEW',
             'cooking': 'COOKING',
             'baking': 'BAKING',
-            'delivery': 'DELIVERING',
+            'delivery': 'DELIVERY',
             'completed': 'COMPLETED',
             'cancelled': 'CANCELLED'
         };

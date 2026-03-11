@@ -141,7 +141,7 @@
             color: #F59E0B;
         }
 
-        .status-DELIVERING {
+        .status-DELIVERY {
             color: #8B5CF6;
         }
 
@@ -283,8 +283,8 @@
             }
 
             container.innerHTML = orders.map((o, i) => {
-                const statusLabels = { NEW: 'Новый', COOKING: 'Готовится', DELIVERING: 'Доставка', COMPLETED: 'Выполнен' };
-                const statusColors = { NEW: 'bg-blue-500/20 text-blue-400', COOKING: 'bg-amber-500/20 text-amber-400', DELIVERING: 'bg-violet-500/20 text-violet-400', COMPLETED: 'bg-green-500/20 text-green-400' };
+                const statusLabels = { NEW: 'Новый', COOKING: 'Готовится', DELIVERY: 'Доставка', COMPLETED: 'Выполнен' };
+                const statusColors = { NEW: 'bg-blue-500/20 text-blue-400', COOKING: 'bg-amber-500/20 text-amber-400', DELIVERY: 'bg-violet-500/20 text-violet-400', COMPLETED: 'bg-green-500/20 text-green-400' };
                 const ts = new Date(o.createdAt || Date.now()).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const items = (o.items || []).map(it => {
                     const name = it.product?.name || it.name || 'Товар';

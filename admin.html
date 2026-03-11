@@ -577,9 +577,9 @@
         // ---- Kanban Orders ----
         function refreshOrders() {
             const statuses = ['new', 'cooking', 'delivery', 'completed'];
-            const dbStatusMap = { 'new': 'NEW', 'cooking': 'COOKING', 'delivery': 'DELIVERING', 'completed': 'COMPLETED' };
-            const nextStatus = { 'NEW': 'COOKING', 'COOKING': 'DELIVERING', 'DELIVERING': 'COMPLETED' };
-            const btnLabels = { 'NEW': 'Начать готовить', 'COOKING': 'Отправить', 'DELIVERING': 'Завершить' };
+            const dbStatusMap = { 'new': 'NEW', 'cooking': 'COOKING', 'delivery': 'DELIVERY', 'completed': 'COMPLETED' };
+            const nextStatus = { 'NEW': 'COOKING', 'COOKING': 'DELIVERY', 'DELIVERY': 'COMPLETED' };
+            const btnLabels = { 'NEW': 'Начать готовить', 'COOKING': 'Отправить', 'DELIVERY': 'Завершить' };
 
             statuses.forEach(status => {
                 const mappedStatus = dbStatusMap[status];
@@ -763,13 +763,13 @@
 
         // ---- Helpers ----
         function statusLabel(s) {
-            return { 'NEW': 'Новый', 'COOKING': 'Готовится', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен' }[s] || s;
+            return { 'NEW': 'Новый', 'COOKING': 'Готовится', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен' }[s] || s;
         }
         function statusStyle(s) {
             return {
                 'NEW': 'bg-blue-500/20 text-blue-400',
                 'COOKING': 'bg-amber-500/20 text-amber-400',
-                'DELIVERING': 'bg-violet-500/20 text-violet-400',
+                'DELIVERY': 'bg-violet-500/20 text-violet-400',
                 'COMPLETED': 'bg-green-500/20 text-green-400'
             }[s] || '';
         }
