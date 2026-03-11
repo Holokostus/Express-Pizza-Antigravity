@@ -80,12 +80,12 @@ class IikoAdapter extends BaseAdapter {
 class RkeeperAdapter extends BaseAdapter {
     constructor() { super('rkeeper', 'r_keeper POS'); }
     sendOrder(order) {
-        console.log(`%c[r_keeper] 🖥️ XML-RPC call — Creating order #${order.id}`, 'color:#0066CC;font-weight:bold');
+        console.log(`%c[r_keeper] XML-RPC call — Creating order #${order.id}`, 'color:#0066CC;font-weight:bold');
         console.log(`[r_keeper] Station: CashStation_01, Waiter: API_USER`);
         console.log(`[r_keeper] → Response: { orderId: "RK-${order.id}", status: "created" }`);
     }
     syncStopList(itemId, available) {
-        console.log(`%c[r_keeper] 🖥️ Dish availability update: item #${itemId} → ${available ? 'ON' : 'OFF'}`, 'color:#0066CC');
+        console.log(`%c[r_keeper] Dish availability update: item #${itemId} → ${available ? 'ON' : 'OFF'}`, 'color:#0066CC');
     }
 }
 
@@ -93,7 +93,7 @@ class BePaidAdapter extends BaseAdapter {
     constructor() { super('bepaid', 'bePaid Acquiring'); }
     sendOrder(order) {
         const total = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-        console.log(`%c[bePaid] 💳 POST /ctp/api/checkouts — ${total.toFixed(2)} BYN`, 'color:#00B894;font-weight:bold');
+        console.log(`%c[bePaid] POST /ctp/api/checkouts — ${total.toFixed(2)} BYN`, 'color:#00B894;font-weight:bold');
         console.log(`[bePaid] → Checkout token: "BP-CHK-${Date.now()}", redirect URL generated`);
     }
     syncStopList() { /* Payment gateway doesn't need stop-list */ }
@@ -102,10 +102,10 @@ class BePaidAdapter extends BaseAdapter {
 class YandexGoAdapter extends BaseAdapter {
     constructor() { super('yandex_go', 'Yandex.Go (Eats)'); }
     sendOrder(order) {
-        console.log(`%c[Yandex.Go] 🚀 PATCH /api/v1/menu/availability — syncing order #${order.id}`, 'color:#FC3F1D;font-weight:bold');
+        console.log(`%c[Yandex.Go] PATCH /api/v1/menu/availability — syncing order #${order.id}`, 'color:#FC3F1D;font-weight:bold');
     }
     syncStopList(itemId, available) {
-        console.log(`%c[Yandex.Go] 🚀 ${available ? 'Resuming' : 'Pausing'} Item #${itemId} on Yandex.Eats`, 'color:#FC3F1D;font-weight:bold');
+        console.log(`%c[Yandex.Go] ${available ? 'Resuming' : 'Pausing'} Item #${itemId} on Yandex.Eats`, 'color:#FC3F1D;font-weight:bold');
     }
 }
 
@@ -123,7 +123,7 @@ class SlivkiAdapter extends BaseAdapter {
     constructor() { super('slivki', 'Slivki.by'); }
     sendOrder(order) {
         if (order.promo) {
-            console.log(`%c[Slivki.by] 🏷️ POST /api/v1/promo/redeem — code "${order.promo}" for order #${order.id}`, 'color:#E67E22;font-weight:bold');
+            console.log(`%c[Slivki.by] POST /api/v1/promo/redeem — code "${order.promo}" for order #${order.id}`, 'color:#E67E22;font-weight:bold');
         }
     }
     syncStopList(itemId, available) {

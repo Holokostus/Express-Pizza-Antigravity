@@ -311,10 +311,10 @@ async function renderProfileView() {
         body.innerHTML = `
             <h2 class="text-2xl font-display font-black mb-4">Профиль</h2>
             <div class="mb-6 bg-gradient-to-br from-gray-900 to-black p-5 rounded-3xl border border-gray-800 shadow-xl relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-7xl opacity-20 filter blur-sm">🪙</div>
+                <div class="absolute -right-4 -top-4 text-7xl opacity-20 filter blur-sm font-bold">C</div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-3 mb-1">
-                        <span class="text-3xl">🪙</span>
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white font-bold">C</span>
                         <div>
                             <p class="font-bold text-white text-2xl leading-none">${coins}</p>
                             <p class="text-xs text-gray-400 font-medium mt-1">ExpressCoins</p>

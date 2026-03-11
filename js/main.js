@@ -107,11 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             authToken = authResult.token;
             localStorage.setItem('ep_auth_token', authToken);
 
-            // ⚠️ BACKDOOR WARNING
+            // BACKDOOR WARNING
             if (authResult._backdoorUsed) {
                 setTimeout(() => {
                     alert('🚨🚨🚨 ВЫ ВОШЛИ ПО БЭКДОРУ 1234! 🚨🚨🚨\n\n' +
-                        '⚠️ НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
+                        'ВАЖНО: НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
                         'Файл: server/src/routes/auth.js\n' +
                         'Ищите: isBackdoor\n\n' +
                         '🔴 ЭТО НЕ ШУТКА. УДАЛИТЕ БЭКДОР. 🔴');
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const tgToken = "8786581278:AAEEqxSyveHOowJxyMOiA6gRVYOg8HQ0aQs";
                 const tgChatId = "1371605396";
                 let itemsText = cart.map(i => {
-                    let text = `🍕 ${i._display.name} (${i._display.sizeLabel || ''}) x${i.quantity}`;
+                    let text = `• ${i._display.name} (${i._display.sizeLabel || ''}) x${i.quantity}`;
                     if (i._display.modifierNames && i._display.modifierNames.length > 0) {
                         text += `\n   + ${i._display.modifierNames.join(', ')}`;
                     }
@@ -162,13 +162,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const finalSum = serverCalculation?.total ? serverCalculation.total.toFixed(2) : '---';
                 
-                const tgMsg = `🚀 *Новый заказ!* (Express Pizza)\n\n` +
-                              `👤 *Клиент:* ${name || 'Без имени'}\n` +
-                              `📞 *Телефон:* ${phone}\n` +
-                              `🏠 *Адрес:* ${address || 'Самовывоз'}\n` +
-                              `💳 *Оплата:* ${paymentMethod ? paymentMethod.value : 'BEPAID ONLINE'}\n\n` +
+                const tgMsg = `*Новый заказ!* (Express Pizza)\n\n` +
+                              `*Клиент:* ${name || 'Без имени'}\n` +
+                              `*Телефон:* ${phone}\n` +
+                              `*Адрес:* ${address || 'Самовывоз'}\n` +
+                              `*Оплата:* ${paymentMethod ? paymentMethod.value : 'BEPAID ONLINE'}\n\n` +
                               `*Состав:*\n${itemsText}\n\n` +
-                              `💰 *ИТОГО:* ${finalSum} BYN`;
+                              `*ИТОГО:* ${finalSum} BYN`;
 
                 fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
                     method: 'POST',

@@ -307,7 +307,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (cartItemsContainer) {
             cartItemsContainer.innerHTML = cart.length === 0
                 ? `<div class="text-center py-12">
-                        <div class="text-6xl mb-4">🍕</div>
+                        <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
+                           <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        </div>
                         <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
                         <button onclick="document.getElementById('close-cart').click()" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
                    </div>`
@@ -558,11 +560,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             authToken = authResult.token;
             localStorage.setItem('ep_auth_token', authToken);
 
-            // ⚠️ BACKDOOR WARNING — максимально раздражающий
+            // BACKDOOR WARNING — максимально раздражающий
             if (authResult._backdoorUsed) {
                 setTimeout(() => {
                     alert('🚨🚨🚨 ВЫ ВОШЛИ ПО БЭКДОРУ 1234! 🚨🚨🚨\n\n' +
-                        '⚠️ НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
+                        'ВАЖНО: НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
                         'Файл: server/src/routes/auth.js\n' +
                         'Ищите: isBackdoor\n\n' +
                         '🔴 ЭТО НЕ ШУТКА. УДАЛИТЕ БЭКДОР. 🔴');
