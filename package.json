@@ -4,6 +4,7 @@
   "description": "This repository contains the completed Sprint 7 MVP for the Express Pizza system. It includes a fully integrated Node.js API, Prisma ORM over PostgreSQL, WebSockets for KDS, and robust vanilla JS frontends.",
   "main": "index.js",
   "scripts": {
+    "build": "mkdir -p dist && cp -r index.html admin.html kds.html pos.html order-success.html oferta.html css js images dist/ 2>/dev/null || true",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
