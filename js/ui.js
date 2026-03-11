@@ -191,3 +191,138 @@ function updateTimer() {
     const el = $('delivery-timer');
     if (el) el.textContent = `Среднее время: ${Math.floor(Math.random() * 11 + 20)} мин`;
 }
+
+// ── Profile and Login Logic ──
+window.handleProfileClick = function () {
+    const modal = $('profile-modal');
+    const panel = $('profile-panel');
+    if (!modal || !panel) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        panel.classList.remove('scale-95');
+    }, 10);
+
+    if (authToken) renderProfileView();
+    else renderLoginView();
+};
+
+window.closeProfileModal = function () {
+    const modal = $('profile-modal');
+    const panel = $('profile-panel');
+    if (!modal || !panel) return;
+
+    modal.classList.add('opacity-0');
+    panel.classList.add('scale-95');
+
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+};
+
+function renderLoginView() {
+    const body = $('profile-body');
+    body.innerHTML = `
+        <h2 class="text-2xl font-display font-black mb-2">Вход</h2>
+        <p class="text-gray-500 text-sm mb-6">Введите номер телефона для входа в кабинет</p>
+        
+        <div id="login-step-1">
+            <input type="tel" id="login-phone" placeholder="+375 (XX) XXX-XX-XX" class="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-textMainLight dark:text-textMainDark">
+            <button onclick="requestLoginCode()" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-glow">Получить код</button>
+        </div>
+        
+        <div id="login-step-2" class="hidden">
+            <input type="text" id="login-code" placeholder="Код (например 1111)" class="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-center tracking-widest text-xl text-textMainLight dark:text-textMainDark">
+            <button onclick="verifyLoginCode()" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-glow mb-2">Войти</button>
+            <button onclick="renderLoginView()" class="w-full text-gray-500 text-sm py-2 hover:text-primary transition-colors">Изменить номер</button>
+        </div>
+    `;
+}
+
+window.requestLoginCode = async function () {
+    const phone = $('login-phone').value.trim();
+    if (!phone) return showToast('error', 'Введите телефон');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/auth/send-sms`, {
+            method: 'POST', body: JSON.stringify({ phone }), headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            $('login-step-1').classList.add('hidden');
+            $('login-step-2').classList.remove('hidden');
+            showToast('success', 'СМС отправлено');
+        } else {
+            showToast('error', data.error || 'Ошибка');
+        }
+    } catch (e) { showToast('error', 'Ошибка сети'); }
+};
+
+window.verifyLoginCode = async function () {
+    const phone = $('login-phone').value.trim();
+    const code = $('login-code').value.trim();
+    if (!code) return showToast('error', 'Введите код');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/auth/verify`, {
+            method: 'POST', body: JSON.stringify({ phone, code }), headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (data.token) {
+            localStorage.setItem('ep_auth_token', data.token);
+            authToken = data.token;
+            showToast('success', 'Вход успешен');
+            renderProfileView();
+        } else {
+            showToast('error', data.error || 'Неверный код');
+        }
+    } catch (e) { showToast('error', 'Ошибка сети'); }
+};
+
+async function renderProfileView() {
+    const body = $('profile-body');
+    body.innerHTML = '<div class="flex justify-center py-10"><div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/api/orders/my`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.error);
+
+        const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
+
+        let html = data.orders.length === 0 ? '<p class="text-gray-500 text-sm text-center py-6">Нет заказов</p>' : data.orders.map(o => `
+            <div class="border border-gray-100 dark:border-gray-800 rounded-xl p-4 mb-3 bg-gray-50 dark:bg-black/50">
+                <div class="flex justify-between mb-2">
+                    <span class="font-bold text-sm">Заказ #${o.id}</span>
+                    <span class="text-xs font-bold text-primary">${statusMap[o.status] || o.status}</span>
+                </div>
+                <div class="text-xs text-gray-500 mb-2">${new Date(o.timestamp).toLocaleString('ru-RU')}</div>
+                <div class="text-sm line-clamp-2 mb-2">${o.items.map(i => i.name).join(', ')}</div>
+                <div class="font-bold text-sm">${parseFloat(o.total).toFixed(2)} р.</div>
+            </div>
+        `).join('');
+
+        body.innerHTML = `
+            <h2 class="text-2xl font-display font-black mb-6">Кабинет</h2>
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">История</h3>
+                <div class="max-h-64 overflow-y-auto pr-2 custom-scrollbar">${html}</div>
+            </div>
+            <button onclick="userLogout()" class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 font-bold py-3 rounded-xl transition-all">Выйти</button>
+        `;
+    } catch (e) {
+        if (e.message.includes('Unauthorized')) userLogout();
+        else body.innerHTML = '<p class="text-red-500 text-center py-4">Ошибка загрузки</p>';
+    }
+}
+
+window.userLogout = function () {
+    localStorage.removeItem('ep_auth_token');
+    authToken = null;
+    showToast('success', 'Вышли из аккаунта');
+    closeProfileModal();
+};

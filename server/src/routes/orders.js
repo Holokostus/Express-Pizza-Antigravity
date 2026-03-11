@@ -175,10 +175,10 @@ router.post('/checkout', requireAuth, async (req, res) => {
             // Cash / Terminal on delivery: Not paid online, notify the manager immediately
             // (For online payments, the webhook will trigger this notification instead)
             await sendOrderAlert(createdOrder);
-
-            // Push order to Kitchen Display System instantly for CASH orders
-            broadcastOrderToKDS(restaurantId, createdOrder);
         }
+
+        // Push order to Kitchen Display System instantly for ALL orders
+        broadcastOrderToKDS(restaurantId, createdOrder);
 
         console.log(`[Order] Successfully created! externalOrderId: ${externalOrderId}, Total: ${cartResult.total} BYN`);
 
@@ -196,6 +196,42 @@ router.post('/checkout', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('[Checkout Error]', error);
         res.status(400).json({ error: error.message || 'Checkout failed' });
+    }
+});
+
+/**
+ * GET /api/orders/my
+ * Returns orders for the currently authenticated user
+ */
+router.get('/my', requireAuth, async (req, res) => {
+    try {
+        const phone = req.user.phone;
+        const orders = await prisma.order.findMany({
+            where: { customerPhone: phone },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                items: {
+                    include: { product: true }
+                }
+            }
+        });
+
+        const formattedOrders = orders.map(o => ({
+            id: o.id,
+            timestamp: new Date(o.createdAt).getTime(),
+            status: o.status,
+            total: o.total,
+            items: o.items.map(i => ({
+                name: i.product.name,
+                quantity: i.quantity,
+                price: i.unitPrice
+            }))
+        }));
+
+        res.json({ success: true, orders: formattedOrders });
+    } catch (err) {
+        console.error('[My Orders] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch personal orders' });
     }
 });
 

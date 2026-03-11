@@ -116,8 +116,30 @@ async function updateOrderStatus(orderId, newStatus) {
     }
 }
 
+/**
+ * Get active orders for KDS
+ */
+async function getActiveOrders(restaurantId) {
+    return await prisma.order.findMany({
+        where: {
+            restaurantId: parseInt(restaurantId),
+            status: { in: ['NEW', 'COOKING', 'BAKING'] }
+        },
+        orderBy: { createdAt: 'asc' },
+        include: {
+            items: {
+                include: {
+                    product: true,
+                    modifiers: { include: { modifier: true } }
+                }
+            }
+        }
+    });
+}
+
 module.exports = {
     initKDSWebSocket,
     broadcastOrderToKDS,
-    updateOrderStatus
+    updateOrderStatus,
+    getActiveOrders
 };

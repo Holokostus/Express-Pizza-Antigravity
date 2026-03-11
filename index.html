@@ -87,6 +87,15 @@
 
             <!-- Actions -->
             <div class="flex items-center gap-3">
+                <!-- Profile Button -->
+                <button onclick="handleProfileClick()"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-textMainLight dark:text-textMainDark"
+                    aria-label="Профиль">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </button>
                 <!-- Dark Mode Toggle -->
                 <button id="theme-toggle"
                     class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -721,6 +730,24 @@
             </div>
         </div>
     </footer>
+
+    <!-- Profile / Login Modal -->
+    <div id="profile-modal"
+        class="fixed inset-0 z-50 hidden opacity-0 transition-opacity bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-bgElementDark text-textMainLight dark:text-textMainDark rounded-2xl w-full max-w-md shadow-2xl relative transform scale-95 transition-transform"
+            id="profile-panel">
+            <button onclick="closeProfileModal()"
+                class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-full bg-gray-100 dark:bg-gray-800 transition-colors z-10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+            <div id="profile-body" class="p-6 max-h-[85vh] overflow-y-auto hide-scrollbar">
+                <!-- Injected via ui.js -->
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification -->
     <div id="toast"
