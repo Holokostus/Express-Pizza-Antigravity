@@ -1,0 +1,6 @@
+{
+  "appId": "com.expresspizza.app",
+  "appName": "ExpressPizza",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

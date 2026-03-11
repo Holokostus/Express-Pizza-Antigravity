@@ -24,7 +24,6 @@
                 extend: {
                     colors: {
                         primary: '#E30613',
-                        cta: '#FF6900',
                         accent: '#FFED00',
                         bgElementLight: '#ffffff',
                         bgElementDark: '#1e1e1e',
@@ -40,7 +39,7 @@
                     boxShadow: {
                         'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
                         'glow': '0 0 20px rgba(227, 6, 19, 0.4)',
-                        'glow-orange': '0 4px 20px rgba(255,105,0,0.4)',
+                        'glow-red': '0 4px 20px rgba(220,38,38,0.35)',
                     }
                 }
             }
@@ -59,8 +58,8 @@
         class="fixed top-0 w-full z-40 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 transition-colors duration-300 hidden lg:block">
         <div class="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
             <a href="#" class="flex items-center gap-2 group">
-                <div class="w-9 h-9 bg-cta rounded-xl flex items-center justify-center text-white font-display font-bold text-lg shadow-glow-orange group-hover:scale-105 transition-transform">EP</div>
-                <span class="font-display font-black text-xl tracking-tight"><span class="text-cta">EXPRESS</span> PIZZA</span>
+                <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center text-white font-display font-bold text-lg shadow-glow-red group-hover:scale-105 transition-transform">EP</div>
+                <span class="font-display font-black text-xl tracking-tight"><span class="text-red-600">EXPRESS</span> PIZZA</span>
             </a>
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-full font-medium text-sm">
@@ -68,8 +67,8 @@
                     <span id="delivery-timer">Среднее время: 24 мин</span>
                 </div>
                 <div class="flex flex-col text-sm font-semibold">
-                    <a href="tel:+375445891111" class="hover:text-cta transition-colors">+375 44 589 11 11</a>
-                    <a href="tel:+375333891111" class="hover:text-cta transition-colors text-textMutedLight dark:text-textMutedDark">+375 33 389 11 11</a>
+                    <a href="tel:+375445891111" class="hover:text-red-600 transition-colors">+375 44 589 11 11</a>
+                    <a href="tel:+375333891111" class="hover:text-red-600 transition-colors text-textMutedLight dark:text-textMutedDark">+375 33 389 11 11</a>
                 </div>
             </div>
             <div class="flex items-center gap-3">
@@ -88,11 +87,11 @@
     <header id="mobile-header" class="fixed top-0 w-full z-40 bg-white dark:bg-[#111] lg:hidden safe-area-top">
         <div class="flex items-center justify-between px-4 h-14">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-cta rounded-xl flex items-center justify-center text-white font-display font-bold text-sm shadow-glow-orange">EP</div>
-                <span class="font-display font-black text-lg tracking-tight"><span class="text-cta">EXPRESS</span> PIZZA</span>
+                <div class="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-white font-display font-bold text-sm shadow-glow-red">EP</div>
+                <span class="font-display font-black text-lg tracking-tight"><span class="text-red-600">EXPRESS</span> PIZZA</span>
             </div>
             <div class="flex items-center gap-1">
-                <div id="coins-header-badge" class="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full text-xs font-bold">
+                <div id="coins-header-badge" class="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-full text-xs font-bold">
                     <span>🪙</span><span id="coins-count">0</span>
                 </div>
                 <button id="theme-toggle-mobile" class="p-2 rounded-full" aria-label="Toggle Dark Mode">
@@ -108,17 +107,15 @@
         <!-- Stories / Promotions Carousel -->
         <section class="px-3 pt-3 pb-1">
             <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pb-2" id="stories-strip">
-                <!-- Story 1 -->
-                <div class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer group">
-                    <div class="absolute inset-0 bg-gradient-to-br from-cta via-orange-500 to-red-600"></div>
+                <div onclick="openStory(0)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-600 via-red-500 to-orange-500"></div>
                     <div class="relative z-10 h-full flex flex-col justify-end p-4">
                         <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">Акция</span>
                         <p class="text-white font-bold text-base leading-tight">Скидка 50% на вторую пиццу</p>
                         <p class="text-white/70 text-xs mt-0.5">При заказе любой большой</p>
                     </div>
                 </div>
-                <!-- Story 2 -->
-                <div class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer group">
+                <div onclick="openStory(1)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
                     <div class="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-500 to-pink-500"></div>
                     <div class="relative z-10 h-full flex flex-col justify-end p-4">
                         <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">Выгода 25%</span>
@@ -126,8 +123,7 @@
                         <p class="text-white/70 text-xs mt-0.5">Хватит на всю компанию</p>
                     </div>
                 </div>
-                <!-- Story 3 -->
-                <div class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer group">
+                <div onclick="openStory(2)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
                     <div class="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600"></div>
                     <div class="relative z-10 h-full flex flex-col justify-end p-4">
                         <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">🎂 Именинникам</span>
@@ -135,8 +131,7 @@
                         <p class="text-white/70 text-xs mt-0.5">В ваш день рождения</p>
                     </div>
                 </div>
-                <!-- Story 4 -->
-                <div class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer group">
+                <div onclick="openStory(3)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-500"></div>
                     <div class="relative z-10 h-full flex flex-col justify-end p-4">
                         <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">🪙 ExpressCoins</span>
@@ -147,12 +142,25 @@
             </div>
         </section>
 
+        <!-- Story Detail Modal -->
+        <div id="story-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onclick="closeStory()">
+            <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="story-panel" onclick="event.stopPropagation()">
+                <div id="story-gradient" class="h-48 flex items-end p-6">
+                    <h2 id="story-title" class="text-white font-display font-black text-2xl leading-tight"></h2>
+                </div>
+                <div class="p-6">
+                    <p id="story-desc" class="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed"></p>
+                    <button onclick="closeStory()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-2xl transition-all active:scale-95 shadow-glow-red">Понятно</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Sticky Category Tabs -->
         <nav id="menu"
             class="sticky top-14 lg:top-16 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5">
             <div class="px-3 lg:container lg:mx-auto lg:px-6">
                 <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                    <button class="menu-tab active bg-cta text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-orange" data-category="pizza">🍕 Пицца</button>
+                    <button class="menu-tab active bg-red-600 text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-red" data-category="pizza">🍕 Пицца</button>
                     <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="togo">🥡 TOGO</button>
                     <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="sauce">🫙 Соусы</button>
                     <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all" data-category="juice">🧃 Соки</button>
@@ -178,7 +186,7 @@
             <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div>
                     <h2 class="font-display font-black text-xl uppercase tracking-tight">Корзина</h2>
-                    <div id="cart-coins-line" class="flex items-center gap-1.5 mt-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                    <div id="cart-coins-line" class="flex items-center gap-1.5 mt-1 text-xs font-bold text-red-600 dark:text-red-400">
                         <span>🪙</span><span>Баланс: <span id="cart-coins-val">0</span> ExpressCoins</span>
                     </div>
                 </div>
@@ -311,7 +319,7 @@
                     </label>
 
                     <button type="button" id="btn-request-otp" onclick="requestOTP()"
-                        class="w-full bg-cta hover:bg-orange-600 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-orange mt-4">
+                        class="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-red mt-4">
                         К Оформлению
                     </button>
                 </form>
@@ -337,7 +345,7 @@
     <!-- Floating Cart Button -->
     <!-- Floating Cart Button (desktop only) -->
     <button id="floating-cart"
-        class="fixed bottom-6 right-6 z-40 bg-cta text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group hidden lg:flex">
+        class="fixed bottom-6 right-6 z-40 bg-red-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group hidden lg:flex">
         <div id="cart-badge"
             class="absolute -top-1 -right-1 bg-primary text-white text-xs font-black min-w-[20px] h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 opacity-0 transition-opacity">
             0</div>
@@ -353,19 +361,19 @@
         <div class="flex items-center justify-around h-16 max-w-md mx-auto">
             <!-- Tab: Menu -->
             <a href="#menu"
-                class="flex flex-col items-center gap-0.5 text-cta relative w-16">
+                class="flex flex-col items-center gap-0.5 text-red-600 relative w-16">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 <span class="text-[10px] font-bold">Меню</span>
             </a>
             <!-- Tab: Profile -->
             <button onclick="handleProfileClick()"
-                class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-cta transition-colors w-16">
+                class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-red-600 transition-colors w-16">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                 <span class="text-[10px] font-bold">Профиль</span>
             </button>
             <!-- Tab: Cart -->
             <button onclick="toggleCart(true)"
-                class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-cta transition-colors relative w-16">
+                class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-red-600 transition-colors relative w-16">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 <div id="cart-badge-mobile"
                     class="absolute -top-1 right-2 bg-primary text-white text-[9px] font-black min-w-[16px] h-4 rounded-full flex items-center justify-center opacity-0 transition-opacity">
@@ -461,32 +469,44 @@
                     <h4 class="font-bold mb-3">Сделать вкуснее</h4>
                     <div class="space-y-2">
                         <label
-                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-cheese-crust"
-                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    class="peer hidden"
                                     onchange="updateCustomizerTotal()">
-                                <span class="font-medium text-sm">Сырный бортик</span>
+                                <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
+                                    <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
+                                    <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span class="font-medium text-sm">🧀 Сырный бортик</span>
                             </div>
                             <span class="font-bold text-sm">+4.00 р.</span>
                         </label>
                         <label
-                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-jalapeno"
-                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    class="peer hidden"
                                     onchange="updateCustomizerTotal()">
-                                <span class="font-medium text-sm">Халапеньо (острые)</span>
+                                <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
+                                    <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
+                                    <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span class="font-medium text-sm">🌶️ Халапеньо (острые)</span>
                             </div>
                             <span class="font-bold text-sm">+1.50 р.</span>
                         </label>
                         <label
-                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                            class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="mod-double-cheese"
-                                    class="w-5 h-5 rounded text-primary accent-primary"
+                                    class="peer hidden"
                                     onchange="updateCustomizerTotal()">
-                                <span class="font-medium text-sm">Двойной сыр</span>
+                                <div class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-gray-400 peer-checked:text-white transition-all">
+                                    <svg class="w-3 h-3 block peer-checked:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path></svg>
+                                    <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span class="font-medium text-sm">🧀 Двойной сыр</span>
                             </div>
                             <span class="font-bold text-sm">+3.00 р.</span>
                         </label>
@@ -496,9 +516,12 @@
                 <div class="mb-4">
                     <h4 class="font-bold mb-3">Убрать ингредиенты</h4>
                     <label
-                        class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl cursor-pointer">
-                        <input type="checkbox" id="mod-no-onion" class="w-5 h-5 rounded text-red-500 accent-red-500">
-                        <span class="font-medium text-sm text-red-600 dark:text-red-400">Без лука</span>
+                        class="flex items-center gap-3 p-3 border border-red-100 dark:border-red-900/30 rounded-xl cursor-pointer transition-colors hover:border-red-500 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10 bg-red-50 dark:bg-red-900/10">
+                        <input type="checkbox" id="mod-no-onion" class="peer hidden">
+                        <div class="w-5 h-5 rounded border border-red-300 dark:border-red-700 flex items-center justify-center peer-checked:bg-red-600 peer-checked:border-red-600 text-red-400 peer-checked:text-white transition-all">
+                            <svg class="w-3 h-3 hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <span class="font-medium text-sm text-red-600 dark:text-red-400">🧅 Без лука</span>
                     </label>
                 </div>
             </div>

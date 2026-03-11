@@ -1,0 +1,26 @@
+{
+  "name": "pizza-express",
+  "version": "1.0.0",
+  "description": "This repository contains the completed Sprint 7 MVP for the Express Pizza system. It includes a fully integrated Node.js API, Prisma ORM over PostgreSQL, WebSockets for KDS, and robust vanilla JS frontends.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Holokostus/Express-Pizza-Antigravity.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Holokostus/Express-Pizza-Antigravity/issues"
+  },
+  "homepage": "https://github.com/Holokostus/Express-Pizza-Antigravity#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0"
+  }
+}

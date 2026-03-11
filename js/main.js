@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.menu-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.menu-tab').forEach(t => {
-                t.classList.remove('active', 'bg-cta', 'bg-primary', 'text-white', 'shadow-glow-orange');
+                t.classList.remove('active', 'bg-red-600', 'bg-primary', 'text-white', 'shadow-glow-red');
                 t.classList.add('bg-gray-100', 'dark:bg-gray-800');
             });
             tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
-            tab.classList.add('active', 'bg-cta', 'text-white', 'shadow-glow-orange');
+            tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
             currentCategory = tab.dataset.category;
             renderMenu();
         });

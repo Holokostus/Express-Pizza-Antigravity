@@ -40,7 +40,7 @@ function renderMenu() {
         const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
         const hasSizes = item.sizes.length > 1;
         const badgeHtml = item.badge
-            ? `<div class="absolute top-2 left-2 bg-cta text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">${item.badge.text}</div>`
+            ? `<div class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">${item.badge.text}</div>`
             : '';
 
         return `
@@ -58,12 +58,12 @@ function renderMenu() {
                 <div class="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     ${item.sizes.map((s, i) => `
                         <button onclick="selectSize(${item.id}, ${i})"
-                            class="flex-1 text-[10px] lg:text-xs font-bold py-1 rounded-lg transition-all ${i === sizeIdx ? 'bg-cta text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">${s.label}</button>
+                            class="flex-1 text-[10px] lg:text-xs font-bold py-1 rounded-lg transition-all ${i === sizeIdx ? 'bg-red-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">${s.label}</button>
                     `).join('')}
                 </div>
                 ` : ''}
                 <button onclick="addToCart(${item.id})"
-                    class="w-full bg-cta hover:bg-orange-600 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-orange flex items-center justify-center gap-1.5 text-sm">
+                    class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-red flex items-center justify-center gap-1.5 text-sm">
                     <span>${parseFloat(activeSize.price).toFixed(2)} р.</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                 </button>
