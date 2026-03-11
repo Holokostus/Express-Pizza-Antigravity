@@ -27,10 +27,12 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.3.1",
     "iconv-lite": "^0.7.2",
     "jsonwebtoken": "^9.0.3",
     "node-fetch": "^2.7.0",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "prisma": "5.22.0"

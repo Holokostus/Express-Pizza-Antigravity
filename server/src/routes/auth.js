@@ -42,7 +42,7 @@ router.post('/send-sms', async (req, res) => {
         });
 
         // STUB: Here we would call SMS.by API (smsService.js)
-        console.log(`[SMS.by Stub] Sending OTP ${code} to ${phone}`);
+        console.log(`[SMS.by Stub] Sending OTP to user phone`);
 
         res.json({ success: true, message: 'SMS sent' });
 
@@ -99,7 +99,7 @@ router.post('/verify', async (req, res) => {
                     role: 'CUSTOMER'
                 }
             });
-            console.log(`[Auth] New user registered: ${phone}`);
+            console.log(`[Auth] New user registered`);
         }
 
         // Issue JWT

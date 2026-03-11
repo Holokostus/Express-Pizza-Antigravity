@@ -10,6 +10,7 @@ const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { z } = require('zod');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -56,11 +57,33 @@ router.post('/calculate', async (req, res) => {
  * Secure Checkout & Event Sourcing entry point
  * Requires JWT Token from SMS Auth
  */
+// Zod validation schema
+const checkoutSchema = z.object({
+    customerName: z.string().min(1, "Name is required"),
+    customerPhone: z.string().min(1, "Phone is required"),
+    address: z.string().min(1).optional(),
+    customerAddress: z.string().min(1).optional(),
+    items: z.array(z.any()).min(1, "Cart is empty"),
+    promoCodeString: z.string().optional(),
+    restaurantId: z.number().int().optional(),
+    source: z.string().optional(),
+    payment: z.string().optional()
+}).refine(data => data.address || data.customerAddress, {
+    message: "Address is required",
+    path: ["address"]
+});
+
 router.post('/checkout', requireAuth, async (req, res) => {
     try {
+        const validation = checkoutSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({ error: 'Invalid input data', details: validation.error.issues });
+        }
+
         const {
             customerName,
             customerAddress,
+            address,
             items,
             promoCodeString,
             restaurantId,
@@ -68,8 +91,11 @@ router.post('/checkout', requireAuth, async (req, res) => {
             payment = 'BEPAID_ONLINE'
         } = req.body;
 
+        const finalAddress = customerAddress || address;
+
         // Extract verified phone from JWT token
-        const customerPhone = req.user.phone;
+        const customerPhoneJwt = req.user.phone;
+        const customerPhone = customerPhoneJwt || req.body.customerPhone;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ error: 'Cart is empty' });
@@ -91,7 +117,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         });
 
         if (duplicateEvent) {
-            console.log(`[Order] Debounced duplicate order for phone ${customerPhone}`);
+            console.log(`[Order] Debounced duplicate order`);
             return res.status(200).json({
                 success: true,
                 message: 'Order already processed',
@@ -112,7 +138,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     source,
                     customerName,
                     customerPhone,
-                    customerAddress,
+                    customerAddress: finalAddress,
                     payment,
                     status: 'NEW',
                     subtotal: cartResult.subtotal,

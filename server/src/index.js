@@ -37,8 +37,23 @@ const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
 
+const rateLimit = require('express-rate-limit');
+
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    message: { error: 'Слишком много запросов, пожалуйста, попробуйте позже.' }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5,
+    message: { error: 'Слишком много попыток входа. Подождите 1 минуту.' }
+});
+
 // ---- Mount Routes ----
-app.use('/api/auth', authRoutes);
+app.use('/api/', globalLimiter);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
