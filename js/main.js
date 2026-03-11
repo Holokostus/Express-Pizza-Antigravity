@@ -10,27 +10,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Theme Toggle ──
     const htmlTag = document.documentElement;
     const themeToggleBtn = $('theme-toggle');
+    const themeToggleMobile = $('theme-toggle-mobile');
 
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         htmlTag.setAttribute('data-theme', 'dark');
     }
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = htmlTag.getAttribute('data-theme') === 'dark';
-            htmlTag.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            localStorage.theme = isDark ? 'light' : 'dark';
-        });
+    function toggleTheme() {
+        const isDark = htmlTag.getAttribute('data-theme') === 'dark';
+        htmlTag.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.theme = isDark ? 'light' : 'dark';
     }
+    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
+    if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
 
     // ── Category Tabs ──
     document.querySelectorAll('.menu-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.menu-tab').forEach(t => {
-                t.classList.remove('active', 'bg-primary', 'text-white');
+                t.classList.remove('active', 'bg-cta', 'bg-primary', 'text-white', 'shadow-glow-orange');
                 t.classList.add('bg-gray-100', 'dark:bg-gray-800');
             });
             tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
-            tab.classList.add('active', 'bg-primary', 'text-white');
+            tab.classList.add('active', 'bg-cta', 'text-white', 'shadow-glow-orange');
             currentCategory = tab.dataset.category;
             renderMenu();
         });

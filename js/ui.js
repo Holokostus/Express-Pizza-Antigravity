@@ -30,7 +30,7 @@ function showSkeletons(count = 8) {
     `).join('');
 }
 
-// ── Render Menu Cards ──
+// ── Render Menu Cards (Dodo-style) ──
 function renderMenu() {
     const menuGrid = $('menu-grid');
     if (!menuGrid) return;
@@ -40,40 +40,33 @@ function renderMenu() {
         const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
         const hasSizes = item.sizes.length > 1;
         const badgeHtml = item.badge
-            ? `<div class="absolute top-4 right-4 product-badge ${item.badge.color} z-10">${item.badge.text}</div>`
+            ? `<div class="absolute top-2 left-2 bg-cta text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">${item.badge.text}</div>`
             : '';
 
         return `
-        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-soft hover:shadow-xl card-lift group border border-gray-100 dark:border-gray-800 menu-card-anim" style="animation-delay: ${idx * 0.06}s">
-            <div class="relative overflow-hidden h-52 sm:h-48">
+        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
+            <div class="relative overflow-hidden aspect-square">
                 <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${item.name}" loading="lazy"
-                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                      onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'">
                 ${badgeHtml}
-                <div class="absolute bottom-3 left-3 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                    ${activeSize.weight || ''}
-                </div>
             </div>
-            <div class="p-5">
-                <h3 class="font-bold text-lg mb-1">${item.name}</h3>
-                <p class="text-textMutedLight dark:text-textMutedDark text-xs mb-4 line-clamp-2 h-8">${item.description}</p>
+            <div class="p-3 lg:p-4">
+                <h3 class="font-bold text-sm lg:text-base leading-tight mb-1 line-clamp-2">${item.name}</h3>
+                <p class="text-textMutedLight dark:text-textMutedDark text-[11px] lg:text-xs mb-2 line-clamp-1">${item.description || ''}</p>
                 ${hasSizes ? `
-                <div class="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                <div class="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     ${item.sizes.map((s, i) => `
                         <button onclick="selectSize(${item.id}, ${i})"
-                            class="flex-1 text-xs font-bold py-1.5 rounded-lg transition-all ${i === sizeIdx ? 'bg-primary text-white shadow-md' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">
-                            ${s.label}
-                        </button>
+                            class="flex-1 text-[10px] lg:text-xs font-bold py-1 rounded-lg transition-all ${i === sizeIdx ? 'bg-cta text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">${s.label}</button>
                     `).join('')}
                 </div>
                 ` : ''}
-                <div class="flex items-center justify-between">
-                    <span class="font-display font-black text-xl text-primary">${parseFloat(activeSize.price).toFixed(2)} <small class="text-xs">руб.</small></span>
-                    <button onclick="addToCart(${item.id})"
-                        class="bg-gray-100 dark:bg-gray-800 hover:bg-primary hover:text-white dark:hover:bg-primary p-3 rounded-2xl transition-all duration-300 active:scale-95 cart-add-btn">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    </button>
-                </div>
+                <button onclick="addToCart(${item.id})"
+                    class="w-full bg-cta hover:bg-orange-600 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-orange flex items-center justify-center gap-1.5 text-sm">
+                    <span>${parseFloat(activeSize.price).toFixed(2)} р.</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                </button>
             </div>
         </div>`;
     }).join('');
@@ -294,6 +287,15 @@ async function renderProfileView() {
 
         const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERING': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
+        // ExpressCoins: 5% of completed order totals
+        const completedTotal = data.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + parseFloat(o.total), 0);
+        const coins = Math.floor(completedTotal * 0.05 * 100); // 1 coin = 0.01 BYN
+        // Update header and cart badges
+        const coinsEl = document.getElementById('coins-count');
+        const cartCoinsEl = document.getElementById('cart-coins-val');
+        if (coinsEl) coinsEl.textContent = coins;
+        if (cartCoinsEl) cartCoinsEl.textContent = coins;
+
         let html = data.orders.length === 0 ? '<p class="text-gray-500 text-sm text-center py-6">Нет заказов</p>' : data.orders.map(o => `
             <div class="border border-gray-100 dark:border-gray-800 rounded-xl p-4 mb-3 bg-gray-50 dark:bg-black/50">
                 <div class="flex justify-between mb-2">
@@ -307,7 +309,14 @@ async function renderProfileView() {
         `).join('');
 
         body.innerHTML = `
-            <h2 class="text-2xl font-display font-black mb-6">Кабинет</h2>
+            <h2 class="text-2xl font-display font-black mb-2">Кабинет</h2>
+            <div class="flex items-center gap-2 mb-6 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-2xl">
+                <span class="text-2xl">🪙</span>
+                <div>
+                    <p class="font-bold text-amber-700 dark:text-amber-400 text-lg">${coins} ExpressCoins</p>
+                    <p class="text-xs text-amber-600/70 dark:text-amber-500/70">5% от каждого заказа</p>
+                </div>
+            </div>
             <div class="mb-6">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">История</h3>
                 <div class="max-h-64 overflow-y-auto pr-2 custom-scrollbar">${html}</div>
