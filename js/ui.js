@@ -44,7 +44,7 @@ function renderMenu() {
             : '';
 
         return `
-        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
+        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
             <div class="relative overflow-hidden aspect-square">
                 <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${item.name}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -383,4 +383,29 @@ window.closeStory = function() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }, 300);
-};
+}
+
+// ── Global Accessibility ──
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const cartModal = document.getElementById('cart-sidebar');
+        if (cartModal && !cartModal.classList.contains('pointer-events-none')) {
+            document.getElementById('close-cart')?.click();
+        }
+        
+        const customizerModal = document.getElementById('pizza-customizer-modal');
+        if (customizerModal && !customizerModal.classList.contains('hidden')) {
+            if (typeof closeCustomizer === 'function') closeCustomizer();
+        }
+
+        const profileModal = document.getElementById('profile-modal');
+        if (profileModal && !profileModal.classList.contains('hidden')) {
+            if (typeof closeProfileModal === 'function') closeProfileModal();
+        }
+
+        const storyModal = document.getElementById('story-modal');
+        if (storyModal && !storyModal.classList.contains('hidden')) {
+            if (typeof closeStory === 'function') closeStory();
+        }
+    }
+});;
