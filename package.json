@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "mkdir -p dist && cp -r index.html admin.html kds.html pos.html order-success.html oferta.html css js images dist/ 2>/dev/null || true",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --check server/src/index.js"
   },
   "repository": {
     "type": "git",

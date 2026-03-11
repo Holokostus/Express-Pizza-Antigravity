@@ -8,33 +8,26 @@ This repository contains the completed Sprint 7 MVP for the Express Pizza system
 *   Node.js (v18+)
 *   PostgreSQL (or a Docker instance)
 
-### 2. Environment Setup
-1.  Navigate to the `server` directory.
-2.  Copy `.env.example` to a new `.env` file (`cp .env.example .env`).
-3.  Update the `DATABASE_URL` with your active PostgreSQL connection string.
-4.  Optionally fill out the rest of the secrets (JWT, SMS, Telegram, bePaid) for production environments.
+### Быстрый старт
 
-### 3. Database Initialization
-From within the `server` directory, install dependencies and run the Prisma migrations:
-```bash
-cd server
-npm install
-npx prisma generate
-npx prisma db push
-```
+1.  Установите зависимости в папке сервера:
+    ```bash
+    cd server
+    npm install
+    ```
+2.  Настройка `.env`: скопируйте `.env.example` в `.env` и задайте необходимые переменные (`JWT_SECRET`, `BEPAID_SECRET_KEY` и т.д.).
+3.  Инициализируйте базу данных:
+    ```bash
+    npx prisma db push
+    ```
+4.  Запустите сервер для разработки:
+    ```bash
+    npm run dev
+    ```
 
-*(Optional)* If you have seed logic prepared for your MVP:
-```bash
-npx prisma db seed
-```
+*Примечание:* В проекте реализована мощная Telegram-интеграция для уведомлений менеджеров, строгая Zod валидация входящих данных и надежная защита от спама (rate-limiting).
 
-### 4. Running the Backend
-To start the Express server (usually on port 3000):
-```bash
-npm run dev
-```
-
-### 5. Running the Frontend
+### Запуск Frontend
 The frontend consists of static HTML, CSS, and JS files located in the root repository folder. You can serve them using any local static web server (like VS Code Live Server, or `npx serve`).
 ```bash
 # In the root app directory
