@@ -249,8 +249,7 @@
                 <div id="cart-totals-area" class="mb-5">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-lg">Итого:</span>
-                        <span class="font-display font-black text-2xl text-primary" id="cart-total-display">0
-                            руб.</span>
+                        <span class="font-display font-black text-2xl text-primary" id="cart-total-display">0 BYN</span>
                     </div>
                 </div>
 
@@ -309,7 +308,7 @@
                                 class="mt-0.5 accent-primary">
                             <div>
                                 <span class="font-bold text-sm">При получении <span id="cash-limit-warning"
-                                        class="hidden text-xs text-primary ml-1">(Недоступно > 100 р.)</span></span>
+                                        class="hidden text-xs text-primary ml-1">(Недоступно > 100 BYN)</span></span>
                                 <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Наличные курьеру
                                     или терминал iKassa</span>
                             </div>
@@ -322,10 +321,10 @@
                             class="mt-0.5 w-4 h-4 accent-primary rounded flex-shrink-0">
                         <span class="text-[11px] leading-relaxed text-textMutedLight dark:text-textMutedDark">
                             Я согласен(-а) с условиями
-                            <a href="/oferta" target="_blank"
+                            <a href="/oferta" target="_blank" rel="noopener noreferrer"
                                 class="text-primary underline hover:no-underline">публичного договора</a>
                             и даю согласие на
-                            <a href="/oferta#privacy" target="_blank"
+                            <a href="/oferta#privacy" target="_blank" rel="noopener noreferrer"
                                 class="text-primary underline hover:no-underline">обработку персональных данных</a>
                             в соответствии с Законом Республики Беларусь «О защите персональных данных».
                         </span>
@@ -333,7 +332,7 @@
 
                     <button type="button" id="btn-request-otp" onclick="requestOTP()"
                         class="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-red mt-4">
-                        К Оформлению
+                        Оформить заказ
                     </button>
                 </form>
 
@@ -349,7 +348,7 @@
                         class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg mt-2 flex items-center justify-center gap-2">
                         <span>Подтвердить и Заказать</span>
                     </button>
-                    <p class="text-xs text-gray-400 mt-2">P.S. Для демо введите код 1234</p>
+
                 </div>
             </div>
         </div>
@@ -497,7 +496,7 @@
                                     <span class="truncate">Сырный бортик</span>
                                 </span>
                             </div>
-                            <span class="font-bold text-sm">+4.00 р.</span>
+                            <span class="font-bold text-sm">+4.00 BYN</span>
                         </label>
                         <label
                             class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
@@ -515,7 +514,7 @@
                                     <span class="truncate">Халапеньо (острые)</span>
                                 </span>
                             </div>
-                            <span class="font-bold text-sm">+1.50 р.</span>
+                            <span class="font-bold text-sm">+1.50 BYN</span>
                         </label>
                         <label
                             class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer transition-colors hover:border-red-600 has-[:checked]:border-red-600 has-[:checked]:bg-red-600/10">
@@ -533,7 +532,7 @@
                                     <span class="truncate">Двойной сыр</span>
                                 </span>
                             </div>
-                            <span class="font-bold text-sm">+3.00 р.</span>
+                            <span class="font-bold text-sm">+3.00 BYN</span>
                         </label>
                     </div>
                 </div>
@@ -558,7 +557,7 @@
                 <button id="btn-customizer-add" onclick="addCustomizedItem()"
                     class="w-full bg-primary hover:bg-hover text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-between px-6 items-center">
                     <span>Добавить</span>
-                    <span id="cust-total">0.00 р.</span>
+                    <span id="cust-total">0.00 BYN</span>
                 </button>
             </div>
         </div>
@@ -658,11 +657,15 @@
         <div class="max-w-5xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-textMutedLight dark:text-textMutedDark">
                 <!-- Company Info -->
-                <div>
+                <div class="hidden">
                     <p class="font-bold text-sm text-textMainLight dark:text-textMainDark mb-2">ООО «Экспресс Пицца»</p>
                     <p>УНП: <span class="font-mono">100000000</span></p>
                     <p>Юридический адрес: г. Минск,<br>ул. Примерная, д. 1, каб. 101</p>
                     <p class="mt-1">Регистрация в Торговом реестре<br>от ДД.ММ.ГГГГ</p>
+                </div>
+                <div>
+                    <p class="font-bold text-sm text-textMainLight dark:text-textMainDark mb-2">ООО «Экспресс Пицца»</p>
+                    <p>Реквизиты компании обновляются...</p>
                 </div>
                 <!-- Contacts -->
                 <div>

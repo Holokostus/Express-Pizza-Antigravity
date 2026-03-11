@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     ` : ''}
                     <div class="flex items-center justify-between">
-                        <span class="font-display font-black text-xl text-primary">${parseFloat(activeSize.price).toFixed(2)} <small class="text-xs">руб.</small></span>
+                        <span class="font-display font-black text-xl text-primary">${parseFloat(activeSize.price).toFixed(2)} <small class="text-xs">BYN</small></span>
                         <button onclick="addToCart(${item.id})" class="bg-gray-100 dark:bg-gray-800 hover:bg-primary hover:text-white dark:hover:bg-primary p-3 rounded-2xl transition-all duration-300 active:scale-95">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         </button>
@@ -352,11 +352,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 html = `
                     <div class="flex items-center justify-between text-sm mb-1">
                         <span class="text-textMutedLight dark:text-textMutedDark">Сумма:</span>
-                        <span class="line-through text-textMutedLight dark:text-textMutedDark">${subtotal.toFixed(2)} руб.</span>
+                        <span class="line-through text-textMutedLight dark:text-textMutedDark">${subtotal.toFixed(2)} BYN</span>
                     </div>
                     <div class="flex items-center justify-between text-sm mb-1">
                         <span class="text-green-600 dark:text-green-400">${promo.label}</span>
-                        <span class="text-green-600 dark:text-green-400">−${discount.toFixed(2)} руб.</span>
+                        <span class="text-green-600 dark:text-green-400">−${discount.toFixed(2)} BYN</span>
                     </div>
                     <div class="flex items-center justify-between mt-2">
                         <span class="font-bold text-lg">Итого:</span>
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             totalsArea.innerHTML = `
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-lg">Итого:</span>
-                    <span class="font-display font-black text-2xl text-primary">0.00 руб.</span>
+                    <span class="font-display font-black text-2xl text-primary">0.00 BYN</span>
                 </div>`;
         }
 
@@ -693,7 +693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const [group, mods] of Object.entries(groups)) {
             modsHtml += `<p class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-3 mb-1">${group}</p>`;
             mods.forEach(m => {
-                const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} р.`;
+                const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} BYN`;
                 const colorClass = m.isRemoval ? 'text-red-400' : 'text-green-400';
                 modsHtml += `
                     <label class="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
             <div id="customizer-sheet" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[420px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl translate-y-full transition-transform duration-300 p-6">
                 <div class="flex items-center gap-4 mb-4">
-                    <img id="cust-img" src="${itemInfo.image || ''}" class="w-20 h-20 rounded-2xl object-cover bg-gray-200" onerror="this.src='images/placeholder.png'">
+                    <img id="cust-img" src="${itemInfo.image || ''}" alt="${itemInfo.name}" class="w-20 h-20 rounded-2xl object-cover bg-gray-200" onerror="this.src='images/placeholder.png'">
                     <div class="flex-1">
                         <h3 id="cust-title" class="font-bold text-lg">${itemInfo.name} | ${itemInfo.sizes[sizeIdx].label}</h3>
                         <p id="cust-desc" class="text-xs text-gray-400 mt-1 line-clamp-2">${itemInfo.description || ''}</p>
@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${modsHtml}
                 </div>
                 <div class="mt-5 flex items-center justify-between">
-                    <span class="text-lg font-black text-primary" id="cust-total">${customizerBasePrice.toFixed(2)} р.</span>
+                    <span class="text-lg font-black text-primary" id="cust-total">${customizerBasePrice.toFixed(2)} BYN</span>
                     <button onclick="addCustomizedItem()" class="bg-primary text-white font-bold py-3 px-8 rounded-2xl hover:bg-red-700 transition-colors active:scale-95">В корзину</button>
                 </div>
             </div>
@@ -763,7 +763,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             price += parseFloat(cb.dataset.modPrice) || 0;
         });
         const ct = $('cust-total');
-        if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' р.';
+        if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' BYN';
     };
 
     window.addCustomizedItem = () => {

@@ -138,7 +138,7 @@ function renderCartUI(serverData) {
                 const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
 
                 const imageHtml = image 
-                    ? `<img src="${image}" class="w-16 h-16 rounded-2xl object-cover bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
+                    ? `<img src="${image}" alt="${name}" class="w-16 h-16 rounded-2xl object-cover bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
                     : `<div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
 
                 return `
@@ -156,7 +156,7 @@ function renderCartUI(serverData) {
                                 <span class="font-bold text-sm min-w-[18px] text-center">${item.quantity}</span>
                                 <button onclick="changeQuantity(${idx}, 1)" class="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors font-bold">+</button>
                             </div>
-                            <span class="font-bold text-primary text-sm">${linePrice !== null ? linePrice.toFixed(2) + ' р.' : '...'}</span>
+                            <span class="font-bold text-primary text-sm">${linePrice !== null ? linePrice.toFixed(2) + ' BYN' : '...'}</span>
                         </div>
                     </div>
                 </div>`;
@@ -172,21 +172,21 @@ function renderCartUI(serverData) {
             html = `
                 <div class="flex items-center justify-between text-sm mb-1">
                     <span class="text-textMutedLight dark:text-textMutedDark">Сумма:</span>
-                    <span class="line-through text-textMutedLight dark:text-textMutedDark">${subtotal.toFixed(2)} руб.</span>
+                    <span class="line-through text-textMutedLight dark:text-textMutedDark">${subtotal.toFixed(2)} BYN</span>
                 </div>
                 <div class="flex items-center justify-between text-sm mb-1">
                     <span class="text-green-600 dark:text-green-400">${promo.label}</span>
-                    <span class="text-green-600 dark:text-green-400">−${discount.toFixed(2)} руб.</span>
+                    <span class="text-green-600 dark:text-green-400">−${discount.toFixed(2)} BYN</span>
                 </div>
                 <div class="flex items-center justify-between mt-2">
                     <span class="font-bold text-lg">Итого:</span>
-                    <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} руб.</span>
+                    <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} BYN</span>
                 </div>`;
         } else {
             html = `
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-lg">Итого:</span>
-                    <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} руб.</span>
+                    <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} BYN</span>
                 </div>`;
         }
         totalsArea.innerHTML = html;
@@ -195,7 +195,7 @@ function renderCartUI(serverData) {
         totalsArea.innerHTML = `
             <div class="flex items-center justify-between">
                 <span class="font-bold text-lg">Итого:</span>
-                <span class="font-display font-black text-2xl text-primary">0.00 руб.</span>
+                <span class="font-display font-black text-2xl text-primary">0.00 BYN</span>
             </div>`;
     }
 
@@ -314,7 +314,7 @@ function openCustomizer(itemId) {
         modsHtml += `<p class="text-xs font-bold text-textMutedLight dark:text-textMutedDark uppercase tracking-wider mt-4 mb-2 pl-1">${group}</p>`;
         modsHtml += `<div class="grid grid-cols-2 gap-3 mb-4">`;
         mods.forEach(m => {
-            const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} р.`;
+            const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} BYN`;
             const activeColor = m.isRemoval ? 'peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20' : 'peer-checked:border-primary peer-checked:bg-primary/5';
             const icon = m.isRemoval ? '✕' : '+';
             const iconColor = m.isRemoval ? 'text-red-500' : 'text-primary';
@@ -350,7 +350,7 @@ function openCustomizer(itemId) {
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
         <div id="customizer-sheet" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[500px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
             <div class="flex items-center gap-4 p-5 shrink-0 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 rounded-t-3xl sm:rounded-3xl">
-                <img id="cust-img" src="${itemInfo.image || ''}" class="w-20 h-20 rounded-2xl object-cover shadow-sm" onerror="this.src='images/placeholder.png'" loading="lazy">
+                <img id="cust-img" src="${itemInfo.image || ''}" alt="${itemInfo.name}" class="w-20 h-20 rounded-2xl object-cover shadow-sm" onerror="this.src='images/placeholder.png'" loading="lazy">
                 <div class="flex-1">
                     <h3 id="cust-title" class="font-display font-black text-xl leading-tight">${itemInfo.name}</h3>
                     <p class="text-primary font-bold text-sm mt-0.5">${itemInfo.sizes[sizeIdx].label}</p>
@@ -364,7 +364,7 @@ function openCustomizer(itemId) {
             <div class="p-4 border-t border-gray-100 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-[#1a1a1a] shrink-0 rounded-b-3xl">
                 <button onclick="addCustomizedItem()" class="w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl hover:bg-hover transition-all active:scale-95 shadow-glow flex justify-between items-center group">
                     <span>Добавить в корзину</span>
-                    <span class="text-lg font-black bg-white/20 px-3 py-1 rounded-xl transition-colors group-hover:bg-white/30" id="cust-total">${customizerBasePrice.toFixed(2)} р.</span>
+                    <span class="text-lg font-black bg-white/20 px-3 py-1 rounded-xl transition-colors group-hover:bg-white/30" id="cust-total">${customizerBasePrice.toFixed(2)} BYN</span>
                 </button>
             </div>
         </div>
@@ -395,7 +395,7 @@ window.updateCustomizerTotal = () => {
         price += parseFloat(cb.dataset.modPrice) || 0;
     });
     const ct = $('cust-total');
-    if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' р.';
+    if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' BYN';
 };
 
 window.addCustomizedItem = () => {
@@ -453,9 +453,9 @@ function renderUpsells() {
     widget.classList.remove('hidden');
     container.innerHTML = upsells.map(item => `
         <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
-            <img src="${item.image}" class="w-12 h-12 mx-auto object-cover rounded-lg mb-2" loading="lazy">
+            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 mx-auto object-cover rounded-lg mb-2" loading="lazy">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${item.name}</p>
-            <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes[0].price).toFixed(2)} р.</div>
+            <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes[0].price).toFixed(2)} BYN</div>
         </div>
     `).join('');
 }

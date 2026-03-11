@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (otpInput) otpInput.focus();
         } catch (err) {
             showToast('error', err.message || 'Ошибка отправки SMS');
-            if (btn) { btn.disabled = false; btn.innerHTML = 'К Оформлению'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
         }
     };
 
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const otpStep = $('otp-step');
                 if (otpStep) otpStep.classList.add('hidden');
                 const reqBtn = $('btn-request-otp');
-                if (reqBtn) { reqBtn.disabled = false; reqBtn.innerHTML = 'К Оформлению'; }
+                if (reqBtn) { reqBtn.disabled = false; reqBtn.innerHTML = 'Оформить заказ'; }
                 if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.innerHTML = '<span>Подтвердить и Заказать</span>'; }
                 if (otpInput) otpInput.value = '';
             }, 1000);

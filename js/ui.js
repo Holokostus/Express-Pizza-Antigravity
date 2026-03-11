@@ -64,7 +64,7 @@ function renderMenu() {
                 ` : ''}
                 <button onclick="addToCart(${item.id})"
                     class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-red flex items-center justify-center gap-1.5 text-sm">
-                    <span>${parseFloat(activeSize.price).toFixed(2)} р.</span>
+                    <span>${parseFloat(activeSize.price).toFixed(2)} BYN</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                 </button>
             </div>
@@ -304,7 +304,7 @@ async function renderProfileView() {
                 </div>
                 <div class="text-xs text-gray-500 mb-2">${new Date(o.timestamp).toLocaleString('ru-RU')}</div>
                 <div class="text-sm line-clamp-2 mb-2">${o.items.map(i => i.name).join(', ')}</div>
-                <div class="font-bold text-sm">${parseFloat(o.total).toFixed(2)} р.</div>
+                <div class="font-bold text-sm">${parseFloat(o.total).toFixed(2)} BYN</div>
             </div>
         `).join('');
 
@@ -346,7 +346,7 @@ window.userLogout = function () {
 const storiesData = [
     { title: "Скидка 50% на вторую пиццу", desc: "При заказе любой большой пиццы, вторая (меньшая по стоимости) идет со скидкой 50%. Автоматически применяется при добавлении в корзину.", bg: "bg-gradient-to-br from-red-600 via-red-500 to-orange-500" },
     { title: "4 пиццы по цене 3!", desc: "Собери компанию и закажи 4 любые пиццы. Самая дешевая будет в подарок! Акция суммируется с другими специальными предложениями.", bg: "bg-gradient-to-br from-violet-600 via-purple-500 to-pink-500" },
-    { title: "🎂 Пицца в подарок!", desc: "Празднуешь день рождения? Дарим любую среднюю пиццу при заказе от 30 р. Акция действует всю неделю после даты рождения.", bg: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600" },
+    { title: "🎂 Пицца в подарок!", desc: "Празднуешь день рождения? Дарим любую среднюю пиццу при заказе от 30 BYN. Акция действует всю неделю после даты рождения.", bg: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600" },
     { title: "🪙 ExpressCoins", desc: "Копи баллы (5% от каждого заказа) и оплачивай ими до 50% стоимости! Доступно после входа в профиль.", bg: "bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-500" }
 ];
 
