@@ -46,9 +46,9 @@ function renderMenu() {
         return `
         <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-soft hover:shadow-xl card-lift group border border-gray-100 dark:border-gray-800 menu-card-anim" style="animation-delay: ${idx * 0.06}s">
             <div class="relative overflow-hidden h-52 sm:h-48">
-                <img src="${item.image || 'images/placeholder.png'}" alt="${item.name}" loading="lazy"
+                <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${item.name}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                     onerror="this.onerror=null;this.src='images/placeholder.png'">
+                     onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'">
                 ${badgeHtml}
                 <div class="absolute bottom-3 left-3 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                     ${activeSize.weight || ''}
