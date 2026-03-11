@@ -85,38 +85,105 @@ window.selectSize = (itemId, sizeIndex) => {
     renderMenu();
 };
 
-// ── Order Tracker ──
+let customerWs = null;
+
 function showOrderTracker(orderId) {
     toggleCart(false);
     const trackerIdEl = $('tracker-id');
     if (trackerIdEl) trackerIdEl.textContent = orderId;
     const tracker = $('order-tracker');
     if (!tracker) return;
+
+    // Reset overlay and sheet classes for animation
     tracker.classList.remove('hidden');
     tracker.classList.add('flex');
+    requestAnimationFrame(() => {
+        tracker.classList.remove('opacity-0');
+        const sheet = $('tracker-sheet');
+        if (sheet) sheet.classList.remove('translate-y-full');
+    });
     document.body.style.overflow = 'hidden';
 
-    const steps = ['step-new', 'step-cooking', 'step-baking', 'step-delivery'];
-    let currentStep = 0;
-    steps.forEach(id => { const el = $(id); if (el) el.classList.add('opacity-50', 'grayscale'); });
-    const first = $(steps[0]); if (first) first.classList.remove('opacity-50', 'grayscale');
+    // Init UI State for NEW order
+    updateTrackerUI('NEW');
 
-    if (window._trackerInterval) clearInterval(window._trackerInterval);
-    window._trackerInterval = setInterval(() => {
-        currentStep++;
-        if (currentStep < steps.length) {
-            const el = $(steps[currentStep]); if (el) el.classList.remove('opacity-50', 'grayscale');
-        } else {
-            clearInterval(window._trackerInterval);
+    // Init WebSocket to listen for STATUS_SYNC
+    if (customerWs) {
+        customerWs.close();
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    customerWs = new WebSocket(`${protocol}//${window.location.host}/ws/kds?restaurantId=1`);
+
+    customerWs.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            // In a real app we'd get the actual ID format (UUID vs Int). Relaxing check with == here instead of === if needed, or mapping.
+            // Usually message orderId is externalOrderId or DB id. Wait, the server's checkout returns `orderId` as externalOrderId but kds uses `order.id`. 
+            // In our `cart.js`, checkout gives `createdOrder.externalOrderId` to `showOrderTracker`. 
+            // The `STATUS_SYNC` gives `orderId: order.id`. 
+            // For now, let's just listen to ANY status sync and if it matches or we just assume one active order:
+            if (msg.type === 'STATUS_SYNC') {
+                updateTrackerUI(msg.data.status);
+            }
+        } catch (e) { }
+    };
+}
+
+function updateTrackerUI(status) {
+    const steps = ['step-new', 'step-cooking', 'step-baking', 'step-delivery'];
+    const statuses = ['NEW', 'COOKING', 'BAKING', 'DELIVERING'];
+
+    const currentIndex = statuses.indexOf(status);
+    if (currentIndex === -1) return;
+
+    // Update Progress Bar
+    const progressBar = $('tracker-progress-bar');
+    if (progressBar) {
+        const percentages = ['25%', '50%', '75%', '100%'];
+        progressBar.style.width = percentages[currentIndex];
+    }
+
+    // Status text mapping
+    const statusTexts = ['Ожидает подтверждения', 'Готовится', 'В печи', 'В пути к вам'];
+    const txt = $('tracker-status-text');
+    if (txt) txt.textContent = statusTexts[currentIndex];
+
+    // Update Step Icons
+    steps.forEach((stepId, index) => {
+        const el = $(stepId);
+        if (el) {
+            if (index <= currentIndex) {
+                el.classList.remove('opacity-40', 'grayscale');
+            } else {
+                el.classList.add('opacity-40', 'grayscale');
+            }
         }
-    }, 5000);
+    });
+
+    if (status === 'DELIVERING' || status === 'COMPLETED') {
+        if (customerWs) customerWs.close();
+    }
 }
 
 window.closeTracker = () => {
     const tracker = $('order-tracker');
-    if (tracker) { tracker.classList.add('hidden'); tracker.classList.remove('flex'); }
+    const sheet = $('tracker-sheet');
+    if (tracker) tracker.classList.add('opacity-0');
+    if (sheet) sheet.classList.add('translate-y-full');
+
+    setTimeout(() => {
+        if (tracker) {
+            tracker.classList.add('hidden');
+            tracker.classList.remove('flex');
+        }
+    }, 300);
     document.body.style.overflow = '';
-    if (window._trackerInterval) clearInterval(window._trackerInterval);
+
+    if (customerWs) {
+        customerWs.close();
+        customerWs = null;
+    }
 };
 
 // ── Delivery Timer ──

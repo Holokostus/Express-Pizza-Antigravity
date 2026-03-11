@@ -1,72 +1,41 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Express Pizza — KDS (Kitchen Display System)</title>
+    <title>Express Pizza - KDS (Kitchen Display System)</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: { primary: '#E30613' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Outfit', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-dark: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --accent-red: #ff3b30;
-            --accent-green: #34c759;
-            --accent-orange: #ff9500;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            overflow-x: hidden;
+            background-color: #1a1a1a;
+            color: #fff;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .clock {
-            font-size: 20px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* KDS Grid */
-        .kds-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            align-items: start;
-        }
-
-        /* Order Card */
-        .order-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            border-top: 6px solid var(--accent-orange);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s;
-            animation: slideIn 0.3s ease-out;
+        .kds-card {
+            animation: slideIn 0.3s ease-out forwards;
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(10px);
             }
 
             to {
@@ -74,281 +43,203 @@
                 transform: translateY(0);
             }
         }
-
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .order-id {
-            font-size: 24px;
-            font-weight: 900;
-        }
-
-        .timer {
-            font-size: 20px;
-            font-weight: bold;
-            background: #333;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .timer.warning {
-            background: var(--accent-orange);
-            color: #000;
-        }
-
-        .timer.danger {
-            background: var(--accent-red);
-            color: #fff;
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes pulse {
-            from {
-                opacity: 1;
-            }
-
-            to {
-                opacity: 0.7;
-            }
-        }
-
-        /* Items List */
-        .item-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 16px 0;
-        }
-
-        .item {
-            padding: 12px 0;
-            border-bottom: 1px dashed #444;
-            font-size: 18px;
-        }
-
-        .item:last-child {
-            border-bottom: none;
-        }
-
-        .item-qty {
-            display: inline-block;
-            background: var(--text-main);
-            color: var(--bg-dark);
-            width: 28px;
-            height: 28px;
-            line-height: 28px;
-            text-align: center;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-right: 8px;
-        }
-
-        /* Modifiers - HIGH CONTRAST */
-        .modifier {
-            display: block;
-            margin-top: 6px;
-            margin-left: 36px;
-            font-size: 16px;
-            color: var(--text-muted);
-        }
-
-        .modifier.removal {
-            color: var(--accent-red);
-            font-weight: bold;
-            font-size: 18px;
-            text-transform: uppercase;
-        }
-
-        .modifier.addition {
-            color: var(--accent-green);
-        }
-
-        /* Actions */
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .btn-ready {
-            background-color: var(--accent-green);
-            color: white;
-        }
-
-        .btn-cancel {
-            background-color: transparent;
-            color: var(--text-muted);
-            border: 1px solid #444;
-        }
     </style>
 </head>
 
-<body>
+<body class="h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-[#242424] border-b border-[#333] px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4">
+            <div
+                class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center font-display font-black text-xl">
+                EP</div>
+            <div>
+                <h1 class="font-display font-black text-2xl leading-tight">Кухня <span class="text-primary">KDS</span>
+                </h1>
+                <p class="text-xs text-gray-400">Ресторан #1 (пр-т Партизанский, 19)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="ws-status"
+                class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-sm font-bold">
+                <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div> Отключено
+            </div>
+            <div class="text-right">
+                <div id="clock" class="font-display font-bold text-xl">--:--:--</div>
+                <div id="date" class="text-xs text-gray-400">--.--.----</div>
+            </div>
+        </div>
+    </header>
 
-    <div class="header">
-        <h1>👨‍🍳 EXPRESS PIZZA KDS (Ресторан #1)</h1>
-        <div class="clock" id="clock">00:00:00</div>
-    </div>
+    <!-- Kanban Board -->
+    <main class="flex-1 overflow-x-auto p-6 flex gap-6 hide-scrollbar">
+        <!-- Column 1: Новые (NEW) -->
+        <div class="flex-1 min-w-[300px] flex flex-col bg-[#242424] rounded-2xl border border-[#333] overflow-hidden">
+            <div class="p-4 bg-[#2a2a2a] border-b border-[#333] flex justify-between items-center shrink-0">
+                <h2 class="font-bold text-lg flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span> Новые
+                </h2>
+                <span class="bg-[#1a1a1a] px-2 py-0.5 rounded text-xs font-bold" id="count-new">0</span>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto space-y-4" id="col-NEW"></div>
+        </div>
 
-    <div class="kds-grid" id="kds-grid">
-        <!-- Order Cards will be injected here via WebSocket -->
-    </div>
+        <!-- Column 2: Готовятся (COOKING) -->
+        <div class="flex-1 min-w-[300px] flex flex-col bg-[#242424] rounded-2xl border border-[#333] overflow-hidden">
+            <div class="p-4 bg-[#2a2a2a] border-b border-[#333] flex justify-between items-center shrink-0">
+                <h2 class="font-bold text-lg flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-500"></span> Готовятся
+                </h2>
+                <span class="bg-[#1a1a1a] px-2 py-0.5 rounded text-xs font-bold" id="count-cooking">0</span>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto space-y-4" id="col-COOKING"></div>
+        </div>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <!-- Column 3: В печи (BAKING) -->
+        <div class="flex-1 min-w-[300px] flex flex-col bg-[#242424] rounded-2xl border border-[#333] overflow-hidden">
+            <div class="p-4 bg-[#2a2a2a] border-b border-[#333] flex justify-between items-center shrink-0">
+                <h2 class="font-bold text-lg flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-orange-500"></span> В печи
+                </h2>
+                <span class="bg-[#1a1a1a] px-2 py-0.5 rounded text-xs font-bold" id="count-baking">0</span>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto space-y-4" id="col-BAKING"></div>
+        </div>
+    </main>
+
     <script>
-        // Setup clock
+        // Clock
         setInterval(() => {
             const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU', { timeZone: 'Europe/Minsk' });
+            document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU');
+            document.getElementById('date').textContent = now.toLocaleDateString('ru-RU');
         }, 1000);
 
-        const grid = document.getElementById('kds-grid');
-        const orders = new Map(); // Store orders to update timers
+        let ws = null;
+        let orders = [];
 
-        // Connect WebSocket to RENDER backend (not Vercel frontend)
-        const RENDER_HOST = 'express-pizza-antigravity.onrender.com';
-        const wsUrl = `wss://${RENDER_HOST}/ws/kds?restaurantId=1`;
-        let ws;
+        function initKDS() {
+            // Fetch initial orders
+            fetch('/api/kds/1/orders')
+                .then(res => res.json())
+                .then(data => {
+                    orders = data;
+                    renderBoard();
+                })
+                .catch(err => console.error('Failed to fetch orders:', err));
+
+            // Connect WebSocket
+            connectWS();
+        }
 
         function connectWS() {
-            ws = new WebSocket(wsUrl);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/kds?restaurantId=1`);
 
-            ws.onopen = () => console.log('[KDS] Connected to kitchen server');
+            ws.onopen = () => {
+                const statusEl = document.getElementById('ws-status');
+                statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-400 text-sm font-bold';
+                statusEl.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div> В сети';
+            };
 
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
                 if (msg.type === 'NEW_ORDER') {
-                    renderOrder(msg.data);
+                    orders.push(msg.data);
+                    renderBoard();
                 } else if (msg.type === 'STATUS_SYNC') {
-                    // Remove if another tablet marked it ready
-                    if (msg.data.status === 'READY') {
-                        const card = document.getElementById(`order-${msg.data.orderId}`);
-                        if (card) {
-                            card.style.transform = 'scale(0.9)';
-                            card.style.opacity = '0';
-                            setTimeout(() => card.remove(), 200);
-                            orders.delete(msg.data.orderId);
-                        }
+                    const idx = orders.findIndex(o => o.id === msg.data.orderId);
+                    if (idx !== -1) {
+                        orders[idx].status = msg.data.status;
+                        renderBoard();
                     }
                 }
             };
 
             ws.onclose = () => {
-                console.log('[KDS] Disconnected. Reconnecting in 3s...');
+                const statusEl = document.getElementById('ws-status');
+                statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-sm font-bold';
+                statusEl.innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div> Переподключение...';
                 setTimeout(connectWS, 3000);
             };
         }
-        connectWS();
 
-        function renderOrder(order) {
-            if (document.getElementById(`order-${order.id}`)) return; // Duplicate
-
-            // Track start time
-            orders.set(order.id, { created: new Date(order.createdAt), el: null });
-
-            const card = document.createElement('div');
-            card.className = 'order-card';
-            card.id = `order-${order.id}`;
-
-            let itemsHtml = order.items.map(item => {
-                const sizeLabel = item.productSize ? ` (${item.productSize.label})` : '';
-
-                let modsHtml = '';
-                if (item.modifiers) {
-                    modsHtml = item.modifiers.map(m => {
-                        const name = m.modifier ? m.modifier.name : 'Опция';
-                        const isRemoval = m.modifier && m.modifier.isRemoval;
-                        const modVal = isRemoval ? `!!! БЕЗ: ${name.replace('Без ', '')} !!!` : `+ ${name}`;
-                        const cssClass = isRemoval ? 'modifier removal' : 'modifier addition';
-                        return `<span class="${cssClass}">${modVal}</span>`;
-                    }).join('');
-                }
-
-                const noteHtml = item.note ? `<span class="modifier removal">💬 ${item.note}</span>` : '';
-
-                return `
-                    <li class="item">
-                        <div style="display:flex; align-items:flex-start;">
-                            <span class="item-qty">${item.quantity}</span>
-                            <span style="font-weight:bold;">${item.product ? item.product.name : 'Товар'}${sizeLabel}</span>
-                        </div>
-                        ${modsHtml}
-                        ${noteHtml}
-                    </li>
-                `;
-            }).join('');
-
-            card.innerHTML = `
-                <div class="order-header">
-                    <span class="order-id">#${order.orderNumber || order.id}</span>
-                    <span class="timer" id="timer-${order.id}">00:00</span>
-                </div>
-                <ul class="item-list">
-                    ${itemsHtml}
-                </ul>
-                <div class="actions">
-                    <button class="btn btn-ready" onclick="markReady(${order.id})">✅ Готово</button>
-                </div>
-            `;
-
-            grid.appendChild(card);
-            orders.get(order.id).el = document.getElementById(`timer-${order.id}`);
-        }
-
-        function markReady(orderId) {
-            // Send STATUS_UPDATE to WS Server
+        function changeStatus(orderId, newStatus) {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
                     type: 'STATUS_UPDATE',
-                    data: { orderId, status: 'READY' }
+                    data: { orderId, status: newStatus }
                 }));
             }
-
-            const card = document.getElementById(`order-${orderId}`);
-            if (card) {
-                card.style.transform = 'scale(0.9)';
-                card.style.opacity = '0';
-                setTimeout(() => card.remove(), 200);
+            // Optimistic update
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                orders[idx].status = newStatus;
+                renderBoard();
             }
-            orders.delete(orderId);
         }
 
-        // Timer Loop UI Update
-        setInterval(() => {
-            const now = new Date();
-            orders.forEach((data, id) => {
-                if (!data.el) return;
+        function renderBoard() {
+            const cols = { NEW: [], COOKING: [], BAKING: [] };
 
-                const diffSec = Math.floor((now - data.created) / 1000);
-                const m = Math.floor(diffSec / 60).toString().padStart(2, '0');
-                const s = (diffSec % 60).toString().padStart(2, '0');
-
-                data.el.textContent = `${m}:${s}`;
-
-                // Color coding warnings (10 min orange, 15 min red)
-                if (diffSec > 15 * 60) {
-                    data.el.className = 'timer danger';
-                } else if (diffSec > 10 * 60) {
-                    data.el.className = 'timer warning';
-                }
+            orders.forEach(o => {
+                if (cols[o.status]) cols[o.status].push(o);
             });
-        }, 1000);
 
+            document.getElementById('count-new').textContent = cols.NEW.length;
+            document.getElementById('count-cooking').textContent = cols.COOKING.length;
+            document.getElementById('count-baking').textContent = cols.BAKING.length;
+
+            Object.keys(cols).forEach(status => {
+                const container = document.getElementById(`col-${status}`);
+                if (!container) return;
+
+                container.innerHTML = cols[status].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(order => {
+                    const timeAgo = Math.floor((new Date() - new Date(order.createdAt)) / 60000);
+                    let timeColor = timeAgo > 15 ? 'text-red-400' : (timeAgo > 10 ? 'text-amber-400' : 'text-gray-400');
+
+                    let actionBtn = '';
+                    if (status === 'NEW') {
+                        actionBtn = `<button onclick="changeStatus(${order.id}, 'COOKING')" class="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors">Взять в работу</button>`;
+                    } else if (status === 'COOKING') {
+                        actionBtn = `<button onclick="changeStatus(${order.id}, 'BAKING')" class="w-full mt-3 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg transition-colors">В печь</button>`;
+                    } else if (status === 'BAKING') {
+                        actionBtn = `<button onclick="changeStatus(${order.id}, 'DELIVERING')" class="w-full mt-3 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg transition-colors">Готово</button>`;
+                    }
+
+                    const itemsHtml = order.items.map(item => `
+                        <div class="py-1 border-b border-[#333] last:border-0 text-sm">
+                            <div class="flex justify-between">
+                                <span class="font-bold">${item.quantity}x ${item.product.name}</span>
+                            </div>
+                            ${item.modifiers && item.modifiers.length > 0 ? `
+                                <div class="text-xs text-amber-500 mt-0.5">
+                                    Модификаторы: ${item.modifiers.map(m => m.modifier.name).join(', ')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="bg-[#1a1a1a] p-4 rounded-xl border-l-4 ${status === 'NEW' ? 'border-blue-500' : status === 'COOKING' ? 'border-amber-500' : 'border-orange-500'} kds-card shadow-lg">
+                            <div class="flex justify-betweenitems-start mb-2">
+                                <h3 class="font-display font-black text-xl">Заказ #${order.id}</h3>
+                                <span class="text-xs font-bold ${timeColor}">${timeAgo} мин</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mb-2">Тип: ${order.source}</div>
+                            <div class="bg-[#242424] rounded-lg p-2 mb-2">
+                                ${itemsHtml}
+                            </div>
+                            ${actionBtn}
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        // Initialize
+        initKDS();
+        setInterval(renderBoard, 60000); // Re-render every minute to update "time ago"
     </script>
 </body>
 
