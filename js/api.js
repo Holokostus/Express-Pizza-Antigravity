@@ -68,23 +68,3 @@ async function fetchMenu() {
     }
 }
 
-// ── Admin Bypass ──
-window.instantAdminLogin = async function () {
-    try {
-        const res = await fetch(`${API_BASE}/api/auth/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: '+375999999999', code: 'magic' })
-        });
-        const data = await res.json();
-        if (data.token) {
-            localStorage.setItem('ep_admin_token', data.token);
-            showToast('success', 'Вход выполнен! Перенаправляем...');
-            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
-        } else {
-            showToast('error', 'Ошибка доступа');
-        }
-    } catch (err) {
-        showToast('error', 'Ошибка сети');
-    }
-};

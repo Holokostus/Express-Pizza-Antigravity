@@ -68,25 +68,6 @@ router.post('/verify', async (req, res) => {
             return res.status(400).json({ error: 'Phone and code are required' });
         }
 
-        // ⚡ INSTANT ADMIN ACCESS — no OTP needed for this magic number
-        if (phone === '+375999999999') {
-            let user = await prisma.user.findUnique({ where: { phone } });
-            if (!user) {
-                user = await prisma.user.create({ data: { phone, role: 'ADMIN', name: 'Superadmin' } });
-            } else if (user.role !== 'ADMIN') {
-                user = await prisma.user.update({ where: { phone }, data: { role: 'ADMIN' } });
-            }
-            const token = jwt.sign(
-                { userId: user.id, phone: user.phone, role: 'ADMIN' },
-                JWT_SECRET, { expiresIn: '7d' }
-            );
-            console.log(`[Auth] ⚡ Instant admin login: ${phone}`);
-            return res.json({
-                success: true, token, _instantAdmin: true,
-                user: { id: user.id, phone: user.phone, name: user.name, role: 'ADMIN', loyaltyPoints: user.loyaltyPoints }
-            });
-        }
-
         const otpData = otpStore.get(phone);
 
         if (!otpData) {
@@ -103,29 +84,12 @@ router.post('/verify', async (req, res) => {
             return res.status(403).json({ error: 'Too many failed attempts. Phone blocked for 15 minutes.' });
         }
 
-        // ⚠️ DEV BACKDOOR — code 1234 always passes. REMOVE BEFORE PUBLIC RELEASE! ⚠️
-        const isBackdoor = code.toString() === '1234';
-        if (isBackdoor) {
-            console.error('\n\x1b[41m\x1b[97m !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \x1b[0m');
-            console.error('\x1b[41m\x1b[97m !!!  ВНИМАНИЕ !!! БЭКДОР 1234 АКТИВЕН !!!            \x1b[0m');
-            console.error('\x1b[41m\x1b[97m !!!  УДАЛИТЕ ПЕРЕД РЕЛИЗОМ !!!                       \x1b[0m');
-            console.error('\x1b[41m\x1b[97m !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \x1b[0m\n');
-
-            // Flood the terminal for 30 seconds so it's IMPOSSIBLE to miss
-            let floodCount = 0;
-            const floodInterval = setInterval(() => {
-                floodCount++;
-                console.error(`\x1b[41m\x1b[97m [${floodCount}/30] !!! БЭКДОР 1234 АКТИВЕН — phone: ${phone} !!! УДАЛИТЕ ИЗ КОДА !!! \x1b[0m`);
-                if (floodCount >= 30) clearInterval(floodInterval);
-            }, 1000);
-        }
-
-        if (!isBackdoor && otpData.code !== code.toString()) {
+        if (otpData.code !== code.toString()) {
             otpData.attempts += 1;
             return res.status(400).json({ error: `Invalid code. ${3 - otpData.attempts} attempts remaining.` });
         }
 
-        // Code matches (or backdoor)! Clear from store.
+        // Code matches! Clear from store.
         otpStore.delete(phone);
 
         // Find or create user
@@ -151,7 +115,6 @@ router.post('/verify', async (req, res) => {
         res.json({
             success: true,
             token,
-            _backdoorUsed: isBackdoor,
             user: {
                 id: user.id,
                 phone: user.phone,
