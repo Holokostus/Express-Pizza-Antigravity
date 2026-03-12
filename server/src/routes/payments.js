@@ -1,9 +1,10 @@
+const express = require('express');
+const router = express.Router();
+
 // ============================================================
 // Express Pizza — Payments Webhook Router (Sprint 3)
 // ============================================================
 
-const express = require('express');
-const router = express.Router();
 const prisma = require('../lib/prisma');
 
 /**
