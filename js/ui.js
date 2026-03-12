@@ -83,46 +83,61 @@ function renderMenu() {
 }
 
 // ── Render Category Tabs ──
-window.renderCategories = () => {
+window.renderCategories = (categories = menuCategories) => {
     const container = document.getElementById('category-tabs-container');
     if (!container) return;
 
-    // Extract unique categories from menuItems
-    const catsMap = new Map();
-    menuItems.forEach(p => {
-        const slug = typeof p.category === 'object' && p.category ? p.category.slug : p.categorySlug;
-        const name = typeof p.category === 'object' && p.category ? p.category.name : (p.categoryName || slug);
-        if (slug && !catsMap.has(slug)) {
-            catsMap.set(slug, name);
-        }
-    });
-
-    if (catsMap.size > 0) {
-        container.innerHTML = Array.from(catsMap.entries()).map(([slug, name]) => {
-            const isActive = slug === currentCategory;
-            const activeClasses = isActive ? 'active bg-red-600 text-white shadow-glow-red' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700';
-            return `<button class="menu-tab ${activeClasses} px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="${slug}">
-                ${name}
-            </button>`;
-        }).join('');
-
-        // Re-attach listeners
-        document.querySelectorAll('.menu-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.menu-tab').forEach(t => {
-                    t.classList.remove('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
-                    t.classList.add('bg-gray-100', 'dark:bg-gray-800');
-                });
-                tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
-                tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
-                currentCategory = tab.dataset.category;
-                renderMenu();
-            });
-        });
+    if (!Array.isArray(categories) || categories.length === 0) {
+        container.innerHTML = '';
+        return;
     }
+
+    const safeCurrentCategory = categories.some((c) => c.slug === currentCategory)
+        ? currentCategory
+        : categories[0].slug;
+
+    currentCategory = safeCurrentCategory;
+
+    container.innerHTML = categories.map(({ slug, name }) => {
+        const activeClasses = slug === currentCategory
+            ? 'active bg-red-600 text-white shadow-glow-red'
+            : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700';
+
+        return `<button class="menu-tab ${activeClasses} px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="${slug}">${escapeHtml(name)}</button>`;
+    }).join('');
+
+    document.querySelectorAll('.menu-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.menu-tab').forEach((t) => {
+                t.classList.remove('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
+                t.classList.add('bg-gray-100', 'dark:bg-gray-800');
+            });
+            tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+            tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
+            currentCategory = tab.dataset.category;
+            renderMenu();
+        });
+    });
+};
+
+window.renderPromotions = (items = promotions) => {
+    const strip = $('stories-strip');
+    if (!strip) return;
+
+    strip.innerHTML = (items || []).map((promotion, index) => `
+        <div onclick="openStory(${index})" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
+            <div class="absolute inset-0 ${promotion.bgColor}"></div>
+            <div class="relative z-10 h-full flex flex-col justify-end p-4">
+                <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promotion.badgeText)}</span>
+                <p class="text-white font-bold text-base leading-tight">${escapeHtml(promotion.title)}</p>
+                <p class="text-white/70 text-xs mt-0.5">${escapeHtml(promotion.subtitle)}</p>
+            </div>
+        </div>
+    `).join('');
 };
 
 // ── Size Selector ──
+
 window.selectSize = (itemId, sizeIndex, event) => {
     if (event) {
         event.preventDefault();
@@ -431,12 +446,7 @@ window.userLogout = function () {
 };
 
 // ── Stories Modal Logic ──
-const storiesData = [
-    { title: "Скидка 50% на вторую пиццу", desc: "При заказе любой большой пиццы, вторая (меньшая по стоимости) идет со скидкой 50%. Автоматически применяется при добавлении в корзину.", bg: "bg-gradient-to-br from-red-600 via-red-500 to-orange-500" },
-    { title: "4 пиццы по цене 3!", desc: "Собери компанию и закажи 4 любые пиццы. Самая дешевая будет в подарок! Акция суммируется с другими специальными предложениями.", bg: "bg-gradient-to-br from-violet-600 via-purple-500 to-pink-500" },
-    { title: "🎂 Пицца в подарок!", desc: "Празднуешь день рождения? Дарим любую среднюю пиццу при заказе от 30 BYN. Акция действует всю неделю после даты рождения.", bg: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600" },
-    { title: "🪙 ExpressCoins", desc: "Копи баллы (5% от каждого заказа) и оплачивай ими до 50% стоимости! Доступно после входа в профиль.", bg: "bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-500" }
-];
+const storiesData = promotions;
 
 window.openStory = function(index) {
     const modal = $('story-modal');
@@ -446,11 +456,11 @@ window.openStory = function(index) {
     const gradient = $('story-gradient');
     
     if (!modal || !storiesData[index]) return;
-    
+
     const s = storiesData[index];
     title.textContent = s.title;
-    desc.textContent = s.desc;
-    gradient.className = `h-48 flex items-end p-6 ${s.bg}`;
+    desc.textContent = s.subtitle || '';
+    gradient.className = `h-48 flex items-end p-6 ${s.bgColor}`;
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');

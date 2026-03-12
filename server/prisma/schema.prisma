@@ -197,6 +197,20 @@ model Category {
 // Legal requirement (BY + EU): 14 mandatory allergens must be declared.
 // See: project_overview.md §6.1, §6.2
 
+
+
+model Promotion {
+  id        Int     @id @default(autoincrement())
+  title     String
+  subtitle  String
+  badgeText String
+  bgColor   String
+  imageUrl  String
+  isActive  Boolean @default(true)
+
+  @@map("promotions")
+}
+
 model Product {
   id            Int       @id @default(autoincrement())
   name          String                                  // "Маргарита", "Пепперони"

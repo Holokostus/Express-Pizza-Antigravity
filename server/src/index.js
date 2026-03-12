@@ -31,6 +31,7 @@ const paymentRoutes = require('./routes/payments');
 const aggregatorRoutes = require('./routes/aggregators');
 const adminRoutes = require('./routes/admin');
 const menuRoutes = require('./routes/menu');
+const promotionsRoutes = require('./routes/promotions');
 
 // ---- Import Services ----
 const { generateMenuJsonLd } = require('./services/seoService');
@@ -40,6 +41,7 @@ const stockService = require('./services/stockService');
 const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
+const { runMigration } = require('../../scripts/migrate-legacy');
 
 const rateLimit = require('express-rate-limit');
 const { requireAuth, checkRole } = require('./middleware/auth');
@@ -64,6 +66,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
 app.use('/api/admin', requireAuth, checkRole(['ADMIN']), adminRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/promotions', promotionsRoutes);
 
 // ---- Health Check ----
 app.get('/api/health', async (req, res) => {
@@ -311,22 +314,34 @@ const server = http.createServer(app);
 // Initialize WebSocket for Kitchen Display System
 kdsService.initKDSWebSocket(server);
 
-server.listen(PORT, () => {
-    console.log(`\n🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
-    console.log(`📋 Health:       /api/health`);
-    console.log(`📦 Menu:         /api/menu`);
-    console.log(`🔐 Auth:         /api/auth/send-sms`);
-    console.log(`🛒 Cart:         /api/orders/calculate`);
-    console.log(`💳 Payments:     /api/payments/webhook`);
-    console.log(`📡 Aggregators:  /api/aggregators/{delivio,wolt}/webhook`);
-    console.log(`🔄 Event Sync:   /api/sync/events`);
-    console.log(`👨‍🍳 KDS:          /api/kds/:restaurantId/orders`);
-    console.log(`⏱️  ETA:          /api/eta/calculate`);
-    console.log(`🖨️  Print:        /api/print/{service,kitchen}`);
-    console.log(`🔌 WebSocket:    ws://localhost:${PORT}/ws/kds?restaurantId=1`);
-    console.log(`🔍 SEO JSON-LD:  /api/seo/jsonld`);
-    console.log(`📄 Оферта:       /oferta\n`);
-});
+async function startServer() {
+    try {
+        await runMigration();
+    } catch (migrationError) {
+        console.error('[Startup] Legacy migration failed, continuing startup:', migrationError);
+    }
+
+    server.listen(PORT, () => {
+        console.log(`
+🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
+        console.log(`📋 Health:       /api/health`);
+        console.log(`📦 Menu:         /api/menu`);
+        console.log(`🔐 Auth:         /api/auth/send-sms`);
+        console.log(`🛒 Cart:         /api/orders/calculate`);
+        console.log(`💳 Payments:     /api/payments/webhook`);
+        console.log(`📡 Aggregators:  /api/aggregators/{delivio,wolt}/webhook`);
+        console.log(`🔄 Event Sync:   /api/sync/events`);
+        console.log(`👨‍🍳 KDS:          /api/kds/:restaurantId/orders`);
+        console.log(`⏱️  ETA:          /api/eta/calculate`);
+        console.log(`🖨️  Print:        /api/print/{service,kitchen}`);
+        console.log(`🔌 WebSocket:    ws://localhost:${PORT}/ws/kds?restaurantId=1`);
+        console.log(`🔍 SEO JSON-LD:  /api/seo/jsonld`);
+        console.log(`📄 Оферта:       /oferta
+`);
+    });
+}
+
+startServer();
 
 // Graceful shutdown
 const shutdown = async (signal) => {

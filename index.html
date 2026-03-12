@@ -118,38 +118,7 @@
         <!-- Stories / Promotions Carousel -->
         <section class="px-3 pt-3 pb-1">
             <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pb-2" id="stories-strip">
-                <div onclick="openStory(0)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
-                    <div class="absolute inset-0 bg-gradient-to-br from-red-600 via-red-500 to-orange-500"></div>
-                    <div class="relative z-10 h-full flex flex-col justify-end p-4">
-                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">Акция</span>
-                        <p class="text-white font-bold text-base leading-tight">Скидка 50% на вторую пиццу</p>
-                        <p class="text-white/70 text-xs mt-0.5">При заказе любой большой</p>
-                    </div>
-                </div>
-                <div onclick="openStory(1)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
-                    <div class="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-500 to-pink-500"></div>
-                    <div class="relative z-10 h-full flex flex-col justify-end p-4">
-                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">Выгода 25%</span>
-                        <p class="text-white font-bold text-base leading-tight">4 пиццы по цене 3!</p>
-                        <p class="text-white/70 text-xs mt-0.5">Хватит на всю компанию</p>
-                    </div>
-                </div>
-                <div onclick="openStory(2)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
-                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600"></div>
-                    <div class="relative z-10 h-full flex flex-col justify-end p-4">
-                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">Именинникам</span>
-                        <p class="text-white font-bold text-base leading-tight">Пицца в подарок!</p>
-                        <p class="text-white/70 text-xs mt-0.5">В ваш день рождения</p>
-                    </div>
-                </div>
-                <div onclick="openStory(3)" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
-                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-500"></div>
-                    <div class="relative z-10 h-full flex flex-col justify-end p-4">
-                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">ExpressCoins</span>
-                        <p class="text-white font-bold text-base leading-tight">Копи баллы, трать на пиццу</p>
-                        <p class="text-white/70 text-xs mt-0.5">5% от каждого заказа</p>
-                    </div>
-                </div>
+                <!-- Promotions will be injected from /api/promotions -->
             </div>
         </section>
 
@@ -171,22 +140,7 @@
             class="sticky top-14 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5">
             <div class="px-3 lg:container lg:mx-auto lg:px-6">
                 <div id="category-tabs-container" class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                    <button class="menu-tab active bg-red-600 text-white px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-glow-red flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="pizza">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.928 11.928 0 0112 17.5c-3.15 0-6.012-1.215-8.156-3.2A8.958 8.958 0 013 12c0-.778.099-1.533.284-2.253m17.432 0c-.57-1.402-1.39-2.658-2.396-3.71m-15.036 0c.57-1.402 1.39-2.658 2.396-3.71M9 14.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm4.5-4a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
-                        Пицца
-                    </button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="togo">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                        TOGO
-                    </button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="sauce">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-                        Соусы
-                    </button>
-                    <button class="menu-tab bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="drinks">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Напитки
-                    </button>
+                    <!-- Categories will be injected from /api/menu -->
                 </div>
             </div>
         </nav>
