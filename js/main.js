@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await fetchMenu();
 
+    if (typeof window.renderCategories === 'function') window.renderCategories();
     renderMenu();
     debouncedRecalculate();
     setInterval(updateTimer, 60000);

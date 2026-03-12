@@ -72,6 +72,46 @@ function renderMenu() {
     }).join('');
 }
 
+// ── Render Category Tabs ──
+window.renderCategories = () => {
+    const container = document.getElementById('category-tabs-container');
+    if (!container) return;
+
+    // Extract unique categories from menuItems
+    const catsMap = new Map();
+    menuItems.forEach(p => {
+        const slug = typeof p.category === 'object' && p.category ? p.category.slug : p.categorySlug;
+        const name = typeof p.category === 'object' && p.category ? p.category.name : (p.categoryName || slug);
+        if (slug && !catsMap.has(slug)) {
+            catsMap.set(slug, name);
+        }
+    });
+
+    if (catsMap.size > 0) {
+        container.innerHTML = Array.from(catsMap.entries()).map(([slug, name]) => {
+            const isActive = slug === currentCategory;
+            const activeClasses = isActive ? 'active bg-red-600 text-white shadow-glow-red' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700';
+            return `<button class="menu-tab ${activeClasses} px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="${slug}">
+                ${name}
+            </button>`;
+        }).join('');
+
+        // Re-attach listeners
+        document.querySelectorAll('.menu-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.menu-tab').forEach(t => {
+                    t.classList.remove('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
+                    t.classList.add('bg-gray-100', 'dark:bg-gray-800');
+                });
+                tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+                tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
+                currentCategory = tab.dataset.category;
+                renderMenu();
+            });
+        });
+    }
+};
+
 // ── Size Selector ──
 window.selectSize = (itemId, sizeIndex) => {
     selectedSizeIndex[itemId] = sizeIndex;
