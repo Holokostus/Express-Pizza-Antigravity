@@ -150,7 +150,7 @@ async function getStopList(restaurantId) {
         .filter(e => e.type === 'OUT_OF_STOCK')
         .map(e => ({
             productId: e.productId,
-            name: e.product.name,
+            name: e.product?.name ?? 'Неизвестный товар',
             reason: e.reason,
             stoppedAt: e.createdAt,
         }));

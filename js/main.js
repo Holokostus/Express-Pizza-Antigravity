@@ -148,40 +148,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', orderResult.order);
 
-            // ── Telegram Notification ──
-            try {
-                const tgToken = "8786581278:AAEEqxSyveHOowJxyMOiA6gRVYOg8HQ0aQs";
-                const tgChatId = "1371605396";
-                let itemsText = cart.map(i => {
-                    let text = `• ${i._display.name} (${i._display.sizeLabel || ''}) x${i.quantity}`;
-                    if (i._display.modifierNames && i._display.modifierNames.length > 0) {
-                        text += `\n   + ${i._display.modifierNames.join(', ')}`;
-                    }
-                    return text;
-                }).join('\n');
-                
-                const finalSum = serverCalculation?.total ? serverCalculation.total.toFixed(2) : '---';
-                
-                const tgMsg = `*Новый заказ!* (Express Pizza)\n\n` +
-                              `*Клиент:* ${name || 'Без имени'}\n` +
-                              `*Телефон:* ${phone}\n` +
-                              `*Адрес:* ${address || 'Самовывоз'}\n` +
-                              `*Оплата:* ${paymentMethod ? paymentMethod.value : 'BEPAID ONLINE'}\n\n` +
-                              `*Состав:*\n${itemsText}\n\n` +
-                              `*ИТОГО:* ${finalSum} BYN`;
-
-                fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: tgChatId,
-                        text: tgMsg,
-                        parse_mode: 'Markdown'
-                    })
-                }).catch(e => console.error("Telegram API Error:", e));
-            } catch (e) {
-                console.error("Failed to build Telegram message", e);
-            }
+            // Telegram Notification (Removed from frontend)
+            // Notifications are now handled purely on the backend via telegramService.js
+            console.log('[Order] Checkout successful, backend will notify Telegram.');
 
             // Reset
             cart = [];

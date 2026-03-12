@@ -86,7 +86,7 @@ function generateReceiptBuffer(order, type = 'SERVICE') {
     // ── ITEMS ──
     if (order.items && order.items.length > 0) {
         order.items.forEach(item => {
-            const name = item.product ? item.product.name : 'Товар';
+            const name = item.product?.name ?? 'Товар';
             const size = item.productSize ? ` (${item.productSize.label})` : '';
 
             builder.add(CMD.BOLD_ON);

@@ -131,7 +131,9 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  orders Order[]
+  orders        Order[]
+  pointsLedgers PointsLedger[]
+  pointsBalance PointsBalance?
 
   @@map("users")
 }
@@ -232,6 +234,7 @@ model Product {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@index([categoryId, isAvailable, sortOrder])
   @@map("products")
 }
 
@@ -353,6 +356,7 @@ model Order {
   @@index([restaurantId, status])                                 // Per-restaurant KDS
   @@index([customerPhone])                                        // CRM phone lookup
   @@index([createdAt])                                            // Analytics/reporting
+  @@index([customerPhone, createdAt])
   @@map("orders")
 }
 
@@ -600,4 +604,35 @@ model AggregatorChannel {
   config        Json?                                    // { stockUpdateUrl, menuSyncUrl, ... }
 
   @@map("aggregator_channels")
+}
+
+// =====================================================================================
+// 18. POINTS LEDGER — Immutable Loyalty Transaction Journal
+// =====================================================================================
+
+model PointsLedger {
+  id              String    @id @default(uuid())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  amount          Int
+  transactionType String    // 'EARN', 'REDEEM', 'EXPIRE'
+  orderId         String?
+  idempotencyKey  String    @unique
+  expirationDate  DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@map("points_ledger")
+}
+
+// =====================================================================================
+// 19. POINTS BALANCE — Materialized Loyalty Balance
+// =====================================================================================
+
+model PointsBalance {
+  userId          Int       @id @unique
+  user            User      @relation(fields: [userId], references: [id])
+  currentBalance  Int       @default(0)
+  updatedAt       DateTime  @updatedAt
+
+  @@map("points_balance")
 }

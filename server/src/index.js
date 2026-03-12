@@ -346,8 +346,31 @@ server.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-    server.close();
-    await prisma.$disconnect();
-    process.exit(0);
+const shutdown = async (signal) => {
+    console.log(`\n[${signal}] Initiating graceful shutdown...`);
+    server.close(async () => {
+        console.log('HTTP server closed.');
+        await prisma.$disconnect();
+        console.log('Database connection closed.');
+        process.exit(0);
+    });
+    
+    // Fallback if it hangs
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Unhandled Rejection] at:', promise, 'reason:', reason);
+    shutdown('unhandledRejection');
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('[Uncaught Exception]', error);
+    shutdown('uncaughtException');
 });

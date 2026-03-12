@@ -248,7 +248,7 @@ router.get('/my', requireAuth, async (req, res) => {
             status: o.status,
             total: o.total,
             items: o.items.map(i => ({
-                name: i.product.name,
+                name: i.product?.name ?? 'Удаленный товар',
                 quantity: i.quantity,
                 price: i.unitPrice
             }))
@@ -291,7 +291,7 @@ router.get('/', requireRole(['ADMIN']), async (req, res) => {
                 address: o.customerAddress
             },
             items: o.items.map(i => ({
-                name: i.product.name,
+                name: i.product?.name ?? 'Удаленный товар',
                 quantity: i.quantity,
                 price: i.unitPrice
             }))

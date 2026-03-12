@@ -81,8 +81,8 @@ async function generateMenuJsonLd() {
 
             return {
                 '@type': 'MenuItem',
-                name: product.name,
-                description: product.description,
+                name: product?.name ?? 'Безымянный товар',
+                description: product?.description || '',
                 image: `https://expresspizza.by/${product.image}`,
                 ...(nutritionObj ? { nutrition: nutritionObj } : {}),
                 offers: product.sizes.map(size => ({

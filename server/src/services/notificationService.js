@@ -25,7 +25,7 @@ async function sendOrderAlert(orderData) {
         let itemsHtml = '';
         if (orderData.items && orderData.items.length > 0) {
             orderData.items.forEach((item, index) => {
-                const productName = item.product ? item.product.name : 'Неизвестный товар';
+                const productName = item.product?.name ?? 'Неизвестный товар';
                 const sizeLabel = item.productSize ? ` (${item.productSize.label})` : '';
                 itemsHtml += `▫️ ${index + 1}. <b>${productName}${sizeLabel}</b> x${item.quantity} — ${item.unitPrice} BYN\n`;
 

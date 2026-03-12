@@ -155,20 +155,25 @@ async function createOrderFromAggregator(normalized, source) {
     // Find restaurant (use first active for now)
     const restaurant = await prisma.restaurant.findFirst({ where: { isActive: true } });
 
-    // Try to match products by posExternalId
+    // Extract all unique posExternalIds
+    const posExternalIds = normalized.items
+        .map(i => i.posExternalId)
+        .filter(id => id !== null && id !== undefined);
+
+    // Batch fetch all matching products
+    const products = await prisma.product.findMany({
+        where: { posExternalId: { in: posExternalIds } },
+        include: { sizes: { orderBy: { price: 'asc' } } }
+    });
+
+    const productMap = new Map(products.map(p => [p.posExternalId, p]));
+
     const items = [];
     for (const item of normalized.items) {
-        let product = null;
+        const product = item.posExternalId ? productMap.get(item.posExternalId) : null;
         let productSize = null;
 
-        if (item.posExternalId) {
-            product = await prisma.product.findFirst({
-                where: { posExternalId: item.posExternalId },
-                include: { sizes: { orderBy: { price: 'asc' } } },
-            });
-        }
-
-        if (product) {
+        if (product && product.sizes.length > 0) {
             productSize = product.sizes[0]; // Default to cheapest size
         }
 

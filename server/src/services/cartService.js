@@ -12,12 +12,27 @@ async function calculateCartTotal(items, promoCodeString = null) {
     let subtotal = 0;
     const validatedItems = [];
 
-    // 1. Fetch real prices from DB for all items
+    // 1. Collect all IDs for batch fetching
+    const productSizeIds = items.map(item => item.productSizeId);
+    const modifierIds = items.flatMap(item => item.modifierIds || []);
+
+    // 2. Batch fetch product sizes and modifiers
+    const productSizes = await prisma.productSize.findMany({
+        where: { id: { in: productSizeIds } },
+        include: { product: true }
+    });
+
+    const modifiers = modifierIds.length > 0 
+        ? await prisma.productModifier.findMany({ where: { id: { in: modifierIds } } })
+        : [];
+
+    // Create maps for O(1) lookups
+    const productSizeMap = new Map(productSizes.map(ps => [ps.id, ps]));
+    const modifierMap = new Map(modifiers.map(m => [m.id, m]));
+
+    // 3. Calculate totals using memory maps
     for (const item of items) {
-        const productSize = await prisma.productSize.findUnique({
-            where: { id: item.productSizeId },
-            include: { product: true }
-        });
+        const productSize = productSizeMap.get(item.productSizeId);
 
         if (!productSize || !productSize.product.isAvailable) {
             throw new Error(`Item ${item.productId} is unavailable or size invalid`);
@@ -26,14 +41,10 @@ async function calculateCartTotal(items, promoCodeString = null) {
         let itemUnitPrice = Number(productSize.price);
         const validatedModifiers = [];
 
-        // 2. Fetch real prices for selected modifiers
+        // Check modifiers
         if (item.modifierIds && item.modifierIds.length > 0) {
-            const modifiers = await prisma.productModifier.findMany({
-                where: { id: { in: item.modifierIds } }
-            });
-
             for (const modId of item.modifierIds) {
-                const modifier = modifiers.find(m => m.id === modId);
+                const modifier = modifierMap.get(modId);
                 if (!modifier) throw new Error(`Invalid modifier ID ${modId}`);
 
                 // Add to unit price
