@@ -8,6 +8,10 @@
     <meta name="description"
         content="Вкусная пицца с быстрой доставкой по Минску. Заказывайте прямо сейчас и получите скидку 50% на вторую пиццу!">
     
+    <!-- PWA / Web Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#E30613">
+    
     <!-- OpenGraph Tags -->
     <meta property="og:title" content="Express Pizza — Быстрая доставка горячей пиццы в Минске" />
     <meta property="og:description" content="Вкусная пицца с быстрой доставкой по Минску. Заказывайте прямо сейчас и получите скидку 50% на вторую пиццу!" />
@@ -753,6 +757,19 @@
     <script src="js/ui.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/main.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('[PWA] Service Worker registered successfully', reg.scope);
+                }).catch(err => {
+                    console.error('[PWA] Service Worker registration failed:', err);
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>
