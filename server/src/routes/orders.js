@@ -8,7 +8,6 @@ const { calculateCartTotal } = require('../services/cartService');
 const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
-const loyaltyService = require('../services/loyaltyService');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
@@ -398,27 +397,7 @@ router.patch('/:id/status', requireRole(['ADMIN']), async (req, res) => {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const wasCompleted = order.status === 'COMPLETED';
-
         await updateOrderStatus(orderId, dbStatus);
-
-        if (dbStatus === 'COMPLETED' && !wasCompleted && order.userId) {
-            const baseAmount = Number(
-                order.finalAmount
-                ?? order.totalAmount
-                ?? Math.max(0, (order.total ?? 0) - (order.spentPoints ?? 0))
-            );
-            const cashbackAmount = Math.floor(baseAmount * 0.05);
-
-            if (cashbackAmount > 0) {
-                await loyaltyService.awardPoints(
-                    order.userId,
-                    cashbackAmount,
-                    order.id,
-                    'earn_completed_' + order.id
-                );
-            }
-        }
 
         res.json({ success: true, status: dbStatus });
     } catch (err) {

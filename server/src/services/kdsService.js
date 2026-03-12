@@ -4,12 +4,98 @@
 
 const WebSocket = require('ws');
 const prisma = require('../lib/prisma');
+const loyaltyService = require('./loyaltyService');
 
 let wss = null;
 
 // Track connections per restaurant
 // Map<restaurantId, Set<WebSocket>>
 const clients = new Map();
+// Pending ACK retries for NEW_ORDER delivery
+// Map<"restaurantId:orderId", { timeout: NodeJS.Timeout, attempts: number, payload: string }>
+const pendingAcks = new Map();
+
+const ACK_TIMEOUT_MS = 5000;
+
+function getAckKey(restaurantId, orderId) {
+    return `${parseInt(restaurantId)}:${parseInt(orderId)}`;
+}
+
+function clearAckTimer(ackKey) {
+    const pending = pendingAcks.get(ackKey);
+    if (!pending) return;
+    clearTimeout(pending.timeout);
+    pendingAcks.delete(ackKey);
+}
+
+function sendToRestaurant(restaurantId, payload) {
+    const restaurantClients = clients.get(parseInt(restaurantId));
+    if (!restaurantClients || restaurantClients.size === 0) return false;
+
+    let sent = false;
+    for (const client of restaurantClients) {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(payload);
+            sent = true;
+        }
+    }
+    return sent;
+}
+
+function scheduleAckRetry(restaurantId, orderData) {
+    const orderId = orderData?.id;
+    if (!orderId) return;
+
+    const ackKey = getAckKey(restaurantId, orderId);
+    clearAckTimer(ackKey);
+
+    const payload = JSON.stringify({
+        type: 'NEW_ORDER',
+        data: orderData
+    });
+
+    const pending = {
+        attempts: 1,
+        payload,
+        timeout: null
+    };
+
+    const queueRetry = () => {
+        pending.timeout = setTimeout(() => {
+            // If already acknowledged, skip
+            if (!pendingAcks.has(ackKey)) {
+                return;
+            }
+
+            pending.attempts += 1;
+            console.log(`[KDS] ACK timeout for order #${orderId} (attempt ${pending.attempts - 1}). Retrying delivery...`);
+            const wasSent = sendToRestaurant(restaurantId, pending.payload);
+
+            if (!wasSent) {
+                console.log(`[KDS] Retry for order #${orderId} skipped: no active clients for restaurant ${restaurantId}`);
+            }
+
+            queueRetry();
+        }, ACK_TIMEOUT_MS);
+    };
+
+    pendingAcks.set(ackKey, pending);
+
+    const wasSent = sendToRestaurant(restaurantId, payload);
+    if (!wasSent) {
+        console.log(`[KDS] Initial delivery for order #${orderId} pending: no active clients for restaurant ${restaurantId}`);
+    }
+
+    queueRetry();
+}
+
+function broadcastStatusSync(restaurantId, payloadData) {
+    const payload = JSON.stringify({
+        type: 'STATUS_SYNC',
+        data: payloadData
+    });
+    sendToRestaurant(restaurantId, payload);
+}
 
 function initKDSWebSocket(server) {
     wss = new WebSocket.Server({ server, path: '/ws/kds' });
@@ -36,7 +122,16 @@ function initKDSWebSocket(server) {
             try {
                 const message = JSON.parse(messageAsString);
 
-                // Allow KDS clients to update status (PREPARING -> READY)
+                if (message.type === 'KDS_ACK' && message.orderId) {
+                    const ackKey = getAckKey(restaurantId, message.orderId);
+                    if (pendingAcks.has(ackKey)) {
+                        clearAckTimer(ackKey);
+                        console.log(`[KDS] ACK received for order #${message.orderId} (restaurant ${restaurantId})`);
+                    }
+                    return;
+                }
+
+                // Allow KDS clients to update status
                 if (message.type === 'STATUS_UPDATE') {
                     const { orderId, status } = message.data;
                     await updateOrderStatus(orderId, status);
@@ -58,20 +153,7 @@ function initKDSWebSocket(server) {
  */
 function broadcastOrderToKDS(restaurantId, orderData) {
     if (!wss) return;
-
-    const restaurantClients = clients.get(parseInt(restaurantId));
-    if (!restaurantClients || restaurantClients.size === 0) return;
-
-    const payload = JSON.stringify({
-        type: 'NEW_ORDER',
-        data: orderData
-    });
-
-    for (const client of restaurantClients) {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(payload);
-        }
-    }
+    scheduleAckRetry(restaurantId, orderData);
 }
 
 /**
@@ -79,9 +161,30 @@ function broadcastOrderToKDS(restaurantId, orderData) {
  */
 async function updateOrderStatus(orderId, newStatus) {
     try {
+        const existingOrder = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                orderNumber: true,
+                externalOrderId: true,
+                status: true,
+                userId: true,
+                total: true,
+                spentPoints: true,
+                restaurantId: true
+            }
+        });
+
+        if (!existingOrder) {
+            throw new Error(`Order ${orderId} not found`);
+        }
+
         const order = await prisma.order.update({
             where: { id: orderId },
-            data: { status: newStatus }
+            data: {
+                status: newStatus,
+                completedAt: newStatus === 'COMPLETED' ? new Date() : null
+            }
         });
 
         console.log(`[KDS] Order #${order.orderNumber} status updated to ${newStatus}`);
@@ -94,24 +197,44 @@ async function updateOrderStatus(orderId, newStatus) {
                 aggregateId: order.externalOrderId,
                 idempotencyKey: `status_${order.externalOrderId}_${newStatus}_${Date.now()}`,
                 restaurantId: order.restaurantId,
-                payload: { oldStatus: order.status, newStatus }
+                payload: { oldStatus: existingOrder.status, newStatus }
             }
         });
 
-        // Broadcast the status change back to all KDS screens to keep them synced
-        const restaurantClients = clients.get(order.restaurantId);
-        if (restaurantClients) {
-            const payload = JSON.stringify({
-                type: 'STATUS_SYNC',
-                data: { orderId: order.id, status: newStatus }
-            });
-            for (const client of restaurantClients) {
-                if (client.readyState === WebSocket.OPEN) client.send(payload);
+        let loyaltyPoints = null;
+
+        if (newStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
+            const baseAmount = Math.max(0, Number(existingOrder.total ?? 0) - Number(existingOrder.spentPoints ?? 0));
+            const cashbackAmount = Math.floor(baseAmount * 0.05);
+
+            if (cashbackAmount > 0) {
+                await loyaltyService.awardPoints(
+                    existingOrder.userId,
+                    cashbackAmount,
+                    order.id,
+                    `earn_completed_${order.id}`
+                );
+
+                const balance = await prisma.pointsBalance.findUnique({
+                    where: { userId: existingOrder.userId },
+                    select: { currentBalance: true }
+                });
+                loyaltyPoints = balance?.currentBalance ?? null;
             }
         }
 
+        // Broadcast status sync to KDS + customer tracker listeners
+        broadcastStatusSync(order.restaurantId, {
+            orderId: order.id,
+            externalOrderId: order.externalOrderId,
+            status: newStatus,
+            userId: existingOrder.userId,
+            loyaltyPoints
+        });
+
     } catch (err) {
         console.error('[KDS] Failed to update order status:', err);
+        throw err;
     }
 }
 
@@ -122,7 +245,7 @@ async function getActiveOrders(restaurantId) {
     return await prisma.order.findMany({
         where: {
             restaurantId: parseInt(restaurantId),
-            status: { in: ['NEW', 'COOKING', 'BAKING'] }
+            status: { in: ['NEW', 'CONFIRMED', 'COOKING', 'BAKING'] }
         },
         orderBy: { createdAt: 'asc' },
         include: {
