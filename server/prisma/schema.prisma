@@ -317,6 +317,9 @@ model Order {
 
   // Payment & Status
   payment         PaymentMethod @default(BEPAID_ONLINE)
+  paymentMethod   String?
+  paymentStatus   String?
+  transactionId   String?
   status          OrderStatus   @default(NEW)
 
   // Pricing (calculated on server — cartService.js)

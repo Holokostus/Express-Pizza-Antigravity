@@ -288,53 +288,21 @@
                     <div class="pt-2">
                         <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Способ
                             оплаты</p>
-                        <!-- Option 1: bePaid Online -->
-                        <label
-                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all mb-2 group">
-                            <input type="radio" name="payment" value="bepaid_online" class="mt-0.5 accent-primary"
-                                checked>
-                            <div class="flex-grow">
-                                <span class="font-bold text-sm">Картой онлайн через bePaid</span>
-                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Visa,
-                                    Mastercard, Белкарт, Мир</span>
-                                <div class="flex items-center gap-1.5 mt-1.5">
-                                    <span
-                                        class="inline-block bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">VISA</span>
-                                    <span
-                                        class="inline-block bg-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded">MC</span>
-                                    <span
-                                        class="inline-block bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">БЕЛКАРТ</span>
-                                    <span
-                                        class="inline-block bg-sky-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded">МИР</span>
-                                </div>
-                            </div>
-                        </label>
-                        <!-- Option 2: Оплати QR -->
-                        <label
-                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all mb-2 group">
-                            <input type="radio" name="payment" value="oplati_qr" class="mt-0.5 accent-primary">
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-sm">Через приложение Оплати</span>
-                                    <span
-                                        class="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full">QR</span>
-                                </div>
-                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Отсканируйте
-                                    QR-код в приложении банка</span>
-                            </div>
-                        </label>
-                        <!-- Option 3: Cash on Delivery -->
-                        <label id="payment-cash-label"
-                            class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
-                            <input type="radio" name="payment" id="payment-cash-radio" value="cash_ikassa"
-                                class="mt-0.5 accent-primary">
-                            <div>
-                                <span class="font-bold text-sm">При получении <span id="cash-limit-warning"
-                                        class="hidden text-xs text-primary ml-1">(Недоступно > 100 BYN)</span></span>
-                                <span class="block text-xs text-textMutedLight dark:text-textMutedDark">Наличные курьеру
-                                    или терминал iKassa</span>
-                            </div>
-                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label id="payment-cash-label"
+                                class="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
+                                <input type="radio" name="payment" id="payment-cash-radio" value="cash" checked
+                                    class="accent-primary">
+                                <span class="font-bold text-sm">Наличными</span>
+                            </label>
+                            <label
+                                class="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group">
+                                <input type="radio" name="payment" value="card" class="accent-primary">
+                                <span class="font-bold text-sm">Картой онлайн</span>
+                            </label>
+                        </div>
+                        <p id="cash-limit-warning" class="hidden text-xs text-primary mt-2">Наличные недоступны для
+                            заказов от 100 BYN.</p>
                     </div>
 
                     <!-- Legal consent checkbox (Belarus law requirement) -->

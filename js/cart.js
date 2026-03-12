@@ -77,7 +77,7 @@ function evaluateRisk(total) {
         cashLabel.classList.add('opacity-50', 'pointer-events-none');
         if (warning) warning.classList.remove('hidden');
         if (cashRadio.checked) {
-            const onlineRadio = document.querySelector('input[value="bepaid_online"]');
+            const onlineRadio = document.querySelector('input[value="card"]');
             if (onlineRadio) onlineRadio.checked = true;
         }
     } else {
@@ -436,6 +436,76 @@ window.addCustomizedItem = () => {
         setTimeout(() => badge.classList.remove('cart-bounce'), 400);
     }
 };
+
+
+
+window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
+    let modal = $('sandbox-payment-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'sandbox-payment-modal';
+        document.body.appendChild(modal);
+    }
+
+    const amount = Number(total || 0).toFixed(2);
+
+    modal.className = 'fixed inset-0 z-[300] flex items-center justify-center opacity-0 transition-opacity duration-300';
+    modal.innerHTML = `
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-[#1a1a1a] rounded-3xl w-[92%] max-w-md p-5 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display font-black text-xl">Sandbox Payment Gateway</h3>
+                <span class="text-xs text-textMutedLight dark:text-textMutedDark">TEST MODE</span>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Номер карты</p>
+                    <div class="grid grid-cols-4 gap-2">
+                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
+                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
+                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
+                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Срок</p>
+                        <input id="sandbox-card-exp" maxlength="5" placeholder="MM/YY" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-center font-mono">
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">CVC</p>
+                        <input id="sandbox-card-cvc" maxlength="3" inputmode="numeric" placeholder="123" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-center font-mono">
+                    </div>
+                </div>
+            </div>
+
+            <button id="sandbox-pay-btn" class="w-full mt-5 bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg">Оплатить ${amount} BYN</button>
+            <div id="sandbox-bank-status" class="hidden mt-3 text-sm text-center text-textMutedLight dark:text-textMutedDark">
+                <span class="animate-spin inline-block mr-2">⏳</span>Связь с банком...
+            </div>
+        </div>
+    `;
+
+    requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+
+    const payBtn = $('sandbox-pay-btn');
+    const bankStatus = $('sandbox-bank-status');
+    if (!payBtn) return resolve();
+
+    payBtn.addEventListener('click', () => {
+        payBtn.disabled = true;
+        if (bankStatus) bankStatus.classList.remove('hidden');
+
+        setTimeout(() => {
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.remove();
+                resolve();
+            }, 250);
+        }, 2500);
+    });
+});
 
 // ── Upsells ──
 function renderUpsells() {

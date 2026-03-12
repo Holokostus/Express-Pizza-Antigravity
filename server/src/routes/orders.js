@@ -11,6 +11,7 @@ const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsServi
 const loyaltyService = require('../services/loyaltyService');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
+const { z } = require('zod');
 
 const router = express.Router();
 
@@ -67,6 +68,9 @@ const checkoutSchema = z.object({
     restaurantId: z.number().int().optional(),
     source: z.string().optional(),
     payment: z.string().optional(),
+    paymentMethod: z.string().optional(),
+    paymentStatus: z.string().optional(),
+    transactionId: z.string().optional(),
     spentPoints: z.number().int().nonnegative().optional(),
     clientOrderId: z.string().optional()
 }).refine(data => data.address || data.customerAddress, {
@@ -90,6 +94,9 @@ router.post('/checkout', requireAuth, async (req, res) => {
             restaurantId,
             source = 'WEBSITE',
             payment = 'BEPAID_ONLINE',
+            paymentMethod,
+            paymentStatus,
+            transactionId,
             spentPoints = 0,
             clientOrderId
         } = req.body;
@@ -184,6 +191,9 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     customerPhone,
                     customerAddress: finalAddress,
                     payment,
+                    paymentMethod: paymentMethod || null,
+                    paymentStatus: paymentStatus || null,
+                    transactionId: transactionId || null,
                     status: 'NEW',
                     subtotal: cartResult.subtotal,
                     discount: cartResult.discount + finalSpentPoints,
@@ -235,7 +245,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // 4. Integrations: Payments & Notifications
         let checkoutUrl = null;
 
-        if (payment === 'BEPAID_ONLINE' || payment === 'OPLATI_QR') {
+        if ((payment === 'BEPAID_ONLINE' || payment === 'OPLATI_QR') && paymentStatus !== 'paid') {
             // Generate bePaid payment URL
             checkoutUrl = await createPaymentSession(createdOrder.externalOrderId, createdOrder.total, {
                 name: customerName,
