@@ -20,6 +20,7 @@ let cart = JSON.parse(localStorage.getItem('ep_cart')) || [];
 let currentCategory = 'pizza';
 let selectedSizeIndex = {};
 let serverCalculation = null;  // latest server response from /api/orders/calculate
+let spentPointsToApply = 0;    // amount of points user decided to spend
 
 // ============================================================
 // 2. showToast
@@ -348,6 +349,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (totalsArea && serverData) {
             const { subtotal, discount, total, promo } = serverData;
             let html = '';
+            // Loyalty points redemption element toggling
+            const applyPointsContainer = $('loyalty-redeem-container');
+            const availPointsEl = $('loyalty-available');
+            
+            // Check global variable set in UI.js renderProfileView
+            const availCoins = window.userLoyaltyPoints || 0;
+            
+            if (applyPointsContainer && authToken && availCoins > 0) {
+                applyPointsContainer.classList.remove('hidden');
+                availPointsEl.textContent = availCoins;
+            } else if (applyPointsContainer) {
+                applyPointsContainer.classList.add('hidden');
+                spentPointsToApply = 0; // reset
+            }
+
+            // Adjust the displayed total
+            const finalTotal = Math.max(0, total - (spentPointsToApply || 0));
+
             if (promo && discount > 0) {
                 html = `
                     <div class="flex items-center justify-between text-sm mb-1">
@@ -358,21 +377,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="text-green-600 dark:text-green-400">${promo.label}</span>
                         <span class="text-green-600 dark:text-green-400">−${discount.toFixed(2)} BYN</span>
                     </div>
+                    ${spentPointsToApply > 0 ? `
+                    <div class="flex items-center justify-between text-sm mb-1 text-primary">
+                        <span>Списано баллов</span>
+                        <span>−${spentPointsToApply.toFixed(2)} BYN</span>
+                    </div>` : ''}
                     <div class="flex items-center justify-between mt-2">
                         <span class="font-bold text-lg">Итого:</span>
-                        <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} руб.</span>
+                        <span class="font-display font-black text-2xl text-primary">${finalTotal.toFixed(2)} руб.</span>
                     </div>`;
             } else {
                 html = `
+                    ${spentPointsToApply > 0 ? `
+                        <div class="flex items-center justify-between text-sm mb-1 text-primary">
+                            <span>Списано баллов</span>
+                            <span>−${spentPointsToApply.toFixed(2)} BYN</span>
+                        </div>` : ''}
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-lg">Итого:</span>
-                        <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} руб.</span>
+                        <span class="font-display font-black text-2xl text-primary">${finalTotal.toFixed(2)} руб.</span>
                     </div>`;
             }
             totalsArea.innerHTML = html;
 
             // COD limit (server-calculated total)
-            evaluateRisk(total);
+            evaluateRisk(finalTotal);
         } else if (totalsArea && cart.length === 0) {
             totalsArea.innerHTML = `
                 <div class="flex items-center justify-between">
@@ -471,6 +500,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.textContent = 'OK';
             appliedPromoCode = null;
             debouncedRecalculate();
+        }
+    };
+
+    // ================================================================
+    // Loyalty Points application
+    // ================================================================
+    window.applyPoints = () => {
+        const input = $('spend-points-input');
+        if (!input) return;
+
+        let points = parseInt(input.value) || 0;
+        const availCoins = window.userLoyaltyPoints || 0;
+        const currentCartTotal = serverCalculation ? serverCalculation.total : 0;
+        
+        // Cannot spend more than available
+        if (points > availCoins) {
+            points = availCoins;
+            input.value = points;
+            showToast('error', 'У вас нет столько баллов');
+        }
+        
+        // Cannot spend more than cart total (rounded up to avoid edge cases logic on front)
+        if (points > Math.floor(currentCartTotal)) {
+            points = Math.floor(currentCartTotal);
+            input.value = points;
+            showToast('error', 'Нельзя списать баллов больше суммы заказа');
+        }
+
+        spentPointsToApply = points;
+        
+        // Manually trigger a quick update of the totals UI without hitting the server again
+        renderCartUI(serverCalculation);
+        
+        if (points > 0) {
+            showToast('success', `Применено баллов: ${points}`);
+        } else {
+            showToast('error', `Списание баллов отменено`);
         }
     };
 
@@ -589,7 +655,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     customerName: name,
                     customerAddress: address,
                     payment: paymentMethod ? paymentMethod.value.toUpperCase() : 'BEPAID_ONLINE',
-                    restaurantId: 1
+                    restaurantId: 1,
+                    spentPoints: spentPointsToApply || 0
                 }),
             });
 
@@ -608,6 +675,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Reset cart
             cart = [];
             appliedPromoCode = null;
+            spentPointsToApply = 0;
             serverCalculation = null;
             renderCartUI(null);
 

@@ -90,14 +90,18 @@ router.post('/verify', async (req, res) => {
         otpStore.delete(phone);
 
         // Find or create user
-        let user = await prisma.user.findUnique({ where: { phone } });
+        let user = await prisma.user.findUnique({
+            where: { phone },
+            include: { pointsBalance: true }
+        });
 
         if (!user) {
             user = await prisma.user.create({
                 data: {
                     phone,
                     role: 'CUSTOMER'
-                }
+                },
+                include: { pointsBalance: true }
             });
             console.log(`[Auth] New user registered`);
         }
@@ -117,7 +121,7 @@ router.post('/verify', async (req, res) => {
                 phone: user.phone,
                 name: user.name,
                 role: user.role,
-                loyaltyPoints: user.loyaltyPoints
+                loyaltyPoints: user.pointsBalance?.currentBalance || 0
             }
         });
 
@@ -135,11 +139,22 @@ router.get('/me', requireAuth, async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.user.userId },
-            select: { id: true, phone: true, name: true, email: true, address: true, loyaltyPoints: true, allergies: true, role: true }
+            include: { pointsBalance: true }
         });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
+        
+        // Map pointsBalance to loyaltyPoints for legacy compatibility in frontend
+        res.json({
+            id: user.id, 
+            phone: user.phone, 
+            name: user.name, 
+            email: user.email, 
+            address: user.address, 
+            loyaltyPoints: user.pointsBalance?.currentBalance || 0, 
+            allergies: user.allergies, 
+            role: user.role
+        });
     } catch (err) {
         res.status(500).json({ error: 'Failed to load profile' });
     }

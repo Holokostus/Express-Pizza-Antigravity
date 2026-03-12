@@ -287,14 +287,18 @@ async function renderProfileView() {
 
         const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
-        // ExpressCoins: 5% of completed order totals
-        const completedTotal = data.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + parseFloat(o.total), 0);
-        const coins = Math.floor(completedTotal * 0.05 * 100); // 1 coin = 0.01 BYN
+        // ExpressCoins: fetched from the Server User Object
+        // (the server now populates it correctly based on PointsBalance)
+        const coins = data.loyaltyPoints || 0;
+        
         // Update header and cart badges
         const coinsEl = document.getElementById('coins-count');
         const cartCoinsEl = document.getElementById('cart-coins-val');
         if (coinsEl) coinsEl.textContent = coins;
         if (cartCoinsEl) cartCoinsEl.textContent = coins;
+        
+        // Expose globally for cart use
+        window.userLoyaltyPoints = coins;
 
         let html = data.orders.length === 0 ? '<p class="text-gray-500 text-sm text-center py-6">Нет заказов</p>' : data.orders.map(o => `
             <div class="border border-gray-100 dark:border-gray-800 rounded-xl p-4 mb-3 bg-gray-50 dark:bg-black/50">
