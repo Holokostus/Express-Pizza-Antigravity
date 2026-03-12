@@ -45,14 +45,12 @@ async function api(path, options = {}) {
             const orderPayload = JSON.parse(options.body);
             orderPayload._tempId = Date.now();
             
-            let offlineOrders = JSON.parse(localStorage.getItem('ep_offline_orders')) || [];
+            let offlineOrders = JSON.parse(localStorage.getItem('offline_orders')) || [];
             offlineOrders.push(orderPayload);
-            localStorage.setItem('ep_offline_orders', JSON.stringify(offlineOrders));
+            localStorage.setItem('offline_orders', JSON.stringify(offlineOrders));
             
             return {
                 offline: true,
-                success: true,
-                orderId: `OFF_${orderPayload._tempId}`,
                 message: "Офлайн"
             };
         }
