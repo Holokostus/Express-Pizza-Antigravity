@@ -3,11 +3,15 @@
 // ============================================================
 
 const express = require('express');
+const router = express.Router();
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
+const { requireAuth } = require('../middleware/auth');
 
 // In-memory OTP store (In production, use Redis with TTL)
 // Maps phone number -> { code: "1234", attempts: 0, expiresAt: timestamp }
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+
 const otpStore = new Map();
 
 /**
