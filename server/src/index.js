@@ -31,6 +31,7 @@ const paymentRoutes = require('./routes/payments');
 const aggregatorRoutes = require('./routes/aggregators');
 const adminRoutes = require('./routes/admin');
 const menuRoutes = require('./routes/menu');
+const promotionsRoutes = require('./routes/promotions');
 
 // ---- Import Services ----
 const { generateMenuJsonLd } = require('./services/seoService');
@@ -64,6 +65,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
 app.use('/api/admin', requireAuth, checkRole(['ADMIN']), adminRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/promotions', promotionsRoutes);
 
 // ---- Health Check ----
 app.get('/api/health', async (req, res) => {
