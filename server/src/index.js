@@ -30,6 +30,7 @@ const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
 const aggregatorRoutes = require('./routes/aggregators');
 const adminRoutes = require('./routes/admin');
+const menuRoutes = require('./routes/menu');
 
 // ---- Import Services ----
 const { generateMenuJsonLd } = require('./services/seoService');
@@ -61,6 +62,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/menu', menuRoutes);
 
 // ---- Health Check ----
 app.get('/api/health', async (req, res) => {
@@ -86,30 +88,6 @@ app.get('/api/health', async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ status: 'error', database: 'disconnected', error: err.message });
-    }
-});
-
-// ---- Menu API (with КБЖУ + allergens) ----
-app.get('/api/menu', async (req, res) => {
-    try {
-        const { category } = req.query;
-        const where = { isAvailable: true };
-        if (category) {
-            const cat = await prisma.category.findUnique({ where: { slug: category } });
-            if (cat) where.categoryId = cat.id;
-        }
-        const products = await prisma.product.findMany({
-            where,
-            include: {
-                sizes: { orderBy: { price: 'asc' } },
-                category: true,
-                modifiers: true,
-            },
-            orderBy: { sortOrder: 'asc' },
-        });
-        res.json(products);
-    } catch (err) {
-        res.status(500).json({ error: 'Ошибка загрузки меню' });
     }
 });
 

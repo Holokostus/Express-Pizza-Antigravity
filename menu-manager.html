@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Pizza — Управление меню</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <header class="flex flex-col md:flex-row gap-4 md:items-center md:justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <a href="admin.html"
+                    class="inline-flex items-center rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition-colors">
+                    ← Назад в Дашборд
+                </a>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold">Каталог товаров</h1>
+                    <p class="text-slate-400 text-sm">Добавляйте, редактируйте и удаляйте позиции меню.</p>
+                </div>
+            </div>
+            <button id="add-product-btn"
+                class="rounded-lg bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 transition-colors">
+                + Добавить товар
+            </button>
+        </header>
+
+        <section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="bg-slate-800/80 text-slate-300 text-sm uppercase tracking-wide">
+                        <tr>
+                            <th class="px-4 py-3">Товар</th>
+                            <th class="px-4 py-3">Категория</th>
+                            <th class="px-4 py-3">Цена</th>
+                            <th class="px-4 py-3">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-body" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="product-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+        <div class="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="modal-title" class="text-xl font-bold">Добавить товар</h2>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-slate-200 text-2xl leading-none">×</button>
+            </div>
+
+            <form id="product-form" class="space-y-4">
+                <input id="product-id" type="hidden">
+                <div>
+                    <label class="block text-sm mb-1 text-slate-300" for="name">Название</label>
+                    <input id="name" type="text" required
+                        class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1 text-slate-300" for="description">Описание</label>
+                    <textarea id="description" rows="3"
+                        class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm mb-1 text-slate-300" for="price">Цена</label>
+                        <input id="price" type="number" min="0" step="0.01" required
+                            class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 text-slate-300" for="category">Категория</label>
+                        <select id="category" required
+                            class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1 text-slate-300" for="image">URL картинки</label>
+                    <input id="image" type="url"
+                        class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        placeholder="https://... или /images/...">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="cancel-btn"
+                        class="rounded-lg border border-slate-600 px-4 py-2 hover:bg-slate-800">Отмена</button>
+                    <button type="submit" class="rounded-lg bg-red-500 px-5 py-2 font-semibold hover:bg-red-400">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/menu-manager.js"></script>
+</body>
+
+</html>
