@@ -1,5 +1,20 @@
 {
+  "version": 2,
   "framework": null,
-  "buildCommand": "echo 'No build step required'",
-  "outputDirectory": "."
+  "builds": [
+    {
+      "src": "server/src/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/server/src/index.js"
+    }
+  ]
 }
