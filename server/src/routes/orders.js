@@ -68,7 +68,8 @@ const checkoutSchema = z.object({
     restaurantId: z.number().int().optional(),
     source: z.string().optional(),
     payment: z.string().optional(),
-    spentPoints: z.number().int().nonnegative().optional()
+    spentPoints: z.number().int().nonnegative().optional(),
+    clientOrderId: z.string().optional()
 }).refine(data => data.address || data.customerAddress, {
     message: "Address is required",
     path: ["address"]
@@ -90,7 +91,8 @@ router.post('/checkout', requireAuth, async (req, res) => {
             restaurantId,
             source = 'WEBSITE',
             payment = 'BEPAID_ONLINE',
-            spentPoints = 0
+            spentPoints = 0,
+            clientOrderId
         } = req.body;
 
         const finalAddress = customerAddress || address;
@@ -112,11 +114,14 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const cartResult = await calculateCartTotal(items, promoCodeString);
 
         // 2. Generate Idempotency Key
-        // Hash based on phone + items stringified + rounded timestamp (10 sec window)
-        // Prevents accidental double-clicks from creating duplicate orders
-        const timeWindow = Math.floor(Date.now() / 10000); // 10 second window
-        const hashInput = `${customerPhone}-${JSON.stringify(items)}-${timeWindow}`;
-        const idempotencyKey = crypto.createHash('sha256').update(hashInput).digest('hex');
+        let idempotencyKey;
+        if (clientOrderId) {
+            idempotencyKey = "checkout_" + clientOrderId;
+        } else {
+            const timeWindow = Math.floor(Date.now() / 10000); // 10 second window
+            const hashInput = `${customerPhone}-${JSON.stringify(items)}-${timeWindow}`;
+            idempotencyKey = crypto.createHash('sha256').update(hashInput).digest('hex');
+        }
 
         // Check if EventLog already has this idempotency key (deduplication)
         const duplicateEvent = await prisma.eventLog.findUnique({
@@ -135,30 +140,41 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // Generate UUID for the order (aggregateId)
         const externalOrderId = crypto.randomUUID();
 
-        // Ensure spent points don't exceed cart total
-        let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
-
-        // Ensure spent points don't exceed user balance
-        if (finalSpentPoints > 0 && req.user?.id) {
-            const balanceRecord = await prisma.pointsBalance.findUnique({
-                where: { userId: req.user.id }
-            });
-            const availablePoints = balanceRecord?.currentBalance || 0;
-
-            if (finalSpentPoints > availablePoints) {
-                return res.status(400).json({ error: 'Недостаточно баллов для списания' });
-            }
-
-            const redeemKey = `redeem_${Date.now()}_${req.user.id}`;
-            await loyaltyService.redeemPoints(req.user.id, finalSpentPoints, null, redeemKey);
-        } else {
-            finalSpentPoints = 0;
-        }
-
-        const finalTotal = Math.max(0, cartResult.total - finalSpentPoints);
-
         // 3. Prisma $transaction (Atomicity)
         const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
+            
+            let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
+            
+            if (finalSpentPoints > 0 && req.user?.id) {
+                // Ensure atomic deduction to prevent TOCTOU
+                const updatedBalance = await tx.pointsBalance.updateMany({
+                    where: { 
+                        userId: req.user.id,
+                        currentBalance: { gte: finalSpentPoints }
+                    },
+                    data: {
+                        currentBalance: { decrement: finalSpentPoints }
+                    }
+                });
+
+                if (updatedBalance.count === 0) {
+                    throw new Error('Недостаточно баллов для списания');
+                }
+
+                // Log deduction in Ledger
+                await tx.pointsLedger.create({
+                    data: {
+                        userId: req.user.id,
+                        amount: -finalSpentPoints,
+                        transactionType: 'REDEEM',
+                        idempotencyKey: `redeem_${idempotencyKey}`
+                    }
+                });
+            } else {
+                finalSpentPoints = 0;
+            }
+
+            const finalTotal = Math.max(0, cartResult.total - finalSpentPoints);
 
             // A. Create the Order and its items
             const order = await tx.order.create({

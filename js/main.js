@@ -135,7 +135,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     customerName: name,
                     customerAddress: address,
                     payment: paymentMethod ? paymentMethod.value.toUpperCase() : 'BEPAID_ONLINE',
-                    restaurantId: 1
+                    restaurantId: 1,
+                    clientOrderId: crypto.randomUUID()
                 }),
             });
 
