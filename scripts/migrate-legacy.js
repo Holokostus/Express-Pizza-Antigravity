@@ -63,7 +63,12 @@ function loadLegacyMenu() {
     return vm.runInNewContext(expression);
 }
 
-async function migrate() {
+async function runMigration() {
+    const count = await prisma.product.count();
+    if (count > 0) {
+        return;
+    }
+
     const legacyMenu = loadLegacyMenu();
 
     await prisma.productSize.deleteMany();
@@ -123,11 +128,17 @@ async function migrate() {
     console.log(`✅ Migration done. Categories: ${categoriesToCreate.length}, products: ${legacyMenu.length}, promotions: ${LEGACY_PROMOTIONS.length}`);
 }
 
-migrate()
-    .catch((error) => {
-        console.error('❌ Migration failed:', error);
-        process.exitCode = 1;
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+module.exports = {
+    runMigration,
+};
+
+if (require.main === module) {
+    runMigration()
+        .catch((error) => {
+            console.error('❌ Migration failed:', error);
+            process.exitCode = 1;
+        })
+        .finally(async () => {
+            await prisma.$disconnect();
+        });
+}

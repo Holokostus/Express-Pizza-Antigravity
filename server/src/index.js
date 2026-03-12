@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const prisma = require('./lib/prisma');
+const { runMigration } = require('../../scripts/migrate-legacy');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -313,22 +314,32 @@ const server = http.createServer(app);
 // Initialize WebSocket for Kitchen Display System
 kdsService.initKDSWebSocket(server);
 
-server.listen(PORT, () => {
-    console.log(`\n🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
-    console.log(`📋 Health:       /api/health`);
-    console.log(`📦 Menu:         /api/menu`);
-    console.log(`🔐 Auth:         /api/auth/send-sms`);
-    console.log(`🛒 Cart:         /api/orders/calculate`);
-    console.log(`💳 Payments:     /api/payments/webhook`);
-    console.log(`📡 Aggregators:  /api/aggregators/{delivio,wolt}/webhook`);
-    console.log(`🔄 Event Sync:   /api/sync/events`);
-    console.log(`👨‍🍳 KDS:          /api/kds/:restaurantId/orders`);
-    console.log(`⏱️  ETA:          /api/eta/calculate`);
-    console.log(`🖨️  Print:        /api/print/{service,kitchen}`);
-    console.log(`🔌 WebSocket:    ws://localhost:${PORT}/ws/kds?restaurantId=1`);
-    console.log(`🔍 SEO JSON-LD:  /api/seo/jsonld`);
-    console.log(`📄 Оферта:       /oferta\n`);
-});
+async function startServer() {
+    try {
+        await runMigration();
+    } catch (error) {
+        console.error('⚠️ Migration on startup failed:', error);
+    }
+
+    server.listen(PORT, () => {
+        console.log(`\n🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
+        console.log(`📋 Health:       /api/health`);
+        console.log(`📦 Menu:         /api/menu`);
+        console.log(`🔐 Auth:         /api/auth/send-sms`);
+        console.log(`🛒 Cart:         /api/orders/calculate`);
+        console.log(`💳 Payments:     /api/payments/webhook`);
+        console.log(`📡 Aggregators:  /api/aggregators/{delivio,wolt}/webhook`);
+        console.log(`🔄 Event Sync:   /api/sync/events`);
+        console.log(`👨‍🍳 KDS:          /api/kds/:restaurantId/orders`);
+        console.log(`⏱️  ETA:          /api/eta/calculate`);
+        console.log(`🖨️  Print:        /api/print/{service,kitchen}`);
+        console.log(`🔌 WebSocket:    ws://localhost:${PORT}/ws/kds?restaurantId=1`);
+        console.log(`🔍 SEO JSON-LD:  /api/seo/jsonld`);
+        console.log(`📄 Оферта:       /oferta\n`);
+    });
+}
+
+startServer();
 
 // Graceful shutdown
 const shutdown = async (signal) => {
