@@ -36,6 +36,34 @@ const LEGACY_MENU = [
     { id: 53, name: 'Вода Bonaqua', category: 'drinks', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=200', badge: null, description: 'Чистая питьевая вода без газа.', isAvailable: true, sizes: [{ label: '0.5 л', weight: '0.5л', price: 1.90 }] },
 ];
 
+
+const REAL_MODIFIERS = [
+    {
+        name: 'Сырный бортик',
+        price: 4.5,
+        category: 'Бортики',
+        imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+        name: 'Халапеньо',
+        price: 2.2,
+        category: 'Острота',
+        imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+        name: 'Пармезан',
+        price: 3.1,
+        category: 'Сыры',
+        imageUrl: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+        name: 'Бекон',
+        price: 3.9,
+        category: 'Мясо',
+        imageUrl: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=400&q=80',
+    },
+];
+
 const LEGACY_PROMOTIONS = [
     {
         title: 'Скидка 50% на вторую пиццу',
@@ -83,6 +111,7 @@ async function runMigration() {
     await prisma.product.deleteMany();
     await prisma.category.deleteMany();
     await prisma.promotion.deleteMany();
+    await prisma.modifier.deleteMany();
 
     const slugs = [...new Set(legacyMenu.map((item) => item.category))];
     const categoriesToCreate = slugs.map((slug) => {
@@ -107,9 +136,23 @@ async function runMigration() {
 
     const categoryProductCounters = new Map();
 
+    const modifierRecords = [];
+    for (const mod of REAL_MODIFIERS) {
+        const createdModifier = await prisma.modifier.create({
+            data: {
+                name: mod.name,
+                category: mod.category,
+                imageUrl: mod.imageUrl,
+                price: Number(mod.price) || 0,
+            },
+        });
+        modifierRecords.push(createdModifier);
+    }
+
     for (const item of legacyMenu) {
         const currentCount = categoryProductCounters.get(item.category) || 0;
         categoryProductCounters.set(item.category, currentCount + 1);
+        const isPizza = item.category === 'pizza';
 
         await prisma.product.create({
             data: {
@@ -120,6 +163,7 @@ async function runMigration() {
                 isAvailable: item.isAvailable !== false,
                 sortOrder: currentCount,
                 categoryId: categoryMap.get(item.category),
+                dodoModifiers: isPizza ? { connect: modifierRecords.map((mod) => ({ id: mod.id })) } : undefined,
                 sizes: {
                     create: (item.sizes || []).map((size) => ({
                         label: size.label || 'Стандарт',
@@ -133,7 +177,7 @@ async function runMigration() {
 
     await prisma.promotion.createMany({ data: LEGACY_PROMOTIONS });
 
-    console.log(`✅ Migration done. Categories: ${categoriesToCreate.length}, products: ${legacyMenu.length}, promotions: ${LEGACY_PROMOTIONS.length}`);
+    console.log(`✅ Migration done. Categories: ${categoriesToCreate.length}, products: ${legacyMenu.length}, promotions: ${LEGACY_PROMOTIONS.length}, modifiers: ${modifierRecords.length}`);
 }
 
 module.exports = {
