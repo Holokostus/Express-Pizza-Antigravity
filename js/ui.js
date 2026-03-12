@@ -54,7 +54,7 @@ function renderMenu() {
             : '';
 
         return `
-        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s" data-item-id="${item.id}">
+        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim cursor-pointer js-menu-card" style="animation-delay: ${idx * 0.04}s" data-item-id="${item.id}">
             <div class="relative overflow-hidden aspect-square">
                 <img src="${item.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${escapeHtml(item.name)}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -72,7 +72,7 @@ function renderMenu() {
                     `).join('')}
                 </div>
                 ` : ''}
-                <button onclick="addToCart(${item.id})"
+                <button onclick="event.stopPropagation(); addToCart(${item.id})"
                     class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-red flex items-center justify-center gap-1.5 text-sm">
                     <span data-role="price-text">${parseFloat(activeSize.price).toFixed(2)} BYN</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
@@ -124,8 +124,10 @@ window.renderPromotions = (items = promotions) => {
     const strip = $('stories-strip');
     if (!strip) return;
 
-    strip.innerHTML = (items || []).map((promotion, index) => `
-        <div onclick="openStory(${index})" class="snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
+    strip.innerHTML = (items || []).map((promotion, index) => {
+        const safeUrl = promotion.linkUrl ? escapeHtml(promotion.linkUrl) : '';
+        return `
+        <div onclick="openPromotion(${index})" data-link-url="${safeUrl}" class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
             <div class="absolute inset-0 ${promotion.bgColor}"></div>
             <div class="relative z-10 h-full flex flex-col justify-end p-4">
                 <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promotion.badgeText)}</span>
@@ -133,8 +135,32 @@ window.renderPromotions = (items = promotions) => {
                 <p class="text-white/70 text-xs mt-0.5">${escapeHtml(promotion.subtitle)}</p>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 };
+
+window.openPromotion = (index) => {
+    const promotion = promotions?.[index];
+    if (promotion?.linkUrl) {
+        window.open(promotion.linkUrl, '_blank', 'noopener,noreferrer');
+        return;
+    }
+    openStory(index);
+};
+
+document.addEventListener('click', (event) => {
+    const card = event.target.closest('.js-menu-card');
+    if (!card) return;
+
+    if (event.target.closest('button')) {
+        return;
+    }
+
+    const itemId = Number(card.dataset.itemId);
+    if (!Number.isNaN(itemId) && typeof window.openCustomizer === 'function') {
+        window.openCustomizer(itemId);
+    }
+});
 
 // ── Size Selector ──
 
