@@ -3,12 +3,9 @@ const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/css/style.css',
-    '/js/auth.js',
     '/js/api.js',
     '/js/ui.js',
-    '/js/app.js',
     '/js/cart.js',
-    '/js/admin.js',
     '/js/main.js' // We just cache common js files we might use
 ];
 

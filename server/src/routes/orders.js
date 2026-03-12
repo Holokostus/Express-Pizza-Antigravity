@@ -232,12 +232,6 @@ router.post('/checkout', requireAuth, async (req, res) => {
             return [order, event];
         });
 
-        // Award 5% cashback on the final paid amount
-        const cashback = Math.floor(finalTotal * 0.05);
-        if (cashback > 0 && req.user?.id) {
-            await loyaltyService.awardPoints(req.user.id, cashback, String(createdOrder.id), 'earn_' + createdOrder.id);
-        }
-
         // 4. Integrations: Payments & Notifications
         let checkoutUrl = null;
 
@@ -377,7 +371,44 @@ router.patch('/:id/status', requireRole(['ADMIN']), async (req, res) => {
         };
         const dbStatus = statusMap[status.toLowerCase()] || status.toUpperCase();
 
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                status: true,
+                userId: true,
+                finalAmount: true,
+                totalAmount: true,
+                total: true,
+                spentPoints: true
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const wasCompleted = order.status === 'COMPLETED';
+
         await updateOrderStatus(orderId, dbStatus);
+
+        if (dbStatus === 'COMPLETED' && !wasCompleted && order.userId) {
+            const baseAmount = Number(
+                order.finalAmount
+                ?? order.totalAmount
+                ?? Math.max(0, (order.total ?? 0) - (order.spentPoints ?? 0))
+            );
+            const cashbackAmount = Math.floor(baseAmount * 0.05);
+
+            if (cashbackAmount > 0) {
+                await loyaltyService.awardPoints(
+                    order.userId,
+                    cashbackAmount,
+                    order.id,
+                    'earn_completed_' + order.id
+                );
+            }
+        }
 
         res.json({ success: true, status: dbStatus });
     } catch (err) {
