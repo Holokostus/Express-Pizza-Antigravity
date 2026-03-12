@@ -513,11 +513,35 @@ function renderUpsells() {
     const container = $('upsell-container');
     if (!widget || !container) return;
 
-    if (cart.length === 0) { widget.classList.add('hidden'); return; }
+    const menu = db.getMenu();
+    const cartMenuItems = cart
+        .map(cartItem => menu.find(menuItem => menuItem.sizes?.some(size => size.id === cartItem.productSizeId)))
+        .filter(Boolean);
 
-    const sauces = db.getAvailableMenu('sauce').slice(0, 2);
-    const drinks = db.getAvailableMenu('drinks').slice(0, 2);
-    const upsells = [...sauces, ...drinks];
+    const hasPizza = cartMenuItems.some(item => ['pizza', 'pizzas'].includes(item.category));
+    const hasDrinks = cartMenuItems.some(item => item.category === 'drinks');
+    const hasSnacks = cartMenuItems.some(item => ['snack', 'snacks'].includes(item.category));
+    const hasSauces = cartMenuItems.some(item => ['sauce', 'sauces'].includes(item.category));
+
+    const popularFallback = [
+        ...db.getAvailableMenu('drinks'),
+        ...db.getAvailableMenu('sauce'),
+        ...db.getAvailableMenu('snacks'),
+    ];
+
+    let upsells = [];
+    if (hasPizza && !hasDrinks) {
+        upsells = db.getAvailableMenu('drinks');
+    } else if (hasSnacks && !hasSauces) {
+        upsells = db.getAvailableMenu('sauce');
+    } else {
+        upsells = popularFallback;
+    }
+
+    upsells = upsells
+        .filter((item, idx, arr) => arr.findIndex(i => i.id === item.id) === idx)
+        .filter(item => !cartMenuItems.some(cartItem => cartItem.id === item.id))
+        .slice(0, 3);
 
     if (upsells.length === 0) { widget.classList.add('hidden'); return; }
 
