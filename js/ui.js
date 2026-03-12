@@ -156,14 +156,29 @@ function showOrderTracker(orderId) {
         customerWs.close();
     }
 
-    const wsUrl = typeof API_BASE !== 'undefined' && API_BASE !== '' ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'ws://localhost:5000' : `wss://${window.location.host}`) + '/ws/kds';
-    customerWs = new WebSocket(`${wsUrl}/ws/kds?restaurantId=1`);
+    const wsBase = typeof API_BASE !== 'undefined' && API_BASE !== ''
+        ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://')
+        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'ws://localhost:5000'
+            : `wss://${window.location.host}`);
+    customerWs = new WebSocket(`${wsBase}/ws/kds?restaurantId=1`);
 
     customerWs.onmessage = (event) => {
         try {
             const msg = JSON.parse(event.data);
             if (msg.type === 'STATUS_SYNC' && msg.data.externalOrderId === currentTrackerOrderId) {
                 updateTrackerUI(msg.data.status);
+
+                if (msg.data.status === 'COMPLETED') {
+                    const loyaltyPoints = msg.data.loyaltyPoints;
+                    if (typeof loyaltyPoints === 'number') {
+                        const coinsEl = document.getElementById('coins-count');
+                        const cartCoinsEl = document.getElementById('cart-coins-val');
+                        if (coinsEl) coinsEl.textContent = loyaltyPoints;
+                        if (cartCoinsEl) cartCoinsEl.textContent = loyaltyPoints;
+                        window.userLoyaltyPoints = loyaltyPoints;
+                    }
+                }
             }
         } catch (e) { }
     };
@@ -171,7 +186,7 @@ function showOrderTracker(orderId) {
 
 function updateTrackerUI(status) {
     const steps = ['step-new', 'step-cooking', 'step-baking', 'step-delivery'];
-    const statuses = ['NEW', 'COOKING', 'BAKING', 'DELIVERY'];
+    const statuses = ['NEW', 'COOKING', 'BAKING', 'DELIVERY', 'COMPLETED'];
 
     const currentIndex = statuses.indexOf(status);
     if (currentIndex === -1) return;
@@ -179,12 +194,12 @@ function updateTrackerUI(status) {
     // Update Progress Bar
     const progressBar = $('tracker-progress-bar');
     if (progressBar) {
-        const percentages = ['25%', '50%', '75%', '100%'];
+        const percentages = ['25%', '50%', '75%', '100%', '100%'];
         progressBar.style.width = percentages[currentIndex];
     }
 
     // Status text mapping
-    const statusTexts = ['Ожидает подтверждения', 'Готовится', 'В печи', 'В пути к вам'];
+    const statusTexts = ['Ожидает подтверждения', 'Готовится', 'В печи', 'В пути к вам', 'Выполнен ✅'];
     const txt = $('tracker-status-text');
     if (txt) txt.textContent = statusTexts[currentIndex];
 
