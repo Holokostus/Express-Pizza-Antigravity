@@ -8,7 +8,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const prisma = require('./lib/prisma');
-const { runMigration } = require('../../scripts/migrate-legacy');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -124,6 +123,16 @@ app.get('/api/restaurants', async (req, res) => {
         res.json(restaurants);
     } catch (err) {
         res.status(500).json({ error: 'Ошибка загрузки ресторанов' });
+    }
+});
+
+app.get('/api/force-migrate', async (req, res) => {
+    try {
+        const { runMigration } = require('../../scripts/migrate-legacy');
+        await runMigration();
+        res.json({ success: true, message: 'БД успешно заселена данными!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -315,12 +324,6 @@ const server = http.createServer(app);
 kdsService.initKDSWebSocket(server);
 
 async function startServer() {
-    try {
-        await runMigration();
-    } catch (error) {
-        console.error('⚠️ Migration on startup failed:', error);
-    }
-
     server.listen(PORT, () => {
         console.log(`\n🍕 Express Pizza SaaS API v3 — http://localhost:${PORT}`);
         console.log(`📋 Health:       /api/health`);
