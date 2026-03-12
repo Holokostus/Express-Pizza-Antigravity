@@ -1,3 +1,21 @@
+const authFetch = async (url, options = {}) => {
+    const token = localStorage.getItem('ep_auth_token');
+    const headers = { ...(options.headers || {}) };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 || response.status === 403) {
+        window.location.href = '/';
+        throw new Error('Недостаточно прав доступа');
+    }
+
+    return response;
+};
+
 const formatCurrency = (value) => {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency',
@@ -64,7 +82,7 @@ const setText = (id, value) => {
 
 const loadAnalytics = async () => {
     try {
-        const response = await fetch('/api/admin/analytics');
+        const response = await authFetch('/api/admin/analytics');
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);

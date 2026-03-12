@@ -11,6 +11,7 @@ const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsServi
 const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
+const { sendTelegramMessage } = require('../services/telegramService');
 
 const router = express.Router();
 
@@ -256,6 +257,17 @@ router.post('/checkout', requireAuth, async (req, res) => {
             await sendOrderAlert(createdOrder);
         }
 
+
+
+        try {
+            const message = `🚨 НОВЫЙ ЗАКАЗ #${createdOrder.id}!\nСумма: ${createdOrder.total} BYN\nОплата: ${createdOrder.paymentMethod}`;
+            if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+                await sendTelegramMessage(message);
+            }
+        } catch (telegramError) {
+            console.error('[Telegram] Order alert failed:', telegramError.message);
+        }
+
         // Push order to Kitchen Display System instantly for ALL orders
         broadcastOrderToKDS(restaurantId, createdOrder);
 
@@ -318,7 +330,7 @@ router.get('/my', requireAuth, async (req, res) => {
  * GET /api/orders
  * Admin endpoint to list all orders
  */
-router.get('/', requireRole(['ADMIN']), async (req, res) => {
+router.get('/', requireAuth, requireRole(['ADMIN']), async (req, res) => {
     try {
         const orders = await prisma.order.findMany({
             orderBy: { createdAt: 'desc' },
@@ -361,7 +373,7 @@ router.get('/', requireRole(['ADMIN']), async (req, res) => {
  * PATCH /api/orders/:id/status
  * Admin endpoint to change order status
  */
-router.patch('/:id/status', requireRole(['ADMIN']), async (req, res) => {
+router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res) => {
     try {
         const orderId = parseInt(req.params.id);
         const { status } = req.body;

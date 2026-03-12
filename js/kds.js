@@ -1,3 +1,21 @@
+const authFetch = async (url, options = {}) => {
+    const token = localStorage.getItem('ep_auth_token');
+    const headers = { ...(options.headers || {}) };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 || response.status === 403) {
+        window.location.href = '/';
+        throw new Error('Недостаточно прав доступа');
+    }
+
+    return response;
+};
+
 // Clock
 setInterval(() => {
     const now = new Date();
@@ -17,7 +35,7 @@ function normalizeStatus(order) {
 }
 
 function initKDS() {
-    fetch('/api/kds/1/orders')
+    authFetch('/api/kds/1/orders')
         .then(res => res.json())
         .then(data => {
             orders = data;

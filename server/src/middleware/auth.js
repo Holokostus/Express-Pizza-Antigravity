@@ -52,20 +52,28 @@ function optionalAuth(req, res, next) {
 
 /**
  * Middleware: Role-based access control
- * @param {string[]} roles Array of allowed roles e.g., ['ADMIN', 'MANAGER']
+ * @param {string[]} allowedRoles Array of allowed roles e.g., ['ADMIN', 'COOK']
  */
-function requireRole(roles) {
+function checkRole(allowedRoles) {
     return (req, res, next) => {
-        if (!req.user || !roles.includes(req.user.role)) {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+        }
+
+        if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
         }
+
         next();
     };
 }
 
+const requireRole = checkRole;
+
 module.exports = {
     requireAuth,
     optionalAuth,
+    checkRole,
     requireRole,
     JWT_SECRET
 };

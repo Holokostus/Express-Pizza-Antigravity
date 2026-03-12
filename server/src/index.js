@@ -42,6 +42,7 @@ const { calculateETA, checkSpillover, createYandexDelivery } = require('./servic
 const printerService = require('./services/printerService');
 
 const rateLimit = require('express-rate-limit');
+const { requireAuth, checkRole } = require('./middleware/auth');
 
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -61,7 +62,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', requireAuth, checkRole(['ADMIN']), adminRoutes);
 app.use('/api/menu', menuRoutes);
 
 // ---- Health Check ----
@@ -217,7 +218,7 @@ app.all('/api/(.*)', (req, res) => {
 
 // ---- KDS API ----
 // Get active orders for kitchen display
-app.get('/api/kds/:restaurantId/orders', async (req, res) => {
+app.get('/api/kds/:restaurantId/orders', requireAuth, checkRole(['COOK', 'ADMIN']), async (req, res) => {
     try {
         const orders = await kdsService.getActiveOrders(parseInt(req.params.restaurantId));
         res.json(orders);
@@ -227,7 +228,7 @@ app.get('/api/kds/:restaurantId/orders', async (req, res) => {
 });
 
 // Update order status (from KDS or admin)
-app.post('/api/kds/status', async (req, res) => {
+app.post('/api/kds/status', requireAuth, checkRole(['COOK', 'ADMIN']), async (req, res) => {
     try {
         const { orderId, status } = req.body;
         await kdsService.updateOrderStatus(orderId, status);
