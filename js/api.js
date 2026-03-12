@@ -17,13 +17,13 @@ let currentCategory = 'pizza';
 let selectedSizeIndex = {};
 let serverCalculation = null;
 let menuItems = [];
+let menuCategories = [];
+let promotions = [];
 
 // ── Polyfill db object for compatibility ──
 window.db = {
-    getAvailableMenu: (cat) => menuItems.filter(p =>
-        typeof p.category === 'object' ? p.category.slug === cat : p.categorySlug === cat
-    ),
-    getMenuItem: (id) => menuItems.find(p => p.id === id),
+    getAvailableMenu: (cat) => menuItems.filter((p) => p.categorySlug === cat),
+    getMenuItem: (id) => menuItems.find((p) => p.id === id),
 };
 
 // ── DOM shortcut ──
@@ -78,14 +78,31 @@ window.showToast = function (type, message, duration = 3000) {
     }, duration);
 };
 
-// ── Fetch Menu ──
+// ── Fetch Menu (categories + items) ──
 async function fetchMenu() {
     try {
         const data = await api('/api/menu');
-        menuItems = data;
+        menuCategories = Array.isArray(data) ? data : [];
+        menuItems = menuCategories.flatMap((category) =>
+            (category.products || []).map((product) => ({
+                ...product,
+                categorySlug: category.slug,
+                categoryName: category.name,
+            }))
+        );
     } catch (err) {
         console.error('[Menu] Fetch error:', err);
         showToast('error', 'Не удалось загрузить меню');
+    }
+}
+
+async function fetchPromotions() {
+    try {
+        const data = await api('/api/promotions');
+        promotions = Array.isArray(data) ? data : [];
+    } catch (err) {
+        console.error('[Promotions] Fetch error:', err);
+        showToast('error', 'Не удалось загрузить акции');
     }
 }
 

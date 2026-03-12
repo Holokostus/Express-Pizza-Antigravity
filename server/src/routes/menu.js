@@ -7,26 +7,23 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const { category } = req.query;
-        const where = { isAvailable: true };
 
-        if (category) {
-            const cat = await prisma.category.findUnique({ where: { slug: category } });
-            if (cat) {
-                where.categoryId = cat.id;
-            }
-        }
-
-        const products = await prisma.product.findMany({
-            where,
+        const categories = await prisma.category.findMany({
+            where: category ? { slug: category } : undefined,
             include: {
-                sizes: { orderBy: { price: 'asc' } },
-                category: true,
-                modifiers: true,
+                products: {
+                    where: { isAvailable: true },
+                    include: {
+                        sizes: { orderBy: { price: 'asc' } },
+                        modifiers: true,
+                    },
+                    orderBy: { sortOrder: 'asc' },
+                },
             },
             orderBy: { sortOrder: 'asc' },
         });
 
-        res.json(products);
+        res.json(categories);
     } catch (err) {
         console.error('[Menu API] Failed to load menu:', err);
         res.status(500).json({ error: 'Ошибка загрузки меню' });

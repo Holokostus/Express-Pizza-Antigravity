@@ -23,20 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
 
-    // ── Category Tabs ──
-    document.querySelectorAll('.menu-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.menu-tab').forEach(t => {
-                t.classList.remove('active', 'bg-red-600', 'bg-primary', 'text-white', 'shadow-glow-red');
-                t.classList.add('bg-gray-100', 'dark:bg-gray-800');
-            });
-            tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
-            tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
-            currentCategory = tab.dataset.category;
-            renderMenu();
-        });
-    });
-
     // ── Cart Sidebar Events ──
     const floatingCart = $('floating-cart');
     const closeCartBtn = $('close-cart');
@@ -200,9 +186,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Boot ──
     showSkeletons();
 
-    await fetchMenu();
+    await Promise.all([fetchMenu(), fetchPromotions()]);
 
-    if (typeof window.renderCategories === 'function') window.renderCategories();
+    if (typeof window.renderCategories === 'function') window.renderCategories(menuCategories);
+    if (typeof window.renderPromotions === 'function') window.renderPromotions(promotions);
     renderMenu();
     debouncedRecalculate();
     setInterval(updateTimer, 60000);
