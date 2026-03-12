@@ -206,6 +206,7 @@ model Promotion {
   badgeText String
   bgColor   String
   imageUrl  String
+  linkUrl   String?
   isActive  Boolean @default(true)
 
   @@map("promotions")
@@ -240,6 +241,7 @@ model Product {
 
   sizes         ProductSize[]
   modifiers     ProductModifier[]                       // Many-to-many (implicit)
+  dodoModifiers Modifier[]      @relation("ProductDodoModifiers")
   orderItems    OrderItem[]
   stockEvents   StockEvent[]
 
@@ -248,6 +250,20 @@ model Product {
 
   @@index([categoryId, isAvailable, sortOrder])
   @@map("products")
+}
+
+model Modifier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  imageUrl  String?
+  category  String
+  products  Product[] @relation("ProductDodoModifiers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("modifiers")
 }
 
 

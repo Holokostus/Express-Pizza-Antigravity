@@ -213,7 +213,8 @@ window.addToCart = (id) => {
         return;
     }
 
-    if (item.modifiers && item.modifiers.length > 0) {
+    const isPizza = (item.categorySlug || '').toLowerCase().includes('pizza') || (item.categoryName || '').toLowerCase().includes('пиц');
+    if (isPizza || (item.modifiers && item.modifiers.length > 0) || (item.dodoModifiers && item.dodoModifiers.length > 0)) {
         openCustomizer(id);
         return;
     }
@@ -294,50 +295,54 @@ window.applyPromoCode = async () => {
 // ── Pizza Customizer ──
 let currentCustomizerItem = null;
 let customizerBasePrice = 0;
+let customizerState = { sizeIdx: 0, doughType: 'traditional' };
 
-function openCustomizer(itemId) {
+window.openCustomizer = (itemId) => {
     const itemInfo = db.getMenuItem(itemId);
-    if (!itemInfo || !itemInfo.modifiers || itemInfo.modifiers.length === 0) return;
+    if (!itemInfo) return;
 
     currentCustomizerItem = itemInfo;
-    const sizeIdx = selectedSizeIndex[itemId] || 0;
-    customizerBasePrice = parseFloat(itemInfo.sizes[sizeIdx].price);
+    customizerState.sizeIdx = selectedSizeIndex[itemId] || 0;
+    customizerState.doughType = 'traditional';
 
-    const groups = {};
-    itemInfo.modifiers.forEach(m => {
-        const g = m.groupName || 'Дополнительно';
-        if (!groups[g]) groups[g] = [];
-        groups[g].push(m);
-    });
+    const size = itemInfo.sizes[customizerState.sizeIdx] || itemInfo.sizes[0];
+    if (!size) return;
+    customizerBasePrice = parseFloat(size.price) || 0;
 
-    let modsHtml = '';
-    for (const [group, mods] of Object.entries(groups)) {
-        modsHtml += `<p class="text-xs font-bold text-textMutedLight dark:text-textMutedDark uppercase tracking-wider mt-4 mb-2 pl-1">${group}</p>`;
-        modsHtml += `<div class="grid grid-cols-2 gap-3 mb-4">`;
-        mods.forEach(m => {
-            const priceLabel = m.isRemoval ? '' : `+${parseFloat(m.price).toFixed(2)} BYN`;
-            const activeColor = m.isRemoval ? 'peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20' : 'peer-checked:border-primary peer-checked:bg-primary/5';
-            const icon = m.isRemoval ? '✕' : '+';
-            const iconColor = m.isRemoval ? 'text-red-500' : 'text-primary';
-            const textColor = m.isRemoval ? 'text-red-500' : 'text-textMainLight dark:text-textMainDark';
+    const modifiers = Array.isArray(itemInfo.dodoModifiers) && itemInfo.dodoModifiers.length
+        ? itemInfo.dodoModifiers
+        : (itemInfo.modifiers || []);
 
-            modsHtml += `
-                <label class="relative cursor-pointer group">
-                    <input type="checkbox" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}"
-                           class="peer sr-only cust-mod-cb" onchange="updateCustomizerTotal()">
-                    <div class="h-full border-2 border-transparent bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md ${activeColor} flex flex-col justify-between">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="font-bold text-xs ${textColor} leading-tight peer-checked:text-primary pr-2">${m.name}</span>
-                            <div class="w-5 h-5 rounded-full bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center peer-checked:bg-primary peer-checked:text-white transition-colors flex-shrink-0">
-                                <span class="text-xs font-black ${iconColor} peer-checked:text-white">${icon}</span>
+    const grouped = modifiers.reduce((acc, mod) => {
+        const key = mod.category || mod.groupName || 'добавка';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(mod);
+        return acc;
+    }, {});
+
+    const sizesHtml = itemInfo.sizes.map((s, i) => `
+        <button type="button" data-size-idx="${i}" onclick="setCustomizerSize(${i})" class="cust-size-btn px-3 py-1.5 rounded-xl text-sm font-semibold border ${i === customizerState.sizeIdx ? 'bg-primary text-white border-primary' : 'border-gray-200 dark:border-gray-700'}">${s.label}</button>
+    `).join('');
+
+    const modsHtml = Object.keys(grouped).length === 0
+        ? '<p class="text-sm text-textMutedLight dark:text-textMutedDark">Дополнительные модификаторы скоро появятся.</p>'
+        : Object.entries(grouped).map(([group, mods]) => `
+            <div class="mb-5 last:mb-0">
+                <p class="text-xs font-bold uppercase tracking-wider text-textMutedLight dark:text-textMutedDark mb-2">${group}</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    ${mods.map((m) => `
+                        <label class="cursor-pointer">
+                            <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
+                            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 p-2.5 text-center bg-white dark:bg-gray-800/40 peer-checked:border-primary peer-checked:bg-primary/10 transition-all h-full">
+                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="w-10 h-10 mx-auto rounded-xl object-cover mb-2" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
+                                <p class="text-xs font-semibold leading-tight">${m.name}</p>
+                                <p class="text-[11px] text-primary font-bold mt-1">+${parseFloat(m.price || 0).toFixed(2)} BYN</p>
                             </div>
-                        </div>
-                        <span class="text-xs font-bold text-gray-500 mt-1">${priceLabel}</span>
-                    </div>
-                </label>`;
-        });
-        modsHtml += `</div>`;
-    }
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
 
     let modal = $('pizza-customizer-modal');
     if (!modal) {
@@ -349,23 +354,35 @@ function openCustomizer(itemId) {
     modal.className = 'fixed inset-0 z-[200] flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300';
     modal.innerHTML = `
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
-        <div id="customizer-sheet" onclick="event.stopPropagation()" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[500px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
-            <div class="flex items-center gap-4 p-5 shrink-0 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 rounded-t-3xl sm:rounded-3xl">
-                <img id="cust-img" src="${itemInfo.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${itemInfo.name}" class="w-20 h-20 rounded-2xl object-cover shadow-sm" onerror="this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'" loading="lazy">
-                <div class="flex-1">
-                    <h3 id="cust-title" class="font-display font-black text-xl leading-tight">${itemInfo.name}</h3>
-                    <p class="text-primary font-bold text-sm mt-0.5">${itemInfo.sizes[sizeIdx].label}</p>
-                    <p id="cust-desc" class="text-xs text-textMutedLight dark:text-textMutedDark mt-1 line-clamp-2">${itemInfo.description || ''}</p>
+        <div id="customizer-sheet" onclick="event.stopPropagation()" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[780px] sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
+            <div class="grid md:grid-cols-2 gap-0 flex-grow overflow-y-auto hide-scrollbar">
+                <div class="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
+                    <img src="${itemInfo.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'">
+                    <h3 class="font-display font-black text-2xl leading-tight">${itemInfo.name}</h3>
+                    <p class="text-sm text-textMutedLight dark:text-textMutedDark mt-1">${itemInfo.description || ''}</p>
                 </div>
-                <button onclick="closeCustomizer()" class="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 rounded-full transition-colors self-start text-gray-500">✕</button>
-            </div>
-            <div class="p-6 overflow-y-auto hide-scrollbar flex-grow">
-                ${modsHtml}
+                <div class="p-5">
+                    <div class="mb-5">
+                        <p class="font-bold mb-2">Размер</p>
+                        <div class="flex flex-wrap gap-2">${sizesHtml}</div>
+                    </div>
+                    <div class="mb-5">
+                        <p class="font-bold mb-2">Тип теста</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setCustomizerDough('traditional')" id="dough-traditional" class="rounded-2xl border px-3 py-2 text-sm font-semibold border-primary bg-primary/10">Традиционное</button>
+                            <button type="button" onclick="setCustomizerDough('thin')" id="dough-thin" class="rounded-2xl border px-3 py-2 text-sm font-semibold border-gray-200 dark:border-gray-700">Тонкое</button>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-bold mb-3">Добавить по вкусу</p>
+                        ${modsHtml}
+                    </div>
+                </div>
             </div>
             <div class="p-4 border-t border-gray-100 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-[#1a1a1a] shrink-0 rounded-b-3xl">
                 <button onclick="addCustomizedItem()" class="w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl hover:bg-hover transition-all active:scale-95 shadow-glow flex justify-between items-center group">
-                    <span>Добавить в корзину</span>
-                    <span class="text-lg font-black bg-white/20 px-3 py-1 rounded-xl transition-colors group-hover:bg-white/30" id="cust-total">${customizerBasePrice.toFixed(2)} BYN</span>
+                    <span>В корзину</span>
+                    <span class="text-lg font-black bg-white/20 px-3 py-1 rounded-xl" id="cust-total">${customizerBasePrice.toFixed(2)} BYN</span>
                 </button>
             </div>
         </div>
@@ -378,7 +395,30 @@ function openCustomizer(itemId) {
         const sheet = $('customizer-sheet');
         if (sheet) sheet.classList.remove('translate-y-full');
     });
-}
+    updateCustomizerTotal();
+};
+
+window.setCustomizerSize = (idx) => {
+    if (!currentCustomizerItem) return;
+    customizerState.sizeIdx = idx;
+    customizerBasePrice = parseFloat(currentCustomizerItem.sizes[idx]?.price || 0);
+
+    document.querySelectorAll('.cust-size-btn').forEach((btn) => {
+        const active = Number(btn.dataset.sizeIdx) === Number(idx);
+        btn.classList.toggle('bg-primary', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-primary', active);
+    });
+
+    updateCustomizerTotal();
+};
+
+window.setCustomizerDough = (type) => {
+    customizerState.doughType = type;
+    $('dough-traditional')?.classList.remove('border-primary', 'bg-primary/10');
+    $('dough-thin')?.classList.remove('border-primary', 'bg-primary/10');
+    $(type === 'traditional' ? 'dough-traditional' : 'dough-thin')?.classList.add('border-primary', 'bg-primary/10');
+};
 
 window.closeCustomizer = () => {
     const modal = $('pizza-customizer-modal');
@@ -392,11 +432,11 @@ window.closeCustomizer = () => {
 
 window.updateCustomizerTotal = () => {
     let price = customizerBasePrice;
-    document.querySelectorAll('.cust-mod-cb:checked').forEach(cb => {
+    document.querySelectorAll('.cust-mod-cb:checked').forEach((cb) => {
         price += parseFloat(cb.dataset.modPrice) || 0;
     });
     const ct = $('cust-total');
-    if (ct) ct.textContent = parseFloat(price).toFixed(2) + ' BYN';
+    if (ct) ct.textContent = `${price.toFixed(2)} BYN`;
 };
 
 window.addCustomizedItem = () => {
@@ -404,14 +444,13 @@ window.addCustomizedItem = () => {
 
     const modifierNames = [];
     const modifierIds = [];
-
-    document.querySelectorAll('.cust-mod-cb:checked').forEach(cb => {
-        modifierIds.push(parseInt(cb.dataset.modId));
+    document.querySelectorAll('.cust-mod-cb:checked').forEach((cb) => {
+        modifierIds.push(parseInt(cb.dataset.modId, 10));
         modifierNames.push(cb.dataset.modName);
     });
 
-    const sizeIdx = selectedSizeIndex[currentCustomizerItem.id] || 0;
-    const size = currentCustomizerItem.sizes[sizeIdx];
+    const size = currentCustomizerItem.sizes[customizerState.sizeIdx] || currentCustomizerItem.sizes[0];
+    if (!size) return;
 
     cart.push({
         productSizeId: size.id,
@@ -420,7 +459,7 @@ window.addCustomizedItem = () => {
         _display: {
             name: currentCustomizerItem.name,
             image: currentCustomizerItem.image,
-            sizeLabel: size.label,
+            sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
             weight: size.weight,
             modifierNames,
         },
@@ -436,8 +475,6 @@ window.addCustomizedItem = () => {
         setTimeout(() => badge.classList.remove('cart-bounce'), 400);
     }
 };
-
-
 
 window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
     let modal = $('sandbox-payment-modal');

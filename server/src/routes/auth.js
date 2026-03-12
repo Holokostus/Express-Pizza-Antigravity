@@ -122,14 +122,17 @@ router.post('/verify', async (req, res) => {
         });
 
         if (!user) {
+            const usersCount = await prisma.user.count();
+            const initialRole = usersCount === 0 ? 'ADMIN' : 'CLIENT';
+
             user = await prisma.user.create({
                 data: {
                     phone,
-                    role: 'CLIENT'
+                    role: initialRole
                 },
                 include: { pointsBalance: true }
             });
-            console.log(`[Auth] New user registered`);
+            console.log(`[Auth] New user registered with role ${initialRole}`);
         }
 
         // Issue JWT

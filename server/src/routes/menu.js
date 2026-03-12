@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
                     include: {
                         sizes: { orderBy: { price: 'asc' } },
                         modifiers: true,
+                        dodoModifiers: { orderBy: { id: 'asc' } },
                     },
                     orderBy: { sortOrder: 'asc' },
                 },

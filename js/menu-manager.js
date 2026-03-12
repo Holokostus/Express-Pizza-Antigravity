@@ -64,33 +64,50 @@ function closeModal() {
 
 function renderProducts() {
     if (!products.length) {
-        productsBody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-slate-400">Товары не найдены.</td></tr>';
+        productsBody.innerHTML = '<div class="rounded-xl border border-slate-800 px-4 py-6 text-slate-400">Товары не найдены.</div>';
         return;
     }
 
-    productsBody.innerHTML = products.map((product) => {
-        const price = product.sizes?.[0]?.price ?? '—';
-        return `
-            <tr>
-                <td class="px-4 py-3">
-                    <div class="font-semibold">${product.name}</div>
-                    <div class="text-slate-400 text-sm">${product.description || ''}</div>
-                </td>
-                <td class="px-4 py-3 text-slate-300">${product.category?.name || '—'}</td>
-                <td class="px-4 py-3">${price} BYN</td>
-                <td class="px-4 py-3">
-                    <div class="flex gap-2">
-                        <button class="edit-btn rounded-md border border-blue-400/40 px-3 py-1 text-blue-300 hover:bg-blue-500/10" data-id="${product.id}">
-                            Редактировать
-                        </button>
-                        <button class="delete-btn rounded-md border border-red-400/40 px-3 py-1 text-red-300 hover:bg-red-500/10" data-id="${product.id}">
-                            Удалить
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+    const productsByCategory = categories.map((category) => ({
+        category,
+        items: products.filter((product) => product.category?.slug === category.slug),
+    })).filter((group) => group.items.length > 0);
+
+    productsBody.innerHTML = productsByCategory.map(({ category, items }, index) => `
+        <details class="rounded-2xl border border-slate-800 bg-slate-950/40" ${index === 0 ? 'open' : ''}>
+            <summary class="list-none cursor-pointer px-4 py-3 md:px-5 md:py-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
+                <div>
+                    <h3 class="font-semibold text-lg">${category.name}</h3>
+                    <p class="text-xs text-slate-400 mt-1">${items.length} шт.</p>
+                </div>
+                <span class="text-slate-400 text-sm">Развернуть</span>
+            </summary>
+            <div class="px-4 md:px-5 pb-4 space-y-3">
+                ${items.map((product) => {
+                    const price = product.sizes?.[0]?.price ?? '—';
+                    return `
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="font-semibold">${product.name}</div>
+                                <div class="text-slate-400 text-sm">${product.description || ''}</div>
+                            </div>
+                            <div class="flex items-center gap-3 md:gap-4">
+                                <div class="text-sm text-slate-300 min-w-[88px]">${price} BYN</div>
+                                <div class="flex gap-2">
+                                    <button class="edit-btn rounded-md border border-blue-400/40 px-3 py-1 text-blue-300 hover:bg-blue-500/10" data-id="${product.id}">
+                                        Редактировать
+                                    </button>
+                                    <button class="delete-btn rounded-md border border-red-400/40 px-3 py-1 text-red-300 hover:bg-red-500/10" data-id="${product.id}">
+                                        Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </details>
+    `).join('');
 }
 
 async function fetchCategories() {
@@ -111,7 +128,14 @@ async function fetchProducts() {
         throw new Error('Ошибка загрузки товаров');
     }
 
-    products = await response.json();
+    const categoryPayload = await response.json();
+    products = categoryPayload.flatMap((category) =>
+        (category.products || []).map((product) => ({
+            ...product,
+            category: { slug: category.slug, name: category.name },
+        }))
+    );
+
     renderProducts();
 }
 
@@ -206,6 +230,6 @@ productsBody.addEventListener('click', async (event) => {
         await fetchCategories();
         await fetchProducts();
     } catch (error) {
-        productsBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-red-300">${error.message}</td></tr>`;
+        productsBody.innerHTML = `<div class="rounded-xl border border-red-900 bg-red-900/20 px-4 py-6 text-red-300">${error.message}</div>`;
     }
 })();

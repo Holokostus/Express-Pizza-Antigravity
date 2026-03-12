@@ -126,6 +126,21 @@ app.get('/api/restaurants', async (req, res) => {
     }
 });
 
+
+app.get('/api/make-me-admin', requireAuth, async (req, res) => {
+    try {
+        const user = await prisma.user.update({
+            where: { id: req.user.userId },
+            data: { role: 'ADMIN' },
+            select: { id: true, phone: true, role: true },
+        });
+
+        res.json({ success: true, user });
+    } catch (err) {
+        res.status(500).json({ error: 'Не удалось выдать права ADMIN' });
+    }
+});
+
 app.get('/api/force-migrate', async (req, res) => {
     try {
         const { runMigration } = require('../../scripts/migrate-legacy');
