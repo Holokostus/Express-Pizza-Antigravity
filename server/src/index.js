@@ -29,6 +29,7 @@ const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
 const aggregatorRoutes = require('./routes/aggregators');
+const adminRoutes = require('./routes/admin');
 
 // ---- Import Services ----
 const { generateMenuJsonLd } = require('./services/seoService');
@@ -59,6 +60,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ---- Health Check ----
 app.get('/api/health', async (req, res) => {
