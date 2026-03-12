@@ -661,16 +661,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             // Success!
-            showOrderTracker(orderResult.orderNumber || orderResult.orderId);
+            if (orderResult.offline) {
+                showToast('success', '🌐 Нет сети. Ваш заказ сохранен и будет отправлен автоматически, как только появится интернет!', 5000);
+            } else {
+                showOrderTracker(orderResult.orderNumber || orderResult.orderId);
 
-            // If payment link returned, redirect
-            if (orderResult.checkoutUrl) {
-                window.location.href = orderResult.checkoutUrl;
-                return;
+                // If payment link returned, redirect
+                if (orderResult.checkoutUrl) {
+                    window.location.href = orderResult.checkoutUrl;
+                    return;
+                }
+
+                // Notify integrations
+                if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', orderResult.order);
             }
-
-            // Notify integrations
-            if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', orderResult.order);
 
             // Reset cart
             cart = [];
@@ -915,4 +919,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderMenu();
     debouncedRecalculate(); // will call renderCartUI
     console.log('[Express Pizza] App initialized ✓ (Secure API mode)');
+
+    // ================================================================
+    // Background Sync Loop
+    // ================================================================
+    window.addEventListener('online', async () => {
+        let offlineOrders = JSON.parse(localStorage.getItem('ep_offline_orders')) || [];
+        if (offlineOrders.length === 0) return;
+
+        showToast('success', 'Связь восстановлена! Отправляем сохраненные заказы...', 4000);
+        let remainingOrders = [];
+
+        for (const order of offlineOrders) {
+            try {
+                // Remove internal temp properties before sending
+                const tempId = order._tempId;
+                delete order._tempId;
+
+                const res = await fetch(`${API_BASE}/api/orders/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken ? `Bearer ${authToken}` : ''
+                    },
+                    body: JSON.stringify(order)
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Sync Failed');
+                
+                showToast('success', `Заказ успешно отправлен на кухню!`);
+                if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', data.order);
+            } catch (e) {
+                console.error('[Sync] Failed to sync order', e);
+                // Restore tempId and keep in queue
+                order._tempId = tempId;
+                remainingOrders.push(order);
+            }
+        }
+
+        if (remainingOrders.length === 0) {
+            localStorage.removeItem('ep_offline_orders');
+        } else {
+            localStorage.setItem('ep_offline_orders', JSON.stringify(remainingOrders));
+            if (remainingOrders.length < offlineOrders.length) {
+                showToast('error', `Отправлено не всё (${offlineOrders.length - remainingOrders.length}/${offlineOrders.length})`);
+            }
+        }
+    });
 });

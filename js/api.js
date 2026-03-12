@@ -31,10 +31,31 @@ const $ = id => document.getElementById(id);
 async function api(path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...options.headers };
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
-    return data;
+    try {
+        const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+        return data;
+    } catch (err) {
+        // Intercept checkout network errors (Offline)
+        if (path === '/api/orders/checkout' && (!navigator.onLine || err instanceof TypeError && err.message.includes('fetch'))) {
+            console.log('[API] Offline detected, queuing order...');
+            const orderPayload = JSON.parse(options.body);
+            orderPayload._tempId = Date.now();
+            
+            let offlineOrders = JSON.parse(localStorage.getItem('ep_offline_orders')) || [];
+            offlineOrders.push(orderPayload);
+            localStorage.setItem('ep_offline_orders', JSON.stringify(offlineOrders));
+            
+            return {
+                offline: true,
+                success: true,
+                orderId: `OFF_${orderPayload._tempId}`,
+                message: "Офлайн"
+            };
+        }
+        throw err;
+    }
 }
 
 // ── Toast ──
