@@ -45,7 +45,8 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
     // Strategy: Network First, fallback to Cache for API requests
-    if (url.pathname.startsWith('/api/')) {
+    // Treat any request with /api/ or any request matching the external Render backend exactly like an API request.
+    if (url.pathname.startsWith('/api/') || url.hostname.includes('onrender.com') || url.port === '5000') {
         event.respondWith(
             fetch(event.request)
                 .then((response) => {
