@@ -203,6 +203,54 @@ function renderCartUI(serverData) {
     localStorage.setItem('ep_cart', JSON.stringify(cart));
 }
 
+function normalizeModifierIds(modifierIds = []) {
+    return [...modifierIds].map((id) => Number(id)).filter((id) => !Number.isNaN(id)).sort((a, b) => a - b);
+}
+
+function addCartLine(itemPayload) {
+    const normalizedModifierIds = normalizeModifierIds(itemPayload.modifierIds || []);
+    const normalizedPrice = Number(itemPayload.finalPrice || 0);
+    const existing = cart.find((entry) => {
+        const sameSize = entry.productSizeId === itemPayload.productSizeId;
+        const sameDough = (entry._meta?.doughType || 'traditional') === (itemPayload.doughType || 'traditional');
+        const sameModifiers = JSON.stringify(normalizeModifierIds(entry.modifierIds || [])) === JSON.stringify(normalizedModifierIds);
+        return sameSize && sameDough && sameModifiers;
+    });
+
+    if (existing) {
+        existing.quantity += 1;
+        return;
+    }
+
+    cart.push({
+        productSizeId: itemPayload.productSizeId,
+        modifierIds: normalizedModifierIds,
+        quantity: 1,
+        _display: {
+            name: itemPayload.name,
+            image: itemPayload.image,
+            sizeLabel: itemPayload.sizeLabel,
+            weight: itemPayload.weight,
+            modifierNames: itemPayload.modifierNames || [],
+        },
+        _meta: {
+            itemId: itemPayload.itemId,
+            doughType: itemPayload.doughType || 'traditional',
+            finalPrice: Number.isFinite(normalizedPrice) ? normalizedPrice : 0,
+        },
+    });
+}
+
+window.cart = {
+    addItem(itemPayload) {
+        if (!itemPayload || !itemPayload.productSizeId) {
+            throw new Error('Invalid cart payload: productSizeId is required');
+        }
+        addCartLine(itemPayload);
+        debouncedRecalculate();
+    },
+};
+
 // ── Add to Cart ──
 window.addToCart = (id) => {
     const item = db.getMenuItem(id);
@@ -222,23 +270,18 @@ window.addToCart = (id) => {
     const sizeIdx = selectedSizeIndex[id] || 0;
     const size = item.sizes[sizeIdx];
 
-    const existing = cart.find(i => i.productSizeId === size.id && (i.modifierIds || []).length === 0);
-    if (existing) {
-        existing.quantity++;
-    } else {
-        cart.push({
-            productSizeId: size.id,
-            modifierIds: [],
-            quantity: 1,
-            _display: {
-                name: item.name,
-                image: item.image,
-                sizeLabel: size.label,
-                weight: size.weight,
-                modifierNames: [],
-            },
-        });
-    }
+    window.cart.addItem({
+        itemId: item.id,
+        productSizeId: size.id,
+        sizeLabel: size.label,
+        doughType: 'traditional',
+        modifierIds: [],
+        name: item.name,
+        image: item.image,
+        weight: size.weight,
+        modifierNames: [],
+        finalPrice: Number(size.price || 0),
+    });
 
     // Bounce animation on cart badge
     const badge = $('cart-badge');
@@ -247,7 +290,6 @@ window.addToCart = (id) => {
         setTimeout(() => badge.classList.remove('cart-bounce'), 400);
     }
 
-    debouncedRecalculate();
     showToast('success', `${item.name} (${size.label}) добавлено`);
 };
 
@@ -452,23 +494,24 @@ window.addCustomizedItem = () => {
     const size = currentCustomizerItem.sizes[customizerState.sizeIdx] || currentCustomizerItem.sizes[0];
     if (!size) return;
 
-    cart.push({
+    const finalPriceLabel = $('cust-total')?.textContent || '';
+    const finalPrice = parseFloat(finalPriceLabel.replace(/[^\d.]/g, '')) || customizerBasePrice;
+
+    window.cart.addItem({
+        itemId: currentCustomizerItem.id,
         productSizeId: size.id,
+        sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
+        doughType: customizerState.doughType,
         modifierIds,
-        quantity: 1,
-        _display: {
-            name: currentCustomizerItem.name,
-            image: currentCustomizerItem.image,
-            sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
-            weight: size.weight,
-            modifierNames,
-        },
+        name: currentCustomizerItem.name,
+        image: currentCustomizerItem.image,
+        weight: size.weight,
+        modifierNames,
+        finalPrice,
     });
 
     closeCustomizer();
     showToast('success', `${currentCustomizerItem.name} добавлена в корзину!`);
-    debouncedRecalculate();
-
     const badge = $('cart-badge');
     if (badge) {
         badge.classList.add('cart-bounce');

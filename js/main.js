@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const phone = $('user-phone').value;
+        const email = $('user-email').value.trim().toLowerCase();
         const paymentMethod = document.querySelector('input[name="payment"]:checked');
         if (!paymentMethod) {
             showToast('error', 'Выберите способ оплаты');
@@ -58,23 +58,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const btn = $('btn-request-otp');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Отправка SMS...'; }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Отправка кода...'; }
 
         try {
-            await api('/api/auth/send-sms', {
+            await api('/api/auth/send-email', {
                 method: 'POST',
-                body: JSON.stringify({ phone }),
+                body: JSON.stringify({ email }),
             });
 
             orderForm.classList.add('hidden');
             const otpStep = $('otp-step');
             if (otpStep) otpStep.classList.remove('hidden');
-            const phoneDisplay = $('otp-phone-display');
-            if (phoneDisplay) phoneDisplay.textContent = phone;
+            const emailDisplay = $('otp-email-display');
+            if (emailDisplay) emailDisplay.textContent = email;
             const otpInput = $('otp-input');
             if (otpInput) otpInput.focus();
         } catch (err) {
-            showToast('error', err.message || 'Ошибка отправки SMS');
+            showToast('error', err.message || 'Ошибка отправки кода');
             if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
         }
     };
@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.verifyOTPAndSubmit = async () => {
         const otpInput = $('otp-input');
         const code = otpInput ? otpInput.value : '';
-        const phone = $('user-phone') ? $('user-phone').value : '';
+        const email = $('user-email') ? $('user-email').value.trim().toLowerCase() : '';
+        const customerPhone = $('user-phone') ? $('user-phone').value : '';
         const name = $('user-name') ? $('user-name').value : '';
 
         if (!code || code.length < 4) {
@@ -96,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const authResult = await api('/api/auth/verify', {
                 method: 'POST',
-                body: JSON.stringify({ phone, code, name }),
+                body: JSON.stringify({ email, code, name }),
             });
 
             authToken = authResult.token;
@@ -136,7 +137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 paymentStatus: selectedPaymentMethod === 'card' ? 'paid' : 'pending',
                 transactionId: selectedPaymentMethod === 'card' ? 'sb_' + Date.now() : undefined,
                 restaurantId: 1,
-                clientOrderId: crypto.randomUUID()
+                clientOrderId: crypto.randomUUID(),
+                customerPhone
             };
 
             const orderResult = await api('/api/orders/checkout', {

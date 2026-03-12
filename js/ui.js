@@ -127,7 +127,7 @@ window.renderPromotions = (items = promotions) => {
     strip.innerHTML = (items || []).map((promotion, index) => {
         const safeUrl = promotion.linkUrl ? escapeHtml(promotion.linkUrl) : '';
         return `
-        <div onclick="openPromotion(${index})" data-link-url="${safeUrl}" class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
+        <div data-promo-index="${index}" data-link-url="${safeUrl}" class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
             <div class="absolute inset-0 ${promotion.bgColor}"></div>
             <div class="relative z-10 h-full flex flex-col justify-end p-4">
                 <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promotion.badgeText)}</span>
@@ -141,14 +141,29 @@ window.renderPromotions = (items = promotions) => {
 
 window.openPromotion = (index) => {
     const promotion = promotions?.[index];
-    if (promotion?.linkUrl) {
-        window.open(promotion.linkUrl, '_blank', 'noopener,noreferrer');
+    if (!promotion) return;
+
+    if (promotion.linkUrl) {
+        window.location.href = promotion.linkUrl;
         return;
     }
-    openStory(index);
+
+    if (typeof openStory === 'function') {
+        openStory(index);
+    }
 };
 
 document.addEventListener('click', (event) => {
+    const promoCard = event.target.closest('.promo-card');
+    if (promoCard) {
+        event.preventDefault();
+        const promoIndex = Number(promoCard.dataset.promoIndex);
+        if (!Number.isNaN(promoIndex)) {
+            window.openPromotion(promoIndex);
+        }
+        return;
+    }
+
     const card = event.target.closest('.js-menu-card');
     if (!card) return;
 
@@ -341,35 +356,35 @@ function renderLoginView() {
     const body = $('profile-body');
     body.innerHTML = `
         <h2 class="text-2xl font-display font-black mb-2">Вход</h2>
-        <p class="text-gray-500 text-sm mb-6">Введите номер телефона для входа в кабинет</p>
+        <p class="text-gray-500 text-sm mb-6">Введите email для входа в кабинет</p>
         
         <div id="login-step-1">
-            <input type="tel" id="login-phone" placeholder="+375 (XX) XXX-XX-XX" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-textMainLight dark:text-textMainDark font-medium text-lg">
+            <input type="email" id="login-email" placeholder="you@example.com" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-textMainLight dark:text-textMainDark font-medium text-lg">
             <button onclick="requestLoginCode()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-glow-red cursor-pointer">Получить код</button>
         </div>
         
         <div id="login-step-2" class="hidden">
-            <input type="text" id="login-code" placeholder="Код из СМС" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-center tracking-widest text-2xl font-bold text-textMainLight dark:text-textMainDark">
+            <input type="text" id="login-code" placeholder="Код из Email" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-center tracking-widest text-2xl font-bold text-textMainLight dark:text-textMainDark">
             <button onclick="verifyLoginCode()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-glow-red cursor-pointer mb-2">Войти</button>
-            <button onclick="renderLoginView()" class="w-full text-gray-500 font-medium py-3 hover:text-red-600 transition-colors active:scale-95 cursor-pointer">Изменить номер</button>
+            <button onclick="renderLoginView()" class="w-full text-gray-500 font-medium py-3 hover:text-red-600 transition-colors active:scale-95 cursor-pointer">Изменить email</button>
         </div>
     `;
 }
 
 window.requestLoginCode = async function () {
-    const phone = $('login-phone').value.trim();
-    if (!phone) return showToast('error', 'Введите телефон');
+    const email = $('login-email').value.trim().toLowerCase();
+    if (!email) return showToast('error', 'Введите email');
 
     try {
-        const res = await fetch(`${API_BASE}/api/auth/send-sms`, {
-            method: 'POST', body: JSON.stringify({ phone }), headers: { 'Content-Type': 'application/json' }
+        const res = await fetch(`${API_BASE}/api/auth/send-email`, {
+            method: 'POST', body: JSON.stringify({ email }), headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json();
 
         if (data.success) {
             $('login-step-1').classList.add('hidden');
             $('login-step-2').classList.remove('hidden');
-            showToast('success', 'СМС отправлено');
+            showToast('success', 'Код отправлен на email');
         } else {
             showToast('error', data.error || 'Ошибка');
         }
@@ -377,13 +392,13 @@ window.requestLoginCode = async function () {
 };
 
 window.verifyLoginCode = async function () {
-    const phone = $('login-phone').value.trim();
+    const email = $('login-email').value.trim().toLowerCase();
     const code = $('login-code').value.trim();
     if (!code) return showToast('error', 'Введите код');
 
     try {
         const res = await fetch(`${API_BASE}/api/auth/verify`, {
-            method: 'POST', body: JSON.stringify({ phone, code }), headers: { 'Content-Type': 'application/json' }
+            method: 'POST', body: JSON.stringify({ email, code }), headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json();
 
