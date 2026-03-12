@@ -45,8 +45,30 @@ router.post('/send-sms', async (req, res) => {
             lastSentAt: Date.now()
         });
 
-        // STUB: Here we would call SMS.by API (smsService.js)
-        console.log(`[SMS.by Stub] Sending OTP to user phone`);
+        const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+        const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (!telegramToken || !telegramChatId) {
+            console.log(`[SMS Fallback] OTP for ${phone}: ${code}`);
+        } else {
+            try {
+                const telegramResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: telegramChatId,
+                        text: `🍕 Express Pizza\nВаш код авторизации: ${code}\nНикому не сообщайте его!`
+                    })
+                });
+
+                if (!telegramResponse.ok) {
+                    throw new Error(`Telegram API responded with status ${telegramResponse.status}`);
+                }
+            } catch (telegramError) {
+                console.error('[Auth] Telegram send failed, using fallback log:', telegramError);
+                console.log(`[SMS Fallback] OTP for ${phone}: ${code}`);
+            }
+        }
 
         res.json({ success: true, message: 'SMS sent' });
 
