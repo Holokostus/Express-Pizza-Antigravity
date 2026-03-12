@@ -48,6 +48,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ── OTP Flow ──
     const orderForm = $('order-form');
+    let selectedPaymentMethod = 'cash';
+
+    const paymentInputs = document.querySelectorAll('input[name="payment"]');
+    paymentInputs.forEach(input => {
+        if (input.checked) selectedPaymentMethod = input.value;
+        input.addEventListener('change', () => {
+            if (input.checked) selectedPaymentMethod = input.value;
+        });
+    });
 
     window.requestOTP = async () => {
         if (!orderForm.checkValidity()) {
@@ -119,25 +128,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const address = $('user-address') ? $('user-address').value : '';
-            const paymentMethod = document.querySelector('input[name="payment"]:checked');
+            const checkoutTotal = serverCalculation?.total || cart.reduce((sum, item) => sum + item.quantity * (parseFloat(item._display?.price) || 0), 0);
+
+            if (selectedPaymentMethod === 'card') {
+                await window.simulateSandboxCardPayment(checkoutTotal);
+            }
 
             if (verifyBtn) verifyBtn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Оформляем...';
 
+            const payload = {
+                items: cart.map(i => ({
+                    productSizeId: i.productSizeId,
+                    modifierIds: i.modifierIds || [],
+                    quantity: i.quantity,
+                })),
+                promoCodeString: appliedPromoCode || undefined,
+                customerName: name,
+                customerAddress: address,
+                payment: selectedPaymentMethod === 'card' ? 'BEPAID_ONLINE' : 'CASH_IKASSA',
+                paymentMethod: selectedPaymentMethod,
+                paymentStatus: selectedPaymentMethod === 'card' ? 'paid' : 'pending',
+                transactionId: selectedPaymentMethod === 'card' ? 'sb_' + Date.now() : undefined,
+                restaurantId: 1,
+                clientOrderId: crypto.randomUUID()
+            };
+
             const orderResult = await api('/api/orders/checkout', {
                 method: 'POST',
-                body: JSON.stringify({
-                    items: cart.map(i => ({
-                        productSizeId: i.productSizeId,
-                        modifierIds: i.modifierIds || [],
-                        quantity: i.quantity,
-                    })),
-                    promoCodeString: appliedPromoCode || undefined,
-                    customerName: name,
-                    customerAddress: address,
-                    payment: paymentMethod ? paymentMethod.value.toUpperCase() : 'BEPAID_ONLINE',
-                    restaurantId: 1,
-                    clientOrderId: crypto.randomUUID()
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (orderResult.offline) {
