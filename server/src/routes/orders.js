@@ -9,8 +9,8 @@ const { calculateCartTotal } = require('../services/cartService');
 const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
+const loyaltyService = require('../services/loyaltyService');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { z } = require('zod');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -67,7 +67,8 @@ const checkoutSchema = z.object({
     promoCodeString: z.string().optional(),
     restaurantId: z.number().int().optional(),
     source: z.string().optional(),
-    payment: z.string().optional()
+    payment: z.string().optional(),
+    spentPoints: z.number().int().nonnegative().optional()
 }).refine(data => data.address || data.customerAddress, {
     message: "Address is required",
     path: ["address"]
@@ -88,13 +89,19 @@ router.post('/checkout', requireAuth, async (req, res) => {
             promoCodeString,
             restaurantId,
             source = 'WEBSITE',
-            payment = 'BEPAID_ONLINE'
+            payment = 'BEPAID_ONLINE',
+            spentPoints = 0
         } = req.body;
 
         const finalAddress = customerAddress || address;
 
+        // Check auth for spending points
+        if (spentPoints > 0 && !req.user?.id) {
+            return res.status(400).json({ error: 'Только авторизованные пользователи могут тратить баллы' });
+        }
+
         // Extract verified phone from JWT token
-        const customerPhoneJwt = req.user.phone;
+        const customerPhoneJwt = req.user?.phone;
         const customerPhone = customerPhoneJwt || req.body.customerPhone;
 
         if (!items || items.length === 0) {
@@ -128,6 +135,14 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // Generate UUID for the order (aggregateId)
         const externalOrderId = crypto.randomUUID();
 
+        // Redeem points before creating order to ensure balance is sufficient
+        if (spentPoints > 0) {
+            const redeemKey = `redeem_${Date.now()}_${req.user.id}`;
+            await loyaltyService.redeemPoints(req.user.id, spentPoints, null, redeemKey);
+        }
+
+        const finalTotal = Math.max(0, cartResult.total - spentPoints);
+
         // 3. Prisma $transaction (Atomicity)
         const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
 
@@ -142,8 +157,8 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     payment,
                     status: 'NEW',
                     subtotal: cartResult.subtotal,
-                    discount: cartResult.discount,
-                    total: cartResult.total,
+                    discount: cartResult.discount + spentPoints,
+                    total: finalTotal,
                     restaurantId,
                     promoCodeId: cartResult.validPromo ? cartResult.validPromo.id : null,
                     // Create items and their modifiers in nested write
@@ -187,6 +202,12 @@ router.post('/checkout', requireAuth, async (req, res) => {
 
             return [order, event];
         });
+
+        // Award 5% cashback on the final paid amount
+        const cashback = Math.floor(finalTotal * 0.05);
+        if (cashback > 0 && req.user?.id) {
+            await loyaltyService.awardPoints(req.user.id, cashback, String(createdOrder.id), 'earn_' + createdOrder.id);
+        }
 
         // 4. Integrations: Payments & Notifications
         let checkoutUrl = null;
