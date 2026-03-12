@@ -51,7 +51,7 @@ self.addEventListener('fetch', (event) => {
             fetch(event.request)
                 .then((response) => {
                     // Cache successful API responses (especially menu)
-                    if (response.ok && event.request.method === 'GET') {
+                    if (response.ok && event.request.method === 'GET' && event.request.url.startsWith('http')) {
                         const responseClone = response.clone();
                         caches.open(CACHE_NAME).then((cache) => {
                             cache.put(event.request, responseClone);
@@ -74,15 +74,15 @@ self.addEventListener('fetch', (event) => {
                 }
                 
                 // Fetch from network if not in cache
-                return fetch(event.request).then((response) => {
-                    // Update cache for typical static asset fetches
-                    if (response.ok && event.request.method === 'GET' && !url.pathname.startsWith('/browser-sync')) {
-                        const responseClone = response.clone();
+                return fetch(event.request).then((networkResponse) => {
+                    // Cache the new resource for future
+                    if (networkResponse.ok && event.request.method === 'GET' && event.request.url.startsWith('http')) {
+                        const responseClone = networkResponse.clone();
                         caches.open(CACHE_NAME).then((cache) => {
                             cache.put(event.request, responseClone);
                         });
                     }
-                    return response;
+                    return networkResponse;
                 }).catch(() => {
                     // You might return an offline.html here if you have one
                     // return caches.match('/offline.html');

@@ -349,9 +349,9 @@ function openCustomizer(itemId) {
     modal.className = 'fixed inset-0 z-[200] flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300';
     modal.innerHTML = `
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
-        <div id="customizer-sheet" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[500px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
+        <div id="customizer-sheet" onclick="event.stopPropagation()" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[500px] sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
             <div class="flex items-center gap-4 p-5 shrink-0 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 rounded-t-3xl sm:rounded-3xl">
-                <img id="cust-img" src="${itemInfo.image || ''}" alt="${itemInfo.name}" class="w-20 h-20 rounded-2xl object-cover shadow-sm" onerror="this.src='images/placeholder.png'" loading="lazy">
+                <img id="cust-img" src="${itemInfo.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${itemInfo.name}" class="w-20 h-20 rounded-2xl object-cover shadow-sm" onerror="this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'" loading="lazy">
                 <div class="flex-1">
                     <h3 id="cust-title" class="font-display font-black text-xl leading-tight">${itemInfo.name}</h3>
                     <p class="text-primary font-bold text-sm mt-0.5">${itemInfo.sizes[sizeIdx].label}</p>

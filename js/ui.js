@@ -56,9 +56,9 @@ function renderMenu() {
         return `
         <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
             <div class="relative overflow-hidden aspect-square">
-                <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${escapeHtml(item.name)}" loading="lazy"
+                <img src="${item.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${escapeHtml(item.name)}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                     onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'">
+                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'">
                 ${badgeHtml}
             </div>
             <div class="p-3 lg:p-4">
