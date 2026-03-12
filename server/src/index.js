@@ -132,7 +132,7 @@ app.get('/api/force-migrate', async (req, res) => {
         await runMigration();
         res.json({ success: true, message: 'БД успешно заселена данными!' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message, stack: error.stack });
     }
 });
 
