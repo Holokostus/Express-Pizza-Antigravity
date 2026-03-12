@@ -5,6 +5,16 @@
 // Depends on: api.js (loaded first)
 // ============================================================
 
+window.escapeHtml = function(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+
 // ── Skeleton Loader ──
 function showSkeletons(count = 8) {
     const menuGrid = $('menu-grid');
@@ -40,20 +50,20 @@ function renderMenu() {
         const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
         const hasSizes = item.sizes.length > 1;
         const badgeHtml = item.badge
-            ? `<div class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">${item.badge.text}</div>`
+            ? `<div class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">${escapeHtml(item.badge.text)}</div>`
             : '';
 
         return `
         <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
             <div class="relative overflow-hidden aspect-square">
-                <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${item.name}" loading="lazy"
+                <img src="${item.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'}" alt="${escapeHtml(item.name)}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                      onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80'">
                 ${badgeHtml}
             </div>
             <div class="p-3 lg:p-4">
-                <h3 class="font-bold text-sm lg:text-base leading-tight mb-1 line-clamp-2">${item.name}</h3>
-                <p class="text-textMutedLight dark:text-textMutedDark text-[11px] lg:text-xs mb-2 line-clamp-1">${item.description || ''}</p>
+                <h3 class="font-bold text-sm lg:text-base leading-tight mb-1 line-clamp-2">${escapeHtml(item.name)}</h3>
+                <p class="text-textMutedLight dark:text-textMutedDark text-[11px] lg:text-xs mb-2 line-clamp-1">${escapeHtml(item.description || '')}</p>
                 ${hasSizes ? `
                 <div class="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     ${item.sizes.map((s, i) => `
@@ -121,9 +131,10 @@ window.selectSize = (itemId, sizeIndex) => {
 let customerWs = null;
 
 function showOrderTracker(orderId) {
+    window.currentTrackerOrderId = orderId;
     toggleCart(false);
     const trackerIdEl = $('tracker-id');
-    if (trackerIdEl) trackerIdEl.textContent = orderId;
+    if (trackerIdEl) trackerIdEl.textContent = escapeHtml(orderId);
     const tracker = $('order-tracker');
     if (!tracker) return;
 
@@ -151,12 +162,7 @@ function showOrderTracker(orderId) {
     customerWs.onmessage = (event) => {
         try {
             const msg = JSON.parse(event.data);
-            // In a real app we'd get the actual ID format (UUID vs Int). Relaxing check with == here instead of === if needed, or mapping.
-            // Usually message orderId is externalOrderId or DB id. Wait, the server's checkout returns `orderId` as externalOrderId but kds uses `order.id`. 
-            // In our `cart.js`, checkout gives `createdOrder.externalOrderId` to `showOrderTracker`. 
-            // The `STATUS_SYNC` gives `orderId: order.id`. 
-            // For now, let's just listen to ANY status sync and if it matches or we just assume one active order:
-            if (msg.type === 'STATUS_SYNC') {
+            if (msg.type === 'STATUS_SYNC' && msg.data.externalOrderId === currentTrackerOrderId) {
                 updateTrackerUI(msg.data.status);
             }
         } catch (e) { }
@@ -347,7 +353,7 @@ async function renderProfileView() {
                     <span class="text-xs font-bold text-primary">${statusMap[o.status] || o.status}</span>
                 </div>
                 <div class="text-xs text-gray-500 mb-2">${new Date(o.timestamp).toLocaleString('ru-RU')}</div>
-                <div class="text-sm line-clamp-2 mb-2">${o.items.map(i => i.name).join(', ')}</div>
+                <div class="text-sm line-clamp-2 mb-2">${escapeHtml(o.items.map(i => i.name).join(', '))}</div>
                 <div class="font-bold text-sm">${parseFloat(o.total).toFixed(2)} BYN</div>
             </div>
         `).join('');

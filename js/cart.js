@@ -137,7 +137,7 @@ function renderCartUI(serverData) {
                 const mods = sd?.modifiers?.map(m => m.name) || item._display.modifierNames;
                 const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
 
-                const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\\//, '') : '');
+                const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
                 const imageHtml = image 
                     ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
                     : `<div class="w-[50px] h-[50px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
@@ -146,10 +146,10 @@ function renderCartUI(serverData) {
                 <div class="flex items-center gap-4 animate-fade-in group relative">
                     ${imageHtml}
                     <div class="flex-grow min-w-0 pr-2">
-                        <h4 class="font-bold text-sm mb-0.5 truncate">${name}</h4>
+                        <h4 class="font-bold text-sm mb-0.5 truncate">${escapeHtml(name)}</h4>
                         <div class="flex flex-col gap-0.5">
-                            ${sizeLabel ? `<span class="text-[11px] text-textMutedLight dark:text-textMutedDark">${sizeLabel}</span>` : ''}
-                            ${mods.length > 0 ? `<span class="text-[10px] text-primary bg-primary/10 inline-block px-1.5 py-0.5 rounded uppercase self-start truncate max-w-full">${mods.join(', ')}</span>` : ''}
+                            ${sizeLabel ? `<span class="text-[11px] text-textMutedLight dark:text-textMutedDark">${escapeHtml(sizeLabel)}</span>` : ''}
+                            ${mods.length > 0 ? `<span class="text-[10px] text-primary bg-primary/10 inline-block px-1.5 py-0.5 rounded uppercase self-start truncate max-w-full">${escapeHtml(mods.join(', '))}</span>` : ''}
                         </div>
                         <div class="flex items-center justify-between mt-1">
                             <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1">
@@ -453,11 +453,11 @@ function renderUpsells() {
 
     widget.classList.remove('hidden');
     container.innerHTML = upsells.map(item => {
-        const imageSrc = item.image && item.image.startsWith('http') ? item.image : (item.image ? API_BASE + '/' + item.image.replace(/^\\//, '') : '');
+        const imageSrc = item.image && item.image.startsWith('http') ? item.image : (item.image ? API_BASE + '/' + item.image.replace(/^\//, '') : '');
         return `
         <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
-            <img src="${imageSrc}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy">
-            <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${item.name}</p>
+            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy">
+            <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
             <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes[0].price).toFixed(2)} BYN</div>
         </div>
     `}).join('');

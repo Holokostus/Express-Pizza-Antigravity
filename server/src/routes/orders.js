@@ -4,16 +4,15 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const { PrismaClient } = require('@prisma/client');
 const { calculateCartTotal } = require('../services/cartService');
 const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
 const loyaltyService = require('../services/loyaltyService');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const prisma = require('../lib/prisma');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/orders/calculate
