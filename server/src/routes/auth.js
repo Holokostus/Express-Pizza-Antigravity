@@ -81,7 +81,7 @@ router.post('/send-sms', async (req, res) => {
 /**
  * POST /api/auth/verify
  * Validates the OTP. If valid, issues a JWT token.
- * If user does not exist, creates a new CUSTOMER record.
+ * If user does not exist, creates a new CLIENT record.
  */
 router.post('/verify', async (req, res) => {
     try {
@@ -125,7 +125,7 @@ router.post('/verify', async (req, res) => {
             user = await prisma.user.create({
                 data: {
                     phone,
-                    role: 'CUSTOMER'
+                    role: 'CLIENT'
                 },
                 include: { pointsBalance: true }
             });

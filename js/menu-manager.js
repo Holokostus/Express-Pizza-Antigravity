@@ -1,3 +1,21 @@
+const authFetch = async (url, options = {}) => {
+    const token = localStorage.getItem('ep_auth_token');
+    const headers = { ...(options.headers || {}) };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 || response.status === 403) {
+        window.location.href = '/';
+        throw new Error('Недостаточно прав доступа');
+    }
+
+    return response;
+};
+
 const productsBody = document.getElementById('products-body');
 const addProductBtn = document.getElementById('add-product-btn');
 const modal = document.getElementById('product-modal');
@@ -75,7 +93,7 @@ function renderProducts() {
 }
 
 async function fetchCategories() {
-    const response = await fetch('/api/categories');
+    const response = await authFetch('/api/categories');
     if (!response.ok) {
         throw new Error('Ошибка загрузки категорий');
     }
@@ -87,7 +105,7 @@ async function fetchCategories() {
 }
 
 async function fetchProducts() {
-    const response = await fetch('/api/menu');
+    const response = await authFetch('/api/menu');
     if (!response.ok) {
         throw new Error('Ошибка загрузки товаров');
     }
@@ -111,7 +129,7 @@ async function saveProduct(event) {
     const url = id ? `/api/menu/${id}` : '/api/menu';
     const method = id ? 'PUT' : 'POST';
 
-    const response = await fetch(url, {
+    const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -130,7 +148,7 @@ async function deleteProduct(id) {
     const ok = window.confirm('Удалить этот товар?');
     if (!ok) return;
 
-    const response = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
+    const response = await authFetch(`/api/menu/${id}`, { method: 'DELETE' });
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || 'Ошибка удаления товара');

@@ -1,5 +1,6 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
+const { requireAuth, checkRole } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const { name, description = '', price, categorySlug, image = '', weight = 'станд.', category } = req.body;
         const normalizedCategorySlug = categorySlug || category;
@@ -76,7 +77,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const id = Number(req.params.id);
         const { name, description = '', price, categorySlug, image = '', weight = 'станд.', category } = req.body;
@@ -130,7 +131,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const id = Number(req.params.id);
 

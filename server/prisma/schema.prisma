@@ -28,15 +28,13 @@ datasource db {
 // =====================================================================================
 
 // --- User roles ---
-// CUSTOMER: end-user placing orders
-// ADMIN:    full platform admin access
-// MANAGER:  restaurant-level manager (KDS, menu, orders dashboard)
-// COURIER:  delivery driver
+// CLIENT: default end-user placing orders
+// COOK:   kitchen display access
+// ADMIN:  full platform admin access
 enum Role {
-  CUSTOMER
+  CLIENT
+  COOK
   ADMIN
-  MANAGER
-  COURIER
 }
 
 // --- POS system type per restaurant ---
@@ -122,7 +120,7 @@ model User {
   phone         String    @unique                       // +375 44 589 11 11 (login key)
   name          String    @default("")
   email         String?   @unique
-  role          Role      @default(CUSTOMER)
+  role          Role      @default(CLIENT)
   address       String?                                 // Last used delivery address
   loyaltyPoints Int       @default(0)                   // Loyalty program balance
   allergies     Json      @default("[]")                // Personal allergen slugs: ["gluten","dairy"]
