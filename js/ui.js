@@ -54,7 +54,7 @@ function renderMenu() {
             : '';
 
         return `
-        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s">
+        <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim" style="animation-delay: ${idx * 0.04}s" data-item-id="${item.id}">
             <div class="relative overflow-hidden aspect-square">
                 <img src="${item.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${escapeHtml(item.name)}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -67,14 +67,14 @@ function renderMenu() {
                 ${hasSizes ? `
                 <div class="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     ${item.sizes.map((s, i) => `
-                        <button onclick="selectSize(${item.id}, ${i})"
-                            class="flex-1 text-[10px] lg:text-xs font-bold py-1 rounded-lg transition-all ${i === sizeIdx ? 'bg-red-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">${s.label}</button>
+                        <button type="button" onclick="selectSize(${item.id}, ${i}, event)" data-size-index="${i}"
+                            class="size-btn flex-1 text-[10px] lg:text-xs font-bold py-1 rounded-lg transition-all ${i === sizeIdx ? 'bg-red-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}">${s.label}</button>
                     `).join('')}
                 </div>
                 ` : ''}
                 <button onclick="addToCart(${item.id})"
                     class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-red flex items-center justify-center gap-1.5 text-sm">
-                    <span>${parseFloat(activeSize.price).toFixed(2)} BYN</span>
+                    <span data-role="price-text">${parseFloat(activeSize.price).toFixed(2)} BYN</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                 </button>
             </div>
@@ -123,9 +123,32 @@ window.renderCategories = () => {
 };
 
 // ── Size Selector ──
-window.selectSize = (itemId, sizeIndex) => {
+window.selectSize = (itemId, sizeIndex, event) => {
+    if (event) {
+        event.preventDefault();
+    }
+
     selectedSizeIndex[itemId] = sizeIndex;
-    renderMenu();
+
+    const item = menuItems.find((menuItem) => Number(menuItem.id) === Number(itemId));
+    if (!item || !Array.isArray(item.sizes) || !item.sizes[sizeIndex]) return;
+
+    const card = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (!card) return;
+
+    card.querySelectorAll('.size-btn').forEach((button) => {
+        const isActive = Number(button.dataset.sizeIndex) === Number(sizeIndex);
+        button.classList.toggle('bg-red-600', isActive);
+        button.classList.toggle('text-white', isActive);
+        button.classList.toggle('shadow-sm', isActive);
+        button.classList.toggle('hover:bg-gray-200', !isActive);
+        button.classList.toggle('dark:hover:bg-gray-700', !isActive);
+    });
+
+    const priceText = card.querySelector('[data-role="price-text"]');
+    if (priceText) {
+        priceText.textContent = `${parseFloat(item.sizes[sizeIndex].price).toFixed(2)} BYN`;
+    }
 };
 
 let customerWs = null;

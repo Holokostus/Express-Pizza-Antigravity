@@ -34,7 +34,8 @@ const imageInput = document.getElementById('image');
 let products = [];
 let categories = [];
 
-function openModal(mode, product = null) {
+async function openModal(mode, product = null) {
+    await fetchCategories();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
@@ -157,7 +158,13 @@ async function deleteProduct(id) {
     await fetchProducts();
 }
 
-addProductBtn.addEventListener('click', () => openModal('create'));
+addProductBtn.addEventListener('click', async () => {
+    try {
+        await openModal('create');
+    } catch (error) {
+        alert(error.message);
+    }
+});
 closeModalBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
 productForm.addEventListener('submit', async (event) => {
@@ -174,7 +181,11 @@ productsBody.addEventListener('click', async (event) => {
         const id = Number(editButton.dataset.id);
         const product = products.find((item) => item.id === id);
         if (product) {
-            openModal('edit', product);
+            try {
+                await openModal('edit', product);
+            } catch (error) {
+                alert(error.message);
+            }
         }
         return;
     }
