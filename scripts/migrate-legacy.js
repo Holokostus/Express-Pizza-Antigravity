@@ -100,11 +100,6 @@ const LEGACY_PROMOTIONS = [
 ];
 
 async function runMigration() {
-    const count = await prisma.product.count();
-    if (count > 0) {
-        return;
-    }
-
     const legacyMenu = LEGACY_MENU;
 
     await prisma.productSize.deleteMany();
