@@ -135,13 +135,27 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // Generate UUID for the order (aggregateId)
         const externalOrderId = crypto.randomUUID();
 
-        // Redeem points before creating order to ensure balance is sufficient
-        if (spentPoints > 0) {
+        // Ensure spent points don't exceed cart total
+        let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
+
+        // Ensure spent points don't exceed user balance
+        if (finalSpentPoints > 0 && req.user?.id) {
+            const balanceRecord = await prisma.pointsBalance.findUnique({
+                where: { userId: req.user.id }
+            });
+            const availablePoints = balanceRecord?.currentBalance || 0;
+
+            if (finalSpentPoints > availablePoints) {
+                return res.status(400).json({ error: 'Недостаточно баллов для списания' });
+            }
+
             const redeemKey = `redeem_${Date.now()}_${req.user.id}`;
-            await loyaltyService.redeemPoints(req.user.id, spentPoints, null, redeemKey);
+            await loyaltyService.redeemPoints(req.user.id, finalSpentPoints, null, redeemKey);
+        } else {
+            finalSpentPoints = 0;
         }
 
-        const finalTotal = Math.max(0, cartResult.total - spentPoints);
+        const finalTotal = Math.max(0, cartResult.total - finalSpentPoints);
 
         // 3. Prisma $transaction (Atomicity)
         const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
@@ -157,7 +171,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     payment,
                     status: 'NEW',
                     subtotal: cartResult.subtotal,
-                    discount: cartResult.discount + spentPoints,
+                    discount: cartResult.discount + finalSpentPoints,
                     total: finalTotal,
                     restaurantId,
                     promoCodeId: cartResult.validPromo ? cartResult.validPromo.id : null,
