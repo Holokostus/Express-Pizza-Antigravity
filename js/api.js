@@ -13,7 +13,7 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
 let appliedPromoCode = null;
 let authToken = localStorage.getItem('ep_auth_token') || null;
 let cart = JSON.parse(localStorage.getItem('ep_cart')) || [];
-let currentCategory = 'pizza';
+let currentCategory = null;
 let selectedSizeIndex = {};
 let serverCalculation = null;
 let menuItems = [];
@@ -22,7 +22,11 @@ let promotions = [];
 
 // ── Polyfill db object for compatibility ──
 window.db = {
-    getAvailableMenu: (cat) => menuItems.filter((p) => p.categorySlug === cat),
+    getAvailableMenu: (cat) => {
+        const targetCategory = cat || currentCategory;
+        if (!targetCategory) return [];
+        return menuItems.filter((p) => p.categorySlug === targetCategory);
+    },
     getMenuItem: (id) => menuItems.find((p) => p.id === id),
 };
 
@@ -90,6 +94,7 @@ async function fetchMenu() {
                 categoryName: category.name,
             }))
         );
+        currentCategory = menuCategories[0]?.slug || null;
     } catch (err) {
         console.error('[Menu] Fetch error:', err);
         showToast('error', 'Не удалось загрузить меню');
