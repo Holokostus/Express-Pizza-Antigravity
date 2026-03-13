@@ -12,7 +12,18 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
 // ── State (shared across modules) ──
 let appliedPromoCode = null;
 let authToken = localStorage.getItem('ep_auth_token') || null;
-let cart = JSON.parse(localStorage.getItem('ep_cart')) || [];
+let cart = [];
+try {
+    cart = JSON.parse(localStorage.getItem('ep_cart')) || [];
+    if (!Array.isArray(cart)) {
+        cart = [];
+    }
+} catch (error) {
+    console.warn('[Cart] Corrupted localStorage cart detected, resetting state:', error);
+    localStorage.removeItem('ep_cart');
+    localStorage.removeItem('cart');
+    cart = [];
+}
 let currentCategory = null;
 let selectedSizeIndex = {};
 let serverCalculation = null;

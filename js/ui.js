@@ -124,15 +124,17 @@ window.renderPromotions = (items = promotions) => {
     const strip = $('stories-strip');
     if (!strip) return;
 
-    strip.innerHTML = (items || []).map((promotion, index) => {
-        const safeUrl = promotion.linkUrl ? escapeHtml(promotion.linkUrl) : '';
+    strip.innerHTML = (items || []).map((promo) => {
+        const clickAction = promo.linkUrl
+            ? `window.location.href='${String(promo.linkUrl).replace(/'/g, "\\'")}'`
+            : `openStory(${promo.id})`;
         return `
-        <div data-promo-index="${index}" data-link-url="${safeUrl}" class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform">
-            <div class="absolute inset-0 ${promotion.bgColor}"></div>
+        <div class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform" onclick="${clickAction}">
+            <div class="absolute inset-0 ${promo.bgColor}"></div>
             <div class="relative z-10 h-full flex flex-col justify-end p-4">
-                <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promotion.badgeText)}</span>
-                <p class="text-white font-bold text-base leading-tight">${escapeHtml(promotion.title)}</p>
-                <p class="text-white/70 text-xs mt-0.5">${escapeHtml(promotion.subtitle)}</p>
+                <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promo.badgeText)}</span>
+                <p class="text-white font-bold text-base leading-tight">${escapeHtml(promo.title)}</p>
+                <p class="text-white/70 text-xs mt-0.5">${escapeHtml(promo.subtitle)}</p>
             </div>
         </div>
     `;
@@ -154,32 +156,6 @@ window.openPromotion = (index) => {
 };
 
 document.body.addEventListener('click', (event) => {
-    const promoCard = event.target.closest('.promo-card');
-    if (promoCard) {
-        event.preventDefault();
-
-        const directLink = promoCard.dataset.linkUrl;
-        if (directLink) {
-            window.location.href = directLink;
-            return;
-        }
-
-        const promoIndex = Number(promoCard.dataset.promoIndex);
-        if (!Number.isNaN(promoIndex)) {
-            window.openPromotion(promoIndex);
-            return;
-        }
-
-        const promoId = Number(promoCard.dataset.promoId);
-        if (!Number.isNaN(promoId)) {
-            const fallbackIndex = promotions.findIndex((item) => Number(item.id) === promoId);
-            if (fallbackIndex >= 0) {
-                window.openPromotion(fallbackIndex);
-            }
-        }
-        return;
-    }
-
     const card = event.target.closest('.js-menu-card');
     if (!card || event.target.closest('button')) return;
 

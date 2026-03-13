@@ -244,17 +244,22 @@ html {
 }
 
 .modifier-card {
-    background: #222;
+    background: #1a1a1a;
     border: 1px solid #333;
-    border-radius: 12px;
-    padding: 8px;
+    border-radius: 16px;
+    padding: 12px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    height: 120px;
+    justify-content: center;
+    min-height: 110px;
+}
+
+.modifier-card:hover {
+    background: #222;
 }
 
 .modifier-card-inner {
@@ -263,27 +268,27 @@ html {
 
 .modifier-card img,
 .modifier-card .modifier-card-image {
-    width: 70px;
-    height: 70px;
+    width: 55px;
+    height: 55px;
     object-fit: contain;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
 }
 
 .modifier-card span.name {
     font-size: 11px;
-    text-align: center;
-    color: #fff;
+    color: #ddd;
     line-height: 1.2;
+    margin-bottom: 4px;
 }
 
 .modifier-card span.price {
     font-size: 12px;
-    font-weight: bold;
+    font-weight: 700;
     color: #ff6900;
-    margin-top: auto;
 }
 
 .modifier-card.active {
     border-color: #ff6900;
-    background: rgba(255, 105, 0, 0.05);
+    background: rgba(255,105,0,0.1);
 }
