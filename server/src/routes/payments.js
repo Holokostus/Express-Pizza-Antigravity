@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { verifyWebhookSignature } = require('../services/paymentService');
+const { sendOrderAlert } = require('../services/notificationService');
 
 // ============================================================
 // Express Pizza — Payments Webhook Router (Sprint 3)
@@ -23,7 +25,7 @@ router.post('/webhook', async (req, res) => {
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const payload = JSON.parse(rawBody);
+        const payload = JSON.parse(rawBody?.toString?.() || '{}');
         const transaction = payload.transaction;
 
         if (!transaction) {
@@ -50,7 +52,7 @@ router.post('/webhook', async (req, res) => {
             // Only update if not already processed
             if (order.status !== 'CONFIRMED' && order.status !== 'COOKING') {
 
-                const [updatedOrder, event] = await prisma.$transaction([
+                const [updatedOrder] = await prisma.$transaction([
                     // A. Update Order Status
                     prisma.order.update({
                         where: { externalOrderId },

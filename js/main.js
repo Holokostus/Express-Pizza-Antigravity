@@ -104,7 +104,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             authToken = authResult.token;
-            localStorage.setItem('ep_auth_token', authToken);
+            try {
+                localStorage.setItem('ep_auth_token', authToken);
+            } catch (storageError) {
+                console.warn('[Auth] Failed to persist auth token:', storageError);
+            }
 
             // BACKDOOR WARNING
             if (authResult._backdoorUsed) {
@@ -204,8 +208,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('online', async () => {
-    let offlineOrders = JSON.parse(localStorage.getItem('offline_orders')) || [];
-    if (offlineOrders.length === 0) return;
+    let offlineOrders = safeLocalStorageGetJson('offline_orders', []);
+    if (!Array.isArray(offlineOrders) || offlineOrders.length === 0) return;
 
     showToast('success', 'Связь восстановлена! Отправляем сохраненные заказы...', 4000);
     let remainingOrders = [];
@@ -237,8 +241,12 @@ window.addEventListener('online', async () => {
     }
 
     if (remainingOrders.length === 0) {
-        localStorage.removeItem('offline_orders');
+        try {
+            localStorage.removeItem('offline_orders');
+        } catch (storageError) {
+            console.warn('[Sync] Failed to clean offline orders cache:', storageError);
+        }
     } else {
-        localStorage.setItem('offline_orders', JSON.stringify(remainingOrders));
+        safeLocalStorageSetJson('offline_orders', remainingOrders);
     }
 });

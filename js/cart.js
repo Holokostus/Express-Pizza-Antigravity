@@ -39,11 +39,15 @@ function loadCart() {
 
         const parsed = JSON.parse(raw);
         cart = Array.isArray(parsed) ? parsed : [];
-        localStorage.setItem('ep_cart', JSON.stringify(cart));
+        safeLocalStorageSetJson('ep_cart', cart);
     } catch (error) {
         console.warn('[Cart] Failed to parse saved cart. Resetting local state:', error);
-        localStorage.removeItem('cart');
-        localStorage.removeItem('ep_cart');
+        try {
+            localStorage.removeItem('cart');
+            localStorage.removeItem('ep_cart');
+        } catch (storageError) {
+            console.warn('[Cart] Failed to clear corrupted local storage state:', storageError);
+        }
         cart = [];
     }
 }
@@ -244,7 +248,7 @@ function renderCartUI(serverData) {
         cartItemsContainer.dataset.closeMenuBound = '1';
     }
 
-    localStorage.setItem('ep_cart', JSON.stringify(cart));
+    safeLocalStorageSetJson('ep_cart', cart);
 }
 
 function normalizeModifierIds(modifierIds = []) {
@@ -313,7 +317,7 @@ window.cart = {
 
         normalizedPayload.cartItemId = Date.now() + Math.random();
         addCartLine(normalizedPayload);
-        localStorage.setItem('ep_cart', JSON.stringify(cart));
+        safeLocalStorageSetJson('ep_cart', cart);
         debouncedRecalculate();
     },
 };
@@ -335,7 +339,12 @@ window.addToCart = (id) => {
     }
 
     const sizeIdx = selectedSizeIndex[id] || 0;
-    const size = item.sizes[sizeIdx];
+    const size = item.sizes?.[sizeIdx] || item.sizes?.[0];
+
+    if (!size?.id) {
+        showToast('error', 'Размер товара недоступен');
+        return;
+    }
 
     window.cart.addItem({
         itemId: item.id,
@@ -724,7 +733,7 @@ function renderUpsells() {
         <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
             <img src="${imageSrc}" alt="${escapeHtml(item.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
-            <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes[0].price).toFixed(2)} BYN</div>
+            <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
         </div>
     `}).join('');
 }

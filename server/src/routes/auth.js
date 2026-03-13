@@ -66,8 +66,12 @@ router.post('/send-sms', (req, res) => {
     return handleSendOtp(req, res);
 });
 
-router.get('/grant-admin', async (req, res) => {
+router.get('/grant-admin', requireAuth, async (req, res) => {
     try {
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
         const email = String(req.query?.email || '').trim().toLowerCase();
         if (!email || !EMAIL_RE.test(email)) {
             return res.status(400).json({ error: 'Введите корректный email' });

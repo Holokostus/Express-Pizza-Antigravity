@@ -128,8 +128,12 @@ app.get('/api/restaurants', async (req, res) => {
 
 
 
-app.get('/api/grant-admin', async (req, res) => {
+app.get('/api/grant-admin', requireAuth, async (req, res) => {
     try {
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
         const email = String(req.query?.email || '').trim().toLowerCase();
         if (!email) {
             return res.status(400).json({ error: 'Email обязателен' });
