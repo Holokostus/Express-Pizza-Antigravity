@@ -121,13 +121,14 @@ function renderCartUI(serverData) {
     }));
 
     if (cartItemsContainer) {
-        cartItemsContainer.innerHTML = cart.length === 0
+        try {
+            cartItemsContainer.innerHTML = cart.length === 0
             ? `<div class="text-center py-12">
                     <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
                         <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     </div>
                     <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
-                    <button type="button" data-action="close-cart" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
+                    <button type="button" data-action="close-cart" onclick="document.getElementById('cart-modal')?.classList.add('hidden'); toggleCart(false);" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
                </div>`
             : cart.map((item, idx) => {
                 const sd = displayItems[idx];
@@ -135,6 +136,11 @@ function renderCartUI(serverData) {
                 const image = sd?.image || item._display.image;
                 const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
                 const mods = Array.isArray(sd?.modifiers) ? sd.modifiers.map((m) => m?.name).filter(Boolean) : (Array.isArray(item._display?.modifierNames) ? item._display.modifierNames : []);
+                const modsHtml = (item.modifiers && item.modifiers.length)
+                    ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + item.modifiers.map(m => m.name).join(', ') + '</div>'
+                    : (mods.length > 0
+                        ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => escapeHtml(m)).join(', ') + '</div>'
+                        : '');
                 const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
 
                 const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
@@ -149,7 +155,7 @@ function renderCartUI(serverData) {
                         <h4 class="font-bold text-sm mb-0.5 truncate">${escapeHtml(name)}</h4>
                         <div class="flex flex-col gap-0.5">
                             ${sizeLabel ? `<span class="text-[11px] text-textMutedLight dark:text-textMutedDark">${escapeHtml(sizeLabel)}</span>` : ''}
-                            ${mods.length > 0 ? `<span class="text-[10px] text-primary bg-primary/10 inline-block px-1.5 py-0.5 rounded uppercase self-start truncate max-w-full">${escapeHtml(mods.join(', '))}</span>` : ''}
+                            ${modsHtml}
                         </div>
                         <div class="flex items-center justify-between mt-1">
                             <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1">
@@ -162,6 +168,9 @@ function renderCartUI(serverData) {
                     </div>
                 </div>`;
             }).join('');
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     // Totals area
@@ -233,6 +242,7 @@ function addCartLine(itemPayload) {
     }
 
     cart.push({
+        cartItemId: itemPayload.cartItemId || (Date.now() + Math.random()),
         productSizeId: itemPayload.productSizeId,
         modifierIds: normalizedModifierIds,
         quantity: 1,
@@ -276,7 +286,9 @@ window.cart = {
             throw new Error('Invalid cart payload: productSizeId is required');
         }
 
+        normalizedPayload.cartItemId = Date.now() + Math.random();
         addCartLine(normalizedPayload);
+        localStorage.setItem('ep_cart', JSON.stringify(cart));
         debouncedRecalculate();
     },
 };
@@ -401,14 +413,14 @@ window.openCustomizer = (itemId) => {
         : Object.entries(grouped).map(([group, mods]) => `
             <div class="mb-5 last:mb-0">
                 <p class="text-xs font-bold uppercase tracking-wider text-textMutedLight dark:text-textMutedDark mb-2">${group}</p>
-                <div class="modifiers-grid">
+                <div class="modifiers-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px;">
                     ${mods.map((m) => `
-                        <label class="modifier-card">
+                        <label class="modifier-card" style="background: #222; border: 1px solid #333; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; height: 120px; cursor: pointer; transition: 0.2s;">
                             <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="modifier-card-inner">
-                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
-                                <span class="name">${m.name}</span>
-                                <span class="price">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
+                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px;" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
+                                <span class="name" style="font-size: 11px; color: #fff;">${m.name}</span>
+                                <span class="price" style="font-size: 12px; font-weight: bold; color: #ff6900;">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
                             </div>
                         </label>
                     `).join('')}
