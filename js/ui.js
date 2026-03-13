@@ -153,23 +153,35 @@ window.openPromotion = (index) => {
     }
 };
 
-document.addEventListener('click', (event) => {
+document.body.addEventListener('click', (event) => {
     const promoCard = event.target.closest('.promo-card');
     if (promoCard) {
         event.preventDefault();
+
+        const directLink = promoCard.dataset.linkUrl;
+        if (directLink) {
+            window.location.href = directLink;
+            return;
+        }
+
         const promoIndex = Number(promoCard.dataset.promoIndex);
         if (!Number.isNaN(promoIndex)) {
             window.openPromotion(promoIndex);
+            return;
+        }
+
+        const promoId = Number(promoCard.dataset.promoId);
+        if (!Number.isNaN(promoId)) {
+            const fallbackIndex = promotions.findIndex((item) => Number(item.id) === promoId);
+            if (fallbackIndex >= 0) {
+                window.openPromotion(fallbackIndex);
+            }
         }
         return;
     }
 
     const card = event.target.closest('.js-menu-card');
-    if (!card) return;
-
-    if (event.target.closest('button')) {
-        return;
-    }
+    if (!card || event.target.closest('button')) return;
 
     const itemId = Number(card.dataset.itemId);
     if (!Number.isNaN(itemId) && typeof window.openCustomizer === 'function') {
@@ -332,6 +344,7 @@ window.handleProfileClick = function () {
     if (!modal || !panel) return;
 
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
         panel.classList.remove('scale-95');
@@ -349,7 +362,10 @@ window.closeProfileModal = function () {
     modal.classList.add('opacity-0');
     panel.classList.add('scale-95');
 
-    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
 };
 
 function renderLoginView() {
