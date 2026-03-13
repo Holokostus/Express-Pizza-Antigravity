@@ -30,21 +30,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cartModal = document.getElementById('cart-modal') || document.getElementById('cart-sidebar');
             const profileModal = document.getElementById('profile-modal');
 
-            // Открытие корзины
+            // Открытие корзины (должна открываться даже если она пустая)
             if (e.target.closest('#cart-btn') || e.target.closest('.cart-btn') || e.target.closest('#floating-cart')) {
+                e.preventDefault();
+                e.stopPropagation();
                 if (typeof toggleCart === 'function') {
                     toggleCart(true);
                 } else {
                     cartModal?.classList.remove('hidden');
                 }
+                return;
             }
             // Закрытие корзины
             if (e.target.closest('#close-cart') || e.target.closest('[data-action="close-cart"]') || e.target.closest('#back-to-menu') || e.target.closest('#cart-overlay')) {
+                e.preventDefault();
                 if (typeof toggleCart === 'function') {
                     toggleCart(false);
                 } else {
                     cartModal?.classList.add('hidden');
                 }
+                return;
             }
             // Открытие профиля
             if (e.target.closest('#profile-btn') || e.target.closest('[onclick="handleProfileClick()"]')) {

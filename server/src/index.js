@@ -218,12 +218,15 @@ app.get('/api/run-scraper', async (req, res) => {
 
             for (const product of products) {
                 const isPizza = product.categorySlug === 'pizzas';
+                const productImage = isPizza
+                    ? 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop'
+                    : 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=500&auto=format&fit=crop';
 
                 const createdProduct = await tx.product.create({
                     data: {
                         name: product.name,
                         description: '',
-                        image: 'https://placehold.co/600x400/ff6900/white?text=Express+Pizza',
+                        image: productImage,
                         categoryId: categoryMap.get(product.categorySlug),
                         sortOrder: product.sortOrder,
                         isAvailable: true,
