@@ -125,11 +125,9 @@ window.renderPromotions = (items = promotions) => {
     if (!strip) return;
 
     strip.innerHTML = (items || []).map((promo) => {
-        const clickAction = promo.linkUrl
-            ? `window.location.href='${String(promo.linkUrl).replace(/'/g, "\\'")}'`
-            : `openStory(${promo.id})`;
+        const safeLink = promo.linkUrl ? String(promo.linkUrl).replace(/"/g, '&quot;') : '';
         return `
-        <div class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform" onclick="${clickAction}">
+        <div class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-transform" data-link="${safeLink}" onclick-link="${safeLink}" data-promo-id="${promo.id}">
             <div class="absolute inset-0 ${promo.bgColor}"></div>
             <div class="relative z-10 h-full flex flex-col justify-end p-4">
                 <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promo.badgeText)}</span>
@@ -154,6 +152,25 @@ window.openPromotion = (index) => {
         openStory(index);
     }
 };
+
+if (!window.__promoCardClickBound) {
+    window.__promoCardClickBound = true;
+    document.addEventListener('click', e => {
+        const p = e.target.closest('.promo-card');
+        if (!p) return;
+
+        const link = p.dataset.link || p.getAttribute('onclick-link');
+        if (link) {
+            window.location.href = link;
+            return;
+        }
+
+        const promoId = Number(p.dataset.promoId);
+        if (!Number.isNaN(promoId) && typeof openStory === 'function') {
+            openStory(promoId);
+        }
+    });
+}
 
 document.body.addEventListener('click', (event) => {
     const card = event.target.closest('.js-menu-card');
@@ -340,7 +357,6 @@ window.closeProfileModal = function () {
 
     setTimeout(() => {
         modal.classList.add('hidden');
-        modal.classList.remove('flex');
     }, 300);
 };
 
@@ -519,7 +535,6 @@ window.closeStory = function() {
     panel.classList.add('scale-95');
     setTimeout(() => {
         modal.classList.add('hidden');
-        modal.classList.remove('flex');
     }, 300);
 }
 
