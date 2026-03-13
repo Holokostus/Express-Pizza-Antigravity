@@ -584,10 +584,11 @@ window.addCustomizedItem = () => {
     if (!size) return;
 
     const finalPriceLabel = $('cust-total')?.textContent || '';
-    const finalPrice = parseFloat(finalPriceLabel.replace(/[^\d.]/g, '')) || customizerBasePrice;
+    const parsedPrice = parseFloat(finalPriceLabel.replace(/[^\d.]/g, ''));
+    const finalPrice = parseFloat(parsedPrice) || parseFloat(customizerBasePrice) || 0;
 
     const item = {
-        id: currentCustomizerItem.id,
+        id: currentCustomizerItem.id || Date.now(),
         productSizeId: size.id,
         sizeId: size.id,
         name: currentCustomizerItem.name,
@@ -599,12 +600,19 @@ window.addCustomizedItem = () => {
         doughType: customizerState.doughType,
         modifiers: selectedModifiers,
         modifierIds,
-        image: currentCustomizerItem.image,
+        image: currentCustomizerItem.image || '',
         weight: size.weight,
         modifierNames,
     };
 
-    window.cart.addItem(item);
+    try {
+        window.cart.addItem(item);
+    } catch (error) {
+        console.error('[Cart] Failed to add customized item:', error, item);
+        showToast('error', 'Не удалось добавить товар в корзину. Попробуйте снова.');
+        return;
+    }
+
     renderCartUI(serverCalculation);
 
     closeCustomizer();
