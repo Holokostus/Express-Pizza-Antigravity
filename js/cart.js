@@ -254,7 +254,10 @@ function renderCartUI(serverData) {
 }
 
 function normalizeModifierIds(modifierIds = []) {
-    return [...modifierIds].map((id) => Number(id)).filter((id) => !Number.isNaN(id)).sort((a, b) => a - b);
+    return [...modifierIds]
+        .map((id) => String(id).trim())
+        .filter(Boolean)
+        .sort();
 }
 
 function addCartLine(itemPayload) {
@@ -329,7 +332,7 @@ window.addToCart = (id) => {
     const item = db.getMenuItem(id);
     if (!item) return;
 
-    if (!item.isAvailable) {
+    if (item.isAvailable === false) {
         showToast('error', 'Позиция временно недоступна (стоп-лист)');
         return;
     }
