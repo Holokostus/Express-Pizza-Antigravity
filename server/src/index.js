@@ -127,6 +127,25 @@ app.get('/api/restaurants', async (req, res) => {
 });
 
 
+
+app.get('/api/grant-admin', async (req, res) => {
+    try {
+        const email = String(req.query?.email || '').trim().toLowerCase();
+        if (!email) {
+            return res.status(400).json({ error: 'Email обязателен' });
+        }
+
+        await prisma.user.update({
+            where: { email },
+            data: { role: 'ADMIN' },
+        });
+
+        return res.json({ success: true, email });
+    } catch (err) {
+        return res.status(500).json({ error: 'Не удалось выдать права ADMIN' });
+    }
+});
+
 app.get('/api/make-me-admin', requireAuth, async (req, res) => {
     try {
         const user = await prisma.user.update({
