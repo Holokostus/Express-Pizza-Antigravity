@@ -9,7 +9,10 @@ const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpEmail } = require('../services/emailService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('FATAL: JWT_SECRET environment variable is missing.');
+}
 const otpStore = new Map();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,13 +69,13 @@ router.post('/send-sms', (req, res) => {
     return handleSendOtp(req, res);
 });
 
-router.get('/grant-admin', requireAuth, async (req, res) => {
+router.post('/grant-admin', requireAuth, async (req, res) => {
     try {
         if (req.user?.role !== 'ADMIN') {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
 
-        const email = String(req.query?.email || '').trim().toLowerCase();
+        const email = String(req.body?.email || '').trim().toLowerCase();
         if (!email || !EMAIL_RE.test(email)) {
             return res.status(400).json({ error: 'Введите корректный email' });
         }

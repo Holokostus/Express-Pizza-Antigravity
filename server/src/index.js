@@ -126,30 +126,6 @@ app.get('/api/restaurants', async (req, res) => {
     }
 });
 
-
-
-app.get('/api/grant-admin', requireAuth, async (req, res) => {
-    try {
-        if (req.user?.role !== 'ADMIN') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
-        }
-
-        const email = String(req.query?.email || '').trim().toLowerCase();
-        if (!email) {
-            return res.status(400).json({ error: 'Email обязателен' });
-        }
-
-        await prisma.user.update({
-            where: { email },
-            data: { role: 'ADMIN' },
-        });
-
-        return res.json({ success: true, email });
-    } catch (err) {
-        return res.status(500).json({ error: 'Не удалось выдать права ADMIN' });
-    }
-});
-
 // ---- SEO: JSON-LD for rich snippets ----
 
 app.get('/api/seo/jsonld', async (req, res) => {

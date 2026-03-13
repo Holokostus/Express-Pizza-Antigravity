@@ -5,9 +5,7 @@
 // Loaded FIRST via <script> tag. Other modules depend on this.
 // ============================================================
 
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-  ? 'http://localhost:5000' 
-  : 'https://express-pizza-antigravity.onrender.com';
+const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
 
 // ── State (shared across modules) ──
 let appliedPromoCode = null;
@@ -66,10 +64,11 @@ const $ = id => document.getElementById(id);
 
 // ── API Helper ──
 async function api(path, options = {}) {
+    const normalizedPath = path.startsWith('/api/') ? path.replace('/api', '') : path;
     const headers = { 'Content-Type': 'application/json', ...options.headers };
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
     try {
-        const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+        const res = await fetch(`${API_BASE}${normalizedPath}`, { ...options, headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
         return data;

@@ -47,9 +47,10 @@ function initKDS() {
 }
 
 function getWsUrl() {
-    return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'ws://localhost:5000'
-        : `wss://${window.location.host}`) + '/ws/kds';
+    const WS_URL = window.location.origin.includes('localhost')
+        ? 'ws://localhost:3000'
+        : `${window.location.origin.replace('https://', 'wss://').replace('http://', 'ws://')}`;
+    return `${WS_URL}/ws/kds`;
 }
 
 function connectWS() {

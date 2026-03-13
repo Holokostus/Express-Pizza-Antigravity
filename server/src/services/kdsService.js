@@ -16,6 +16,7 @@ const clients = new Map();
 const pendingAcks = new Map();
 
 const ACK_TIMEOUT_MS = 5000;
+const MAX_RETRIES = 5;
 
 function getAckKey(restaurantId, orderId) {
     return `${parseInt(restaurantId)}:${parseInt(orderId)}`;
@@ -55,7 +56,7 @@ function scheduleAckRetry(restaurantId, orderData) {
     });
 
     const pending = {
-        attempts: 1,
+        attempts: 0,
         payload,
         timeout: null
     };
@@ -68,7 +69,14 @@ function scheduleAckRetry(restaurantId, orderData) {
             }
 
             pending.attempts += 1;
-            console.log(`[KDS] ACK timeout for order #${orderId} (attempt ${pending.attempts - 1}). Retrying delivery...`);
+
+            if (pending.attempts > MAX_RETRIES) {
+                clearAckTimer(ackKey);
+                console.warn('KDS client offline, dropping ACK retry');
+                return;
+            }
+
+            console.log(`[KDS] ACK timeout for order #${orderId} (attempt ${pending.attempts}). Retrying delivery...`);
             const wasSent = sendToRestaurant(restaurantId, pending.payload);
 
             if (!wasSent) {

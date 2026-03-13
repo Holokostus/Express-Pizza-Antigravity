@@ -205,14 +205,17 @@
     </main>
 
     <script>
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5000' : '';
+        const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
+        const WS_URL = window.location.origin.includes('localhost')
+            ? 'ws://localhost:3000'
+            : window.location.origin.replace('https://', 'wss://').replace('http://', 'ws://');
         let wsConn = null;
         let orders = [];
         let printCount = 0;
 
         // ═══ WebSocket Connection ═══
         function connectWS() {
-            const wsUrl = API_BASE.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws/kds';
+            const wsUrl = `${WS_URL}/ws/kds`;
             wsConn = new WebSocket(wsUrl);
 
             wsConn.onopen = () => {
