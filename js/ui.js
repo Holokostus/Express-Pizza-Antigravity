@@ -240,12 +240,8 @@ function showOrderTracker(orderId) {
         customerWs.close();
     }
 
-    const wsBase = typeof API_BASE !== 'undefined' && API_BASE !== ''
-        ? API_BASE.replace('https://', 'wss://').replace('http://', 'ws://')
-        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'ws://localhost:5000'
-            : `wss://${window.location.host}`);
-    customerWs = new WebSocket(`${wsBase}/ws/kds?restaurantId=1`);
+    const WS_URL = window.location.origin.includes('localhost') ? 'ws://localhost:3000' : `${window.location.origin.replace('https://', 'wss://').replace('http://', 'ws://')}`;
+    customerWs = new WebSocket(`${WS_URL}/ws/kds?restaurantId=1`);
 
     customerWs.onmessage = (event) => {
         try {
