@@ -127,14 +127,14 @@ function renderCartUI(serverData) {
                         <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     </div>
                     <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
-                    <button onclick="document.getElementById('close-cart').click()" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
+                    <button type="button" data-action="close-cart" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
                </div>`
             : cart.map((item, idx) => {
                 const sd = displayItems[idx];
                 const name = sd?.name || item._display.name;
                 const image = sd?.image || item._display.image;
                 const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
-                const mods = sd?.modifiers?.map(m => m.name) || item._display.modifierNames;
+                const mods = Array.isArray(sd?.modifiers) ? sd.modifiers.map((m) => m?.name).filter(Boolean) : (Array.isArray(item._display?.modifierNames) ? item._display.modifierNames : []);
                 const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
 
                 const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
@@ -198,6 +198,16 @@ function renderCartUI(serverData) {
                 <span class="font-bold text-lg">Итого:</span>
                 <span class="font-display font-black text-2xl text-primary">0.00 BYN</span>
             </div>`;
+    }
+
+    if (cartItemsContainer && !cartItemsContainer.dataset.closeMenuBound) {
+        cartItemsContainer.addEventListener('click', (event) => {
+            const closeBtn = event.target.closest('[data-action="close-cart"]');
+            if (closeBtn) {
+                toggleCart(false);
+            }
+        });
+        cartItemsContainer.dataset.closeMenuBound = '1';
     }
 
     localStorage.setItem('ep_cart', JSON.stringify(cart));
@@ -391,14 +401,14 @@ window.openCustomizer = (itemId) => {
         : Object.entries(grouped).map(([group, mods]) => `
             <div class="mb-5 last:mb-0">
                 <p class="text-xs font-bold uppercase tracking-wider text-textMutedLight dark:text-textMutedDark mb-2">${group}</p>
-                <div class="modifier-grid">
+                <div class="modifiers-grid">
                     ${mods.map((m) => `
-                        <label class="modifier-card cursor-pointer">
+                        <label class="modifier-card">
                             <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
-                            <div class="modifier-card-inner transition-all h-full">
+                            <div class="modifier-card-inner">
                                 <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
-                                <p class="text-xs font-semibold leading-tight">${m.name}</p>
-                                <p class="text-[11px] text-primary font-bold mt-1">+${parseFloat(m.price || 0).toFixed(2)} BYN</p>
+                                <span class="name">${m.name}</span>
+                                <span class="price">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
                             </div>
                         </label>
                     `).join('')}
@@ -496,7 +506,7 @@ window.updateCustomizerTotal = () => {
     let price = customizerBasePrice;
 
     document.querySelectorAll('.cust-mod-cb').forEach((cb) => {
-        const card = cb.closest('.modifier-card')?.querySelector('.modifier-card-inner');
+        const card = cb.closest('.modifier-card');
         if (card) {
             card.classList.toggle('active', cb.checked);
         }
