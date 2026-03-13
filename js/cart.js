@@ -28,6 +28,28 @@ function toggleCart(show) {
     }
 }
 
+
+function loadCart() {
+    try {
+        const raw = localStorage.getItem('ep_cart') ?? localStorage.getItem('cart');
+        if (!raw) {
+            cart = [];
+            return;
+        }
+
+        const parsed = JSON.parse(raw);
+        cart = Array.isArray(parsed) ? parsed : [];
+        localStorage.setItem('ep_cart', JSON.stringify(cart));
+    } catch (error) {
+        console.warn('[Cart] Failed to parse saved cart. Resetting local state:', error);
+        localStorage.removeItem('cart');
+        localStorage.removeItem('ep_cart');
+        cart = [];
+    }
+}
+
+loadCart();
+
 // ── Server-Side Cart Calculation ──
 let _calcTimeout = null;
 
@@ -132,6 +154,9 @@ function renderCartUI(serverData) {
                </div>`
             : cart.map((item, idx) => {
                 const sd = displayItems[idx];
+                if (!item || isNaN(Number(sd?.unitPrice ?? item.price))) {
+                    return '';
+                }
                 const name = sd?.name || item._display.name;
                 const image = sd?.image || item._display.image;
                 const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
@@ -413,14 +438,14 @@ window.openCustomizer = (itemId) => {
         : Object.entries(grouped).map(([group, mods]) => `
             <div class="mb-5 last:mb-0">
                 <p class="text-xs font-bold uppercase tracking-wider text-textMutedLight dark:text-textMutedDark mb-2">${group}</p>
-                <div class="modifiers-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px;">
+                <div class="modifiers-grid">
                     ${mods.map((m) => `
-                        <label class="modifier-card" style="background: #222; border: 1px solid #333; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; height: 120px; cursor: pointer; transition: 0.2s;">
+                        <label class="modifier-card">
                             <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="modifier-card-inner">
-                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px;" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
-                                <span class="name" style="font-size: 11px; color: #fff;">${m.name}</span>
-                                <span class="price" style="font-size: 12px; font-weight: bold; color: #ff6900;">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
+                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
+                                <span class="name">${m.name}</span>
+                                <span class="price">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
                             </div>
                         </label>
                     `).join('')}
