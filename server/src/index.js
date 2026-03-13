@@ -184,16 +184,72 @@ app.get('/api/run-scraper', async (req, res) => {
         ];
 
         const products = [
-            { name: 'Пепперони', categorySlug: 'pizzas', sortOrder: 1, price: 17.5 },
-            { name: 'Маргарита', categorySlug: 'pizzas', sortOrder: 2, price: 15.0 },
-            { name: 'Баварская', categorySlug: 'pizzas', sortOrder: 3, price: 21.0 },
-            { name: 'Четыре сыра', categorySlug: 'pizzas', sortOrder: 4, price: 22.5 },
-            { name: 'Сырные палочки', categorySlug: 'snacks', sortOrder: 1, price: 8.5 },
+            {
+                name: 'Пепперони',
+                description: 'Томатный соус, моцарелла, пепперони и орегано.',
+                image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=1200&auto=format&fit=crop',
+                categorySlug: 'pizzas',
+                sortOrder: 1,
+                price: 17.5,
+            },
+            {
+                name: 'Маргарита',
+                description: 'Классическая пицца с томатным соусом, моцареллой и базиликом.',
+                image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=1200&auto=format&fit=crop',
+                categorySlug: 'pizzas',
+                sortOrder: 2,
+                price: 15.0,
+            },
+            {
+                name: 'Баварская',
+                description: 'Охотничьи колбаски, бекон, моцарелла и фирменный соус.',
+                image: 'https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=1200&auto=format&fit=crop',
+                categorySlug: 'pizzas',
+                sortOrder: 3,
+                price: 21.0,
+            },
+            {
+                name: 'Четыре сыра',
+                description: 'Моцарелла, чеддер, дорблю и пармезан на сливочном соусе.',
+                image: 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=1200&auto=format&fit=crop',
+                categorySlug: 'pizzas',
+                sortOrder: 4,
+                price: 22.5,
+            },
+            {
+                name: 'Сырные палочки',
+                description: 'Хрустящие палочки с расплавленным сыром и чесночным соусом.',
+                image: 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=1200&auto=format&fit=crop',
+                categorySlug: 'snacks',
+                sortOrder: 1,
+                price: 8.5,
+            },
         ];
 
         const modifiers = [
             { name: 'Сырный бортик', price: 3.5 },
             { name: 'Халапеньо', price: 1.5 },
+        ];
+
+        const promotions = [
+            {
+                title: 'Комбо дня',
+                subtitle: '2 пиццы + напиток со скидкой 20%',
+                badgeText: 'Хит',
+                bgColor: '#EF4444',
+                imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&auto=format&fit=crop',
+                linkUrl: '/menu?promo=combo',
+                isActive: true,
+            },
+            {
+                title: 'Семейный вечер',
+                subtitle: 'Большая пицца в подарок при заказе от 60 BYN',
+                badgeText: 'Выгодно',
+                bgColor: '#2563EB',
+                imageUrl: 'https://images.unsplash.com/photo-1528137871618-79d2761e3fd5?w=1200&auto=format&fit=crop',
+                linkUrl: '/promotions/family',
+                isActive: true,
+            },
         ];
 
         const categoryMap = new Map();
@@ -218,15 +274,12 @@ app.get('/api/run-scraper', async (req, res) => {
 
             for (const product of products) {
                 const isPizza = product.categorySlug === 'pizzas';
-                const productImage = isPizza
-                    ? 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop'
-                    : 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=500&auto=format&fit=crop';
 
                 const createdProduct = await tx.product.create({
                     data: {
                         name: product.name,
-                        description: '',
-                        image: productImage,
+                        description: product.description,
+                        image: product.image,
                         categoryId: categoryMap.get(product.categorySlug),
                         sortOrder: product.sortOrder,
                         isAvailable: true,
@@ -248,6 +301,10 @@ app.get('/api/run-scraper', async (req, res) => {
                     },
                 });
             }
+
+            await tx.promotion.createMany({
+                data: promotions,
+            });
         });
 
         return res.json({ success: true, message: 'База залита идеальными данными!' });
