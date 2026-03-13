@@ -178,78 +178,114 @@ app.get('/api/force-migrate', async (req, res) => {
 
 app.get('/api/run-scraper', async (req, res) => {
     try {
-        const categories = [
-            { name: 'Пиццы', slug: 'pizzas', sortOrder: 1 },
-            { name: 'Закуски', slug: 'snacks', sortOrder: 2 },
-        ];
-
-        const products = [
-            { name: 'Пепперони', categorySlug: 'pizzas', sortOrder: 1, price: 17.5 },
-            { name: 'Маргарита', categorySlug: 'pizzas', sortOrder: 2, price: 15.0 },
-            { name: 'Баварская', categorySlug: 'pizzas', sortOrder: 3, price: 21.0 },
-            { name: 'Четыре сыра', categorySlug: 'pizzas', sortOrder: 4, price: 22.5 },
-            { name: 'Сырные палочки', categorySlug: 'snacks', sortOrder: 1, price: 8.5 },
-        ];
-
-        const modifiers = [
-            { name: 'Сырный бортик', price: 3.5 },
-            { name: 'Халапеньо', price: 1.5 },
-        ];
-
-        const categoryMap = new Map();
-        const modifierIds = [];
-
         await prisma.$transaction(async (tx) => {
-            await tx.productSize.deleteMany();
-            await tx.product.deleteMany();
-            await tx.productModifier.deleteMany();
-            await tx.promotion.deleteMany();
-            await tx.category.deleteMany();
+            // 1. Безопасная очистка в порядке зависимостей
+            await tx.productSize.deleteMany({});
+            await tx.product.deleteMany({});
+            await tx.productModifier.deleteMany({});
+            await tx.category.deleteMany({});
+            await tx.promotion.deleteMany({});
 
-            for (const category of categories) {
-                const createdCategory = await tx.category.create({ data: category });
-                categoryMap.set(category.slug, createdCategory.id);
-            }
+            // 2. Создание категорий
+            const catPizza = await tx.category.create({ data: { name: 'Пиццы', slug: 'pizzas' } });
+            const catSnacks = await tx.category.create({ data: { name: 'Закуски', slug: 'snacks' } });
 
-            for (const modifier of modifiers) {
-                const createdModifier = await tx.productModifier.create({ data: modifier });
-                modifierIds.push(createdModifier.id);
-            }
+            // 3. Создание модификаторов
+            const cheeseCrust = await tx.productModifier.create({
+                data: {
+                    name: 'Сырный бортик',
+                    price: 3.5,
+                    groupName: 'Допы',
+                },
+            });
 
-            for (const product of products) {
-                const isPizza = product.categorySlug === 'pizzas';
+            const jalapeno = await tx.productModifier.create({
+                data: {
+                    name: 'Халапеньо',
+                    price: 1.5,
+                    groupName: 'Допы',
+                },
+            });
 
-                const createdProduct = await tx.product.create({
-                    data: {
-                        name: product.name,
-                        description: '',
-                        image: 'https://placehold.co/600x400/ff6900/white?text=Express+Pizza',
-                        categoryId: categoryMap.get(product.categorySlug),
-                        sortOrder: product.sortOrder,
-                        isAvailable: true,
-                        allergenSlugs: [],
-                        modifiers: isPizza
-                            ? {
-                                connect: modifierIds.map((id) => ({ id })),
-                            }
-                            : undefined,
+            // 4. Создание товаров с обязательными базовыми полями
+            const pepperoni = await tx.product.create({
+                data: {
+                    categoryId: catPizza.id,
+                    name: 'Пепперони',
+                    description: 'Пикантная пепперони, увеличенная порция моцареллы, томатный соус',
+                    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop',
+                    modifiers: {
+                        connect: [{ id: cheeseCrust.id }, { id: jalapeno.id }],
                     },
-                });
+                },
+            });
 
-                await tx.productSize.create({
-                    data: {
-                        productId: createdProduct.id,
-                        label: 'Стандарт',
-                        weight: '—',
-                        price: product.price,
+            await tx.productSize.create({
+                data: {
+                    productId: pepperoni.id,
+                    label: 'Средняя 30 см',
+                    price: 17.5,
+                    weight: '500 г',
+                },
+            });
+
+            const margherita = await tx.product.create({
+                data: {
+                    categoryId: catPizza.id,
+                    name: 'Маргарита',
+                    description: 'Увеличенная порция моцареллы, томаты, итальянские травы, томатный соус',
+                    image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=500&auto=format&fit=crop',
+                    modifiers: {
+                        connect: [{ id: cheeseCrust.id }],
                     },
-                });
-            }
+                },
+            });
+
+            await tx.productSize.create({
+                data: {
+                    productId: margherita.id,
+                    label: 'Средняя 30 см',
+                    price: 15,
+                    weight: '450 г',
+                },
+            });
+
+            const cheeseSticks = await tx.product.create({
+                data: {
+                    categoryId: catSnacks.id,
+                    name: 'Сырные палочки',
+                    description: 'Горячая закуска с чесноком и моцареллой',
+                    image: 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=500&auto=format&fit=crop',
+                },
+            });
+
+            await tx.productSize.create({
+                data: {
+                    productId: cheeseSticks.id,
+                    label: 'Стандарт',
+                    price: 8.5,
+                    weight: '200 г',
+                },
+            });
+
+            // 5. Восстановление акций (все обязательные поля)
+            await tx.promotion.create({
+                data: {
+                    title: 'Скидка 20% на первый заказ',
+                    subtitle: 'Действует для новых клиентов',
+                    badgeText: 'NEW',
+                    bgColor: '#16A34A',
+                    imageUrl: 'https://images.unsplash.com/photo-1613564834361-9436948817d1?w=600&auto=format&fit=crop',
+                    linkUrl: '#',
+                    isActive: true,
+                },
+            });
         });
 
-        return res.json({ success: true, message: 'База залита идеальными данными!' });
+        res.json({ success: true, message: 'База успешно восстановлена!' });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        console.error('SEED ERROR:', error);
+        res.status(500).json({ error: 'Ошибка при заливке базы', details: error.message });
     }
 });
 
