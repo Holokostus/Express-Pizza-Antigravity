@@ -23,26 +23,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
 
-    // ── Cart Sidebar Events ──
+    // ── Immortal modal buttons (single global delegation) ──
     if (!window.__uiModalDelegationBound) {
         window.__uiModalDelegationBound = true;
-        document.addEventListener('click', (event) => {
-            const openCartBtn = event.target.closest('#floating-cart');
-            if (openCartBtn) {
-                toggleCart(true);
-                return;
-            }
+        document.body.addEventListener('click', (e) => {
+            const cartModal = document.getElementById('cart-modal') || document.getElementById('cart-sidebar');
+            const profileModal = document.getElementById('profile-modal');
 
-            const closeCartBtn = event.target.closest('#close-cart, #back-to-menu, #cart-overlay');
-            if (closeCartBtn) {
-                toggleCart(false);
-                return;
+            // Открытие корзины
+            if (e.target.closest('#cart-btn') || e.target.closest('.cart-btn') || e.target.closest('#floating-cart')) {
+                if (typeof toggleCart === 'function') {
+                    toggleCart(true);
+                } else {
+                    cartModal?.classList.remove('hidden');
+                }
             }
-
-            const profileBtn = event.target.closest('[onclick="handleProfileClick()"]');
-            if (profileBtn) {
-                event.preventDefault();
-                handleProfileClick();
+            // Закрытие корзины
+            if (e.target.closest('#close-cart') || e.target.closest('[data-action="close-cart"]') || e.target.closest('#back-to-menu') || e.target.closest('#cart-overlay')) {
+                if (typeof toggleCart === 'function') {
+                    toggleCart(false);
+                } else {
+                    cartModal?.classList.add('hidden');
+                }
+            }
+            // Открытие профиля
+            if (e.target.closest('#profile-btn') || e.target.closest('[onclick="handleProfileClick()"]')) {
+                if (typeof openProfileModal === 'function') {
+                    e.preventDefault();
+                    openProfileModal();
+                } else {
+                    profileModal?.classList.remove('hidden');
+                }
+            }
+            // Закрытие профиля
+            if (e.target.closest('#close-profile') || e.target.closest('[onclick="closeProfileModal()"]')) {
+                if (typeof closeProfileModal === 'function') {
+                    closeProfileModal();
+                } else {
+                    profileModal?.classList.add('hidden');
+                }
             }
         });
     }

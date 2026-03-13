@@ -250,16 +250,6 @@ function renderCartUI(serverData) {
             </div>`;
     }
 
-    if (cartItemsContainer && !cartItemsContainer.dataset.closeMenuBound) {
-        cartItemsContainer.addEventListener('click', (event) => {
-            const closeBtn = event.target.closest('[data-action="close-cart"]');
-            if (closeBtn) {
-                toggleCart(false);
-            }
-        });
-        cartItemsContainer.dataset.closeMenuBound = '1';
-    }
-
     safeLocalStorageSetJson('ep_cart', cart);
 }
 
