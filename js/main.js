@@ -24,13 +24,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
 
     // ── Cart Sidebar Events ──
-    const floatingCart = $('floating-cart');
-    const closeCartBtn = $('close-cart');
-    const cartOverlay = $('cart-overlay');
+    if (!window.__uiModalDelegationBound) {
+        window.__uiModalDelegationBound = true;
+        document.addEventListener('click', (event) => {
+            const openCartBtn = event.target.closest('#floating-cart');
+            if (openCartBtn) {
+                toggleCart(true);
+                return;
+            }
 
-    if (floatingCart) floatingCart.addEventListener('click', () => toggleCart(true));
-    if (closeCartBtn) closeCartBtn.addEventListener('click', () => toggleCart(false));
-    if (cartOverlay) cartOverlay.addEventListener('click', () => toggleCart(false));
+            const closeCartBtn = event.target.closest('#close-cart, #back-to-menu, #cart-overlay');
+            if (closeCartBtn) {
+                toggleCart(false);
+                return;
+            }
+
+            const profileBtn = event.target.closest('[onclick="handleProfileClick()"]');
+            if (profileBtn) {
+                event.preventDefault();
+                handleProfileClick();
+            }
+        });
+    }
 
     // ── OTP Flow ──
     const orderForm = $('order-form');

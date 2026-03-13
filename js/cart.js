@@ -10,22 +10,29 @@ function toggleCart(show) {
     const cartSidebar = $('cart-sidebar');
     const cartOverlay = $('cart-overlay');
     const cartPanel = $('cart-panel');
-    if (!cartSidebar) return;
+    if (!cartSidebar || !cartOverlay || !cartPanel) return;
+
     if (show) {
+        cartSidebar.classList.remove('hidden');
         cartSidebar.classList.remove('pointer-events-none');
         cartOverlay.classList.replace('opacity-0', 'opacity-100');
         cartOverlay.classList.add('pointer-events-auto');
         cartPanel.classList.replace('translate-y-full', 'translate-y-0');
         cartPanel.classList.replace('lg:translate-x-full', 'lg:translate-x-0');
         document.body.style.overflow = 'hidden';
-    } else {
-        cartSidebar.classList.add('pointer-events-none');
-        cartOverlay.classList.replace('opacity-100', 'opacity-0');
-        cartOverlay.classList.remove('pointer-events-auto');
-        cartPanel.classList.replace('translate-y-0', 'translate-y-full');
-        cartPanel.classList.replace('lg:translate-x-0', 'lg:translate-x-full');
-        document.body.style.overflow = '';
+        return;
     }
+
+    cartOverlay.classList.replace('opacity-100', 'opacity-0');
+    cartOverlay.classList.remove('pointer-events-auto');
+    cartPanel.classList.replace('translate-y-0', 'translate-y-full');
+    cartPanel.classList.replace('lg:translate-x-0', 'lg:translate-x-full');
+    cartSidebar.classList.add('pointer-events-none');
+
+    setTimeout(() => {
+        cartSidebar.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 300);
 }
 
 
@@ -154,30 +161,31 @@ function renderCartUI(serverData) {
                         <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     </div>
                     <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
-                    <button type="button" data-action="close-cart" onclick="document.getElementById('cart-modal')?.classList.add('hidden'); toggleCart(false);" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
+                    <button type="button" data-action="close-cart" onclick="toggleCart(false);" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
                </div>`
             : cart.map((item, idx) => {
-                const sd = displayItems[idx];
-                if (!item || isNaN(Number(sd?.unitPrice ?? item.price))) {
-                    return '';
-                }
-                const name = sd?.name || item._display.name;
-                const image = sd?.image || item._display.image;
-                const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
-                const mods = Array.isArray(sd?.modifiers) ? sd.modifiers.map((m) => m?.name).filter(Boolean) : (Array.isArray(item._display?.modifierNames) ? item._display.modifierNames : []);
-                const modsHtml = (item.modifiers && item.modifiers.length)
-                    ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + item.modifiers.map(m => m.name).join(', ') + '</div>'
-                    : (mods.length > 0
-                        ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => escapeHtml(m)).join(', ') + '</div>'
-                        : '');
-                const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
+                try {
+                    const sd = displayItems[idx];
+                    if (!item || isNaN(Number(sd?.unitPrice ?? item.price))) {
+                        return '';
+                    }
+                    const name = sd?.name || item._display.name;
+                    const image = sd?.image || item._display.image;
+                    const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
+                    const mods = Array.isArray(sd?.modifiers) ? sd.modifiers.map((m) => m?.name).filter(Boolean) : (Array.isArray(item._display?.modifierNames) ? item._display.modifierNames : []);
+                    const modsHtml = (item.modifiers && item.modifiers.length)
+                        ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + item.modifiers.map(m => m.name).join(', ') + '</div>'
+                        : (mods.length > 0
+                            ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => escapeHtml(m)).join(', ') + '</div>'
+                            : '');
+                    const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
 
-                const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
-                const imageHtml = image 
-                    ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
-                    : `<div class="w-[50px] h-[50px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
+                    const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
+                    const imageHtml = image
+                        ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
+                        : `<div class="w-[50px] h-[50px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
 
-                return `
+                    return `
                 <div class="flex items-center gap-4 animate-fade-in group relative">
                     ${imageHtml}
                     <div class="flex-grow min-w-0 pr-2">
@@ -196,6 +204,10 @@ function renderCartUI(serverData) {
                         </div>
                     </div>
                 </div>`;
+                } catch (itemError) {
+                    console.warn('[Cart] Skipping broken cart item while rendering:', itemError, item);
+                    return '';
+                }
             }).join('');
         } catch (e) {
             console.error(e);
@@ -356,7 +368,7 @@ window.addToCart = (id) => {
         image: item.image,
         weight: size.weight,
         modifierNames: [],
-        finalPrice: Number(size.price || 0),
+        finalPrice: Number.isFinite(Number(size.price)) ? Number(size.price) : 0,
     });
 
     // Bounce animation on cart badge
@@ -462,17 +474,13 @@ window.openCustomizer = (itemId) => {
             </div>
         `).join('');
 
-    let modal = $('pizza-customizer-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'pizza-customizer-modal';
-        document.body.appendChild(modal);
-    }
+    const modal = $('pizza-customizer-modal');
+    const sheet = $('customizer-sheet');
+    if (!modal || !sheet) return;
 
-    modal.className = 'fixed inset-0 z-[200] flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300';
-    modal.innerHTML = `
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomizer()"></div>
-        <div id="customizer-sheet" onclick="event.stopPropagation()" class="relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[780px] sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal">
+    modal.classList.add('items-end', 'sm:items-center', 'sm:justify-center');
+    sheet.className = 'relative bg-white dark:bg-[#1a1a1a] w-full sm:w-[780px] sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl translate-y-full transition-transform duration-300 glass-modal';
+    sheet.innerHTML = `
             <div class="grid md:grid-cols-2 gap-0 flex-grow overflow-y-auto hide-scrollbar">
                 <div class="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
                     <img src="${itemInfo.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'">
@@ -503,15 +511,13 @@ window.openCustomizer = (itemId) => {
                     <span class="text-lg font-black bg-white/20 px-3 py-1 rounded-xl" id="cust-total">${customizerBasePrice.toFixed(2)} BYN</span>
                 </button>
             </div>
-        </div>
     `;
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     requestAnimationFrame(() => {
         modal.classList.remove('opacity-0');
-        const sheet = $('customizer-sheet');
-        if (sheet) sheet.classList.remove('translate-y-full');
+        sheet.classList.remove('translate-y-full');
     });
     updateCustomizerTotal();
 };
@@ -544,7 +550,7 @@ window.closeCustomizer = () => {
     if (modal) modal.classList.add('opacity-0');
     if (sheet) sheet.classList.add('translate-y-full');
     setTimeout(() => {
-        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        if (modal) modal.classList.add('hidden');
     }, 300);
 };
 
@@ -681,7 +687,7 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
         setTimeout(() => {
             modal.classList.add('opacity-0');
             setTimeout(() => {
-                modal.remove();
+                modal.classList.add('hidden');
                 resolve();
             }, 250);
         }, 2500);

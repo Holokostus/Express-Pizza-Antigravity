@@ -235,31 +235,30 @@ html {
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Dodo-style dark modifier tiles */
+/* Dodo-style modifier tiles */
 .modifiers-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 15px;
+    gap: 10px;
+    padding: 10px 0;
 }
 
 .modifier-card {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 16px;
-    padding: 12px 6px;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s ease;
+    background: #fff;
+    border: 1px solid #e2e2e9;
+    border-radius: 12px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 110px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .modifier-card:hover {
-    background: #222;
+    border-color: #ff6900;
 }
 
 .modifier-card-inner {
@@ -268,27 +267,27 @@ html {
 
 .modifier-card img,
 .modifier-card .modifier-card-image {
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    margin-bottom: 5px;
 }
 
 .modifier-card span.name {
-    font-size: 11px;
-    color: #ddd;
+    font-size: 12px;
+    color: #000;
     line-height: 1.2;
     margin-bottom: 4px;
 }
 
 .modifier-card span.price {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: bold;
     color: #ff6900;
 }
 
 .modifier-card.active {
     border-color: #ff6900;
-    background: rgba(255,105,0,0.1);
+    box-shadow: 0 0 0 1px #ff6900;
+    background: #fff0e6;
 }
