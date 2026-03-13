@@ -243,10 +243,30 @@ function addCartLine(itemPayload) {
 
 window.cart = {
     addItem(itemPayload) {
-        if (!itemPayload || !itemPayload.productSizeId) {
+        if (!itemPayload) {
+            throw new Error('Invalid cart payload');
+        }
+
+        const normalizedPayload = itemPayload.productSizeId
+            ? itemPayload
+            : {
+                itemId: itemPayload.id,
+                productSizeId: itemPayload.productSizeId || itemPayload.sizeId,
+                sizeLabel: itemPayload.size || itemPayload.sizeLabel || '',
+                doughType: itemPayload.dough || itemPayload.doughType || 'traditional',
+                modifierIds: (itemPayload.modifiers || []).map((mod) => mod.id),
+                name: itemPayload.name,
+                image: itemPayload.image,
+                weight: itemPayload.weight,
+                modifierNames: (itemPayload.modifiers || []).map((mod) => mod.name).filter(Boolean),
+                finalPrice: Number(itemPayload.price || itemPayload.finalPrice || 0),
+            };
+
+        if (!normalizedPayload.productSizeId) {
             throw new Error('Invalid cart payload: productSizeId is required');
         }
-        addCartLine(itemPayload);
+
+        addCartLine(normalizedPayload);
         debouncedRecalculate();
     },
 };
@@ -371,12 +391,12 @@ window.openCustomizer = (itemId) => {
         : Object.entries(grouped).map(([group, mods]) => `
             <div class="mb-5 last:mb-0">
                 <p class="text-xs font-bold uppercase tracking-wider text-textMutedLight dark:text-textMutedDark mb-2">${group}</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div class="modifier-grid">
                     ${mods.map((m) => `
-                        <label class="cursor-pointer">
+                        <label class="modifier-card cursor-pointer">
                             <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
-                            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 p-2.5 text-center bg-white dark:bg-gray-800/40 peer-checked:border-primary peer-checked:bg-primary/10 transition-all h-full">
-                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="w-10 h-10 mx-auto rounded-xl object-cover mb-2" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
+                            <div class="modifier-card-inner transition-all h-full">
+                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
                                 <p class="text-xs font-semibold leading-tight">${m.name}</p>
                                 <p class="text-[11px] text-primary font-bold mt-1">+${parseFloat(m.price || 0).toFixed(2)} BYN</p>
                             </div>
@@ -474,9 +494,18 @@ window.closeCustomizer = () => {
 
 window.updateCustomizerTotal = () => {
     let price = customizerBasePrice;
-    document.querySelectorAll('.cust-mod-cb:checked').forEach((cb) => {
-        price += parseFloat(cb.dataset.modPrice) || 0;
+
+    document.querySelectorAll('.cust-mod-cb').forEach((cb) => {
+        const card = cb.closest('.modifier-card')?.querySelector('.modifier-card-inner');
+        if (card) {
+            card.classList.toggle('active', cb.checked);
+        }
+
+        if (cb.checked) {
+            price += parseFloat(cb.dataset.modPrice) || 0;
+        }
     });
+
     const ct = $('cust-total');
     if (ct) ct.textContent = `${price.toFixed(2)} BYN`;
 };
@@ -484,11 +513,19 @@ window.updateCustomizerTotal = () => {
 window.addCustomizedItem = () => {
     if (!currentCustomizerItem) return;
 
+    const selectedModifiers = [];
     const modifierNames = [];
     const modifierIds = [];
     document.querySelectorAll('.cust-mod-cb:checked').forEach((cb) => {
-        modifierIds.push(parseInt(cb.dataset.modId, 10));
-        modifierNames.push(cb.dataset.modName);
+        const modifierId = parseInt(cb.dataset.modId, 10);
+        const modifierName = cb.dataset.modName;
+        modifierIds.push(modifierId);
+        modifierNames.push(modifierName);
+        selectedModifiers.push({
+            id: modifierId,
+            name: modifierName,
+            price: parseFloat(cb.dataset.modPrice || 0),
+        });
     });
 
     const size = currentCustomizerItem.sizes[customizerState.sizeIdx] || currentCustomizerItem.sizes[0];
@@ -497,18 +534,26 @@ window.addCustomizedItem = () => {
     const finalPriceLabel = $('cust-total')?.textContent || '';
     const finalPrice = parseFloat(finalPriceLabel.replace(/[^\d.]/g, '')) || customizerBasePrice;
 
-    window.cart.addItem({
-        itemId: currentCustomizerItem.id,
+    const item = {
+        id: currentCustomizerItem.id,
         productSizeId: size.id,
-        sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
-        doughType: customizerState.doughType,
-        modifierIds,
+        sizeId: size.id,
         name: currentCustomizerItem.name,
+        price: finalPrice,
+        finalPrice,
+        size: size.label,
+        sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
+        dough: customizerState.doughType,
+        doughType: customizerState.doughType,
+        modifiers: selectedModifiers,
+        modifierIds,
         image: currentCustomizerItem.image,
         weight: size.weight,
         modifierNames,
-        finalPrice,
-    });
+    };
+
+    window.cart.addItem(item);
+    renderCartUI(serverCalculation);
 
     closeCustomizer();
     showToast('success', `${currentCustomizerItem.name} добавлена в корзину!`);
