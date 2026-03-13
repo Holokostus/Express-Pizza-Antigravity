@@ -28,17 +28,6 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
         console.warn(`[bePaid] Missing credentials. Returning fallback checkout URL for order ${externalOrderId}`);
         return `order-success.html?order=${externalOrderId}&payment=temporarily_unavailable`;
     }
-
-    // ── STUB MODE: skip real bePaid if keys are not configured ──
-    const isStub = SHOP_ID === 'SHOP_ID_PLACEHOLDER' || SECRET_KEY === 'SECRET_KEY_PLACEHOLDER'
-        || SHOP_ID === 'test' || SECRET_KEY === 'test';
-
-    // REMOVED STUB CHECK TO FORCE TEST TRANSACTIONS THROUGH REAL BEPAID GATEWAY
-    // if (isStub) {
-    //     console.warn(`[bePaid STUB] Keys not configured — returning fake checkout URL for order ${externalOrderId}`);
-    //     return `order-success.html?order=${externalOrderId}&stub=true`;
-    // }
-
     // ── REAL MODE: call bePaid API ──
     const amountInCents = Math.round(amount * 100);
 

@@ -31,6 +31,25 @@ let menuItems = [];
 let menuCategories = [];
 let promotions = [];
 
+function safeLocalStorageGetJson(key, fallback = null) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw);
+    } catch (error) {
+        console.warn(`[Storage] Failed to parse key "${key}":`, error);
+        return fallback;
+    }
+}
+
+function safeLocalStorageSetJson(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn(`[Storage] Failed to write key "${key}":`, error);
+    }
+}
+
 // ── Polyfill db object for compatibility ──
 window.db = {
     getAvailableMenu: (cat) => {
@@ -39,6 +58,7 @@ window.db = {
         return menuItems.filter((p) => p.categorySlug === targetCategory);
     },
     getMenuItem: (id) => menuItems.find((p) => p.id === id),
+    getMenu: () => menuItems,
 };
 
 // ── DOM shortcut ──
@@ -60,9 +80,10 @@ async function api(path, options = {}) {
             const orderPayload = JSON.parse(options.body);
             orderPayload._tempId = Date.now();
             
-            let offlineOrders = JSON.parse(localStorage.getItem('offline_orders')) || [];
+            let offlineOrders = safeLocalStorageGetJson('offline_orders', []);
+            if (!Array.isArray(offlineOrders)) offlineOrders = [];
             offlineOrders.push(orderPayload);
-            localStorage.setItem('offline_orders', JSON.stringify(offlineOrders));
+            safeLocalStorageSetJson('offline_orders', offlineOrders);
             
             return {
                 offline: true,
@@ -134,4 +155,3 @@ async function fetchPromotions() {
         showToast('error', 'Не удалось загрузить акции');
     }
 }
-
