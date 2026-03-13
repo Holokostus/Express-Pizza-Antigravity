@@ -402,9 +402,16 @@ window.requestLoginCode = async function () {
             $('login-step-2').classList.remove('hidden');
             showToast('success', 'Код отправлен на email');
         } else {
-            showToast('error', data.error || 'Ошибка');
+            const details = data.details ? ` (${data.details})` : '';
+            const message = `${data.error || 'Ошибка'}${details}`;
+            console.error('[Login] send-email error:', data);
+            alert(message);
+            showToast('error', message);
         }
-    } catch (e) { showToast('error', 'Ошибка сети'); }
+    } catch (e) {
+        console.error('[Login] send-email network error:', e);
+        showToast('error', 'Ошибка сети');
+    }
 };
 
 window.verifyLoginCode = async function () {

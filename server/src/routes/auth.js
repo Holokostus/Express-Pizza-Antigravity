@@ -43,7 +43,10 @@ async function handleSendOtp(req, res) {
         return res.json({ success: true, message: 'OTP sent to email' });
     } catch (err) {
         console.error('[Auth] Send OTP email error:', err);
-        return res.status(500).json({ error: 'Не удалось отправить OTP email' });
+        return res.status(500).json({
+            error: 'Mail Error',
+            details: err?.message || 'Не удалось отправить OTP email',
+        });
     }
 }
 

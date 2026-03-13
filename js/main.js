@@ -74,7 +74,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const otpInput = $('otp-input');
             if (otpInput) otpInput.focus();
         } catch (err) {
-            showToast('error', err.message || 'Ошибка отправки кода');
+            console.error('[OTP] Send email error:', err);
+            const backendDetails = err?.message || 'Ошибка отправки кода';
+            alert(`Ошибка отправки кода: ${backendDetails}`);
+            showToast('error', backendDetails);
             if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
         }
     };

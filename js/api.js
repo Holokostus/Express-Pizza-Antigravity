@@ -72,13 +72,26 @@ window.showToast = function (type, message, duration = 3000) {
     icon.textContent = type === 'success' ? '✅' : '❌';
     msg.textContent = message;
 
-    el.classList.remove('translate-y-[150%]', 'opacity-0');
-    el.classList.add('translate-y-0', 'opacity-100');
+    el.style.position = 'fixed';
+    el.style.bottom = '20px';
+    el.style.left = '50%';
+    el.style.transform = 'translateX(-50%) translateY(24px)';
+    el.style.background = '#333';
+    el.style.color = '#fff';
+    el.style.borderRadius = '30px';
+    el.style.boxShadow = '0 10px 20px rgba(0,0,0,0.5)';
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+
+    requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(-50%) translateY(0)';
+    });
 
     clearTimeout(window._toastTimer);
     window._toastTimer = setTimeout(() => {
-        el.classList.add('translate-y-[150%]', 'opacity-0');
-        el.classList.remove('translate-y-0', 'opacity-100');
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(12px)';
     }, duration);
 };
 
