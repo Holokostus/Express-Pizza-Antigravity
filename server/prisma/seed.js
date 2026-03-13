@@ -64,11 +64,14 @@ async function main() {
     // ================================================================
     const categories = [
         { slug: 'pizza', name: 'Пицца', sortOrder: 1 },
-        { slug: 'togo', name: 'Пицца TOGO', sortOrder: 2 },
-        { slug: 'combo', name: 'Комбо & Акции', sortOrder: 3 },
-        { slug: 'sauce', name: 'Соусы', sortOrder: 4 },
-        { slug: 'juice', name: 'Соки', sortOrder: 5 },
-        { slug: 'drinks', name: 'Напитки', sortOrder: 6 },
+        { slug: 'calzone', name: 'Кальцоне', sortOrder: 2 },
+        { slug: 'togo', name: 'Пицца TOGO', sortOrder: 3 },
+        { slug: 'combo', name: 'Комбо & Акции', sortOrder: 4 },
+        { slug: 'snacks', name: 'Закуски', sortOrder: 5 },
+        { slug: 'desserts', name: 'Десерты', sortOrder: 6 },
+        { slug: 'sauce', name: 'Соусы', sortOrder: 7 },
+        { slug: 'juice', name: 'Соки', sortOrder: 8 },
+        { slug: 'drinks', name: 'Напитки', sortOrder: 9 },
     ];
 
     const catMap = {};
@@ -176,6 +179,60 @@ async function main() {
             calories: 238, proteins: 9.8, fats: 9.5, carbs: 28.5,
             allergenSlugs: ['gluten', 'dairy'],
             sizes: [{ label: '20 см', weight: '260г', price: 7.90 }],
+        },
+
+        // ----- Кальцоне -----
+        {
+            name: 'Кальцоне Пепперони', description: 'Закрытая пицца с пепперони, моцареллой и томатным соусом',
+            image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80', categorySlug: 'calzone', sortOrder: 1,
+            calories: 320, proteins: 14, fats: 14, carbs: 32,
+            allergenSlugs: ['gluten', 'dairy'],
+            sizes: [{ label: 'Стандарт', weight: '450г', price: 15.90 }],
+        },
+        {
+            name: 'Кальцоне Ветчина-Сыр', description: 'Закрытая пицца с ветчиной, грибами и моцареллой',
+            image: 'https://images.unsplash.com/photo-1555072956-7758afb20e8f?w=800&q=80', categorySlug: 'calzone', sortOrder: 2,
+            calories: 310, proteins: 15, fats: 12, carbs: 30,
+            allergenSlugs: ['gluten', 'dairy'],
+            sizes: [{ label: 'Стандарт', weight: '470г', price: 16.90 }],
+        },
+
+        // ----- Закуски -----
+        {
+            name: 'Картофель фри', description: 'Хрустящий золотистый картофель фри с морской солью',
+            image: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=800&q=80', categorySlug: 'snacks', sortOrder: 1,
+            calories: 312, proteins: 3.4, fats: 15, carbs: 41,
+            allergenSlugs: [],
+            sizes: [
+                { label: 'Стандарт', weight: '150г', price: 5.90 },
+                { label: 'Большая', weight: '250г', price: 8.90 },
+            ],
+        },
+        {
+            name: 'Куриные крылышки', description: 'Крылышки в соусе на выбор: BBQ, острый или чесночный',
+            image: 'https://images.unsplash.com/photo-1524114664604-cd8133cd67ad?w=800&q=80', categorySlug: 'snacks', sortOrder: 2,
+            calories: 280, proteins: 22, fats: 18, carbs: 8,
+            allergenSlugs: [],
+            sizes: [
+                { label: '6 шт', weight: '300г', price: 9.90 },
+                { label: '12 шт', weight: '600г', price: 17.90 },
+            ],
+        },
+
+        // ----- Десерты -----
+        {
+            name: 'Чизкейк Нью-Йорк', description: 'Нежный сливочный чизкейк с ванильными нотами',
+            image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=800&q=80', categorySlug: 'desserts', sortOrder: 1,
+            calories: 340, proteins: 6.2, fats: 24, carbs: 27,
+            allergenSlugs: ['gluten', 'dairy', 'eggs'],
+            sizes: [{ label: '1 порция', weight: '120г', price: 8.90 }],
+        },
+        {
+            name: 'Брауни шоколадный', description: 'Плотный шоколадный брауни с какао и ореховой крошкой',
+            image: 'https://images.unsplash.com/photo-1617305855058-336d24456869?w=800&q=80', categorySlug: 'desserts', sortOrder: 2,
+            calories: 410, proteins: 5.5, fats: 22, carbs: 48,
+            allergenSlugs: ['gluten', 'dairy', 'eggs', 'nuts'],
+            sizes: [{ label: '1 порция', weight: '100г', price: 7.90 }],
         },
 
         // ----- Соусы -----
