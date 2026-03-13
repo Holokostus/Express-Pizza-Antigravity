@@ -7,8 +7,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const axios = require('axios');
-const cheerio = require('cheerio');
 const prisma = require('./lib/prisma');
 const PORT = process.env.PORT || 3000;
 
@@ -43,150 +41,6 @@ const stockService = require('./services/stockService');
 const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
-
-const BASE_URL = 'https://express-pizza.by';
-
-function slugify(value) {
-    return String(value || '')
-        .toLowerCase()
-        .replace(/[^a-zа-я0-9]+/gi, '-')
-        .replace(/^-+|-+$/g, '')
-        .replace(/-{2,}/g, '-');
-}
-
-function toNumber(value) {
-    if (typeof value === 'number') return value;
-    const normalized = String(value || '').replace(',', '.').replace(/[^\d.]/g, '');
-    const num = Number(normalized);
-    return Number.isFinite(num) ? num : null;
-}
-
-function absolutize(url) {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('//')) return `https:${url}`;
-    return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-}
-
-function extractJsonCandidates(html) {
-    const out = [];
-    const $ = cheerio.load(html);
-    $('script').each((_, el) => {
-        const body = $(el).html()?.trim();
-        if (!body) return;
-
-        if (body.startsWith('{') || body.startsWith('[')) {
-            out.push(body);
-        }
-
-        const assignRe = /(?:window\.|self\.)?([A-Za-z0-9_$]+)\s*=\s*(\{[\s\S]*?\}|\[[\s\S]*?\]);/g;
-        let match;
-        while ((match = assignRe.exec(body))) {
-            out.push(match[2]);
-        }
-    });
-    return out;
-}
-
-function parseFromJson(html) {
-    const candidates = extractJsonCandidates(html);
-    const categories = [];
-    const products = [];
-    const promotions = [];
-
-    for (const raw of candidates) {
-        try {
-            const parsed = JSON.parse(raw);
-            const queue = [parsed];
-            while (queue.length) {
-                const node = queue.shift();
-                if (!node) continue;
-
-                if (Array.isArray(node)) {
-                    queue.push(...node);
-                    continue;
-                }
-
-                if (typeof node !== 'object') continue;
-
-                const name = node.name || node.title;
-                const price = toNumber(node.price || node.cost);
-                const image = node.image || node.imageUrl || node.picture;
-                const maybeCategory = node.category || node.categoryName || node.section;
-
-                if (name && price !== null && image) {
-                    products.push({
-                        name: String(name).trim(),
-                        price,
-                        image: absolutize(image),
-                        category: String(maybeCategory || 'Пицца').trim(),
-                    });
-                }
-
-                if ((node.slug || node.code) && (node.name || node.title) && !price) {
-                    categories.push({
-                        slug: slugify(node.slug || node.code || node.name || node.title),
-                        name: String(node.name || node.title).trim(),
-                    });
-                }
-
-                if ((node.link || node.url) && (node.title || node.name) && (node.subtitle || node.description || node.badgeText)) {
-                    promotions.push({
-                        title: String(node.title || node.name).trim(),
-                        subtitle: String(node.subtitle || node.description || '').trim(),
-                        badgeText: String(node.badgeText || 'Акция').trim(),
-                        imageUrl: absolutize(node.image || node.imageUrl || ''),
-                        linkUrl: absolutize(node.link || node.url || ''),
-                    });
-                }
-
-                for (const value of Object.values(node)) {
-                    if (value && typeof value === 'object') queue.push(value);
-                }
-            }
-        } catch (error) {
-            // ignore non-JSON scripts
-        }
-    }
-
-    return { categories, products, promotions };
-}
-
-function parseFromHtml(html) {
-    const products = [];
-    const promotions = [];
-    const $ = cheerio.load(html);
-
-    $('[class*="product"], [class*="menu"]').each((_, el) => {
-        const block = $(el);
-        const name = block.find('[class*="title"], [class*="name"], h1, h2, h3, h4').first().text().trim();
-        const image = block.find('img').first().attr('src');
-        const priceMatch = block.text().match(/([\d]+[\.,]?\d*)\s*(?:BYN|руб)/i);
-
-        if (!name || !image || !priceMatch) return;
-
-        products.push({
-            image: absolutize(image),
-            name,
-            price: toNumber(priceMatch[1]),
-            category: 'Пицца',
-        });
-    });
-
-    $('[class*="promo"]').each((_, el) => {
-        const title = $(el).text().trim();
-        if (!title || title.length < 5) return;
-        promotions.push({
-            title,
-            subtitle: '',
-            badgeText: 'Акция',
-            imageUrl: '',
-            linkUrl: '',
-        });
-    });
-
-    return { categories: [], products, promotions };
-}
 
 const rateLimit = require('express-rate-limit');
 const { requireAuth, checkRole } = require('./middleware/auth');
@@ -324,87 +178,61 @@ app.get('/api/force-migrate', async (req, res) => {
 
 app.get('/api/run-scraper', async (req, res) => {
     try {
-        const response = await axios.get(BASE_URL, {
-            headers: {
-                'user-agent': 'Mozilla/5.0 (ExpressPizzaBot/1.0)',
-                'accept-language': 'ru-RU,ru;q=0.9,en;q=0.8',
-            },
-            timeout: 30000,
-        });
+        const categories = [
+            { name: 'Пиццы', slug: 'pizzas', sortOrder: 1 },
+            { name: 'Закуски', slug: 'snacks', sortOrder: 2 },
+        ];
 
-        const html = response.data;
-        let parsed = parseFromJson(html);
+        const products = [
+            { name: 'Пепперони', categorySlug: 'pizzas', sortOrder: 1, price: 17.5 },
+            { name: 'Маргарита', categorySlug: 'pizzas', sortOrder: 2, price: 15.0 },
+            { name: 'Баварская', categorySlug: 'pizzas', sortOrder: 3, price: 21.0 },
+            { name: 'Четыре сыра', categorySlug: 'pizzas', sortOrder: 4, price: 22.5 },
+            { name: 'Сырные палочки', categorySlug: 'snacks', sortOrder: 1, price: 8.5 },
+        ];
 
-        if (parsed.products.length === 0 && parsed.promotions.length === 0) {
-            parsed = parseFromHtml(html);
-        }
-
-        const uniqueProducts = [];
-        const seenProducts = new Set();
-        for (const product of parsed.products) {
-            if (!product.name || !Number.isFinite(product.price)) continue;
-            const key = `${product.name}::${product.price}`;
-            if (seenProducts.has(key)) continue;
-            seenProducts.add(key);
-            uniqueProducts.push(product);
-        }
-
-        const categoryNames = parsed.categories.length
-            ? parsed.categories.map((category) => category.name)
-            : [...new Set(uniqueProducts.map((product) => product.category || 'Пицца'))];
-
-        const categories = categoryNames
-            .filter(Boolean)
-            .map((name, idx) => ({
-                name,
-                slug: slugify(name) || `category-${idx + 1}`,
-                sortOrder: idx + 1,
-            }));
-
-        const promotions = parsed.promotions
-            .filter((promotion) => promotion.title)
-            .slice(0, 20)
-            .map((promotion) => ({
-                title: promotion.title,
-                subtitle: promotion.subtitle || '',
-                badgeText: promotion.badgeText || 'Акция',
-                bgColor: 'bg-gradient-to-r from-red-600 to-orange-500',
-                imageUrl: promotion.imageUrl || 'https://placehold.co/800x400/ff6900/white?text=Express+Pizza',
-                linkUrl: promotion.linkUrl || null,
-                isActive: true,
-            }));
-
-        if (!categories.length || !uniqueProducts.length) {
-            return res.status(500).json({ error: 'Не удалось получить достаточно данных меню с express-pizza.by' });
-        }
+        const modifiers = [
+            { name: 'Сырный бортик', price: 3.5 },
+            { name: 'Халапеньо', price: 1.5 },
+        ];
 
         const categoryMap = new Map();
+        const modifierIds = [];
 
         await prisma.$transaction(async (tx) => {
             await tx.productSize.deleteMany();
             await tx.product.deleteMany();
+            await tx.productModifier.deleteMany();
             await tx.promotion.deleteMany();
             await tx.category.deleteMany();
 
             for (const category of categories) {
                 const createdCategory = await tx.category.create({ data: category });
-                categoryMap.set(category.name, createdCategory.id);
+                categoryMap.set(category.slug, createdCategory.id);
             }
 
-            for (const [idx, product] of uniqueProducts.entries()) {
-                const categoryName = product.category && categoryMap.has(product.category)
-                    ? product.category
-                    : categories[0].name;
+            for (const modifier of modifiers) {
+                const createdModifier = await tx.productModifier.create({ data: modifier });
+                modifierIds.push(createdModifier.id);
+            }
+
+            for (const product of products) {
+                const isPizza = product.categorySlug === 'pizzas';
 
                 const createdProduct = await tx.product.create({
                     data: {
                         name: product.name,
                         description: '',
-                        image: product.image || 'https://placehold.co/600x400/ff6900/white?text=Express+Pizza',
-                        categoryId: categoryMap.get(categoryName),
-                        sortOrder: idx + 1,
+                        image: 'https://placehold.co/600x400/ff6900/white?text=Express+Pizza',
+                        categoryId: categoryMap.get(product.categorySlug),
+                        sortOrder: product.sortOrder,
                         isAvailable: true,
                         allergenSlugs: [],
+                        modifiers: isPizza
+                            ? {
+                                connect: modifierIds.map((id) => ({ id })),
+                            }
+                            : undefined,
                     },
                 });
 
@@ -417,13 +245,9 @@ app.get('/api/run-scraper', async (req, res) => {
                     },
                 });
             }
-
-            for (const promotion of promotions) {
-                await tx.promotion.create({ data: promotion });
-            }
         });
 
-        return res.json({ success: true, message: 'База наполнена реальными данными с сайта!' });
+        return res.json({ success: true, message: 'База залита идеальными данными!' });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
