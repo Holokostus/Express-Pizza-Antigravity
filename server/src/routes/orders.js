@@ -104,7 +104,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const finalAddress = customerAddress || address;
 
         // Check auth for spending points
-        if (spentPoints > 0 && !req.user?.id) {
+        if (spentPoints > 0 && !req.user?.userId) {
             return res.status(400).json({ error: 'Только авторизованные пользователи могут тратить баллы' });
         }
 
@@ -151,11 +151,11 @@ router.post('/checkout', requireAuth, async (req, res) => {
             
             let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
             
-            if (finalSpentPoints > 0 && req.user?.id) {
+            if (finalSpentPoints > 0 && req.user?.userId) {
                 // Ensure atomic deduction to prevent TOCTOU
                 const updatedBalance = await tx.pointsBalance.updateMany({
                     where: { 
-                        userId: req.user.id,
+                        userId: req.user.userId,
                         currentBalance: { gte: finalSpentPoints }
                     },
                     data: {
@@ -170,7 +170,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                 // Log deduction in Ledger
                 await tx.pointsLedger.create({
                     data: {
-                        userId: req.user.id,
+                        userId: req.user.userId,
                         amount: -finalSpentPoints,
                         transactionType: 'REDEEM',
                         idempotencyKey: `redeem_${idempotencyKey}`
@@ -398,10 +398,7 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
                 id: true,
                 status: true,
                 userId: true,
-                finalAmount: true,
-                totalAmount: true,
-                total: true,
-                spentPoints: true
+                total: true
             }
         });
 

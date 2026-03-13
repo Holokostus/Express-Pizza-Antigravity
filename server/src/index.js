@@ -150,168 +150,7 @@ app.get('/api/grant-admin', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/api/make-me-admin', requireAuth, async (req, res) => {
-    try {
-        const user = await prisma.user.update({
-            where: { id: req.user.userId },
-            data: { role: 'ADMIN' },
-            select: { id: true, phone: true, role: true },
-        });
-
-        res.json({ success: true, user });
-    } catch (err) {
-        res.status(500).json({ error: 'Не удалось выдать права ADMIN' });
-    }
-});
-
-app.get('/api/force-migrate', async (req, res) => {
-    try {
-        const { runMigration } = require('../../scripts/migrate-legacy');
-        await runMigration();
-        res.json({ success: true, message: 'БД успешно заселена данными!' });
-    } catch (error) {
-        res.status(500).json({ error: error.message, stack: error.stack });
-    }
-});
-
 // ---- SEO: JSON-LD for rich snippets ----
-
-app.get('/api/run-scraper', async (req, res) => {
-    try {
-        const categories = [
-            { name: 'Пиццы', slug: 'pizzas', sortOrder: 1 },
-            { name: 'Закуски', slug: 'snacks', sortOrder: 2 },
-        ];
-
-        const products = [
-            {
-                name: 'Пепперони',
-                description: 'Томатный соус, моцарелла, пепперони и орегано.',
-                image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=1200&auto=format&fit=crop',
-                categorySlug: 'pizzas',
-                sortOrder: 1,
-                price: 17.5,
-            },
-            {
-                name: 'Маргарита',
-                description: 'Классическая пицца с томатным соусом, моцареллой и базиликом.',
-                image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=1200&auto=format&fit=crop',
-                categorySlug: 'pizzas',
-                sortOrder: 2,
-                price: 15.0,
-            },
-            {
-                name: 'Баварская',
-                description: 'Охотничьи колбаски, бекон, моцарелла и фирменный соус.',
-                image: 'https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=1200&auto=format&fit=crop',
-                categorySlug: 'pizzas',
-                sortOrder: 3,
-                price: 21.0,
-            },
-            {
-                name: 'Четыре сыра',
-                description: 'Моцарелла, чеддер, дорблю и пармезан на сливочном соусе.',
-                image: 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=1200&auto=format&fit=crop',
-                categorySlug: 'pizzas',
-                sortOrder: 4,
-                price: 22.5,
-            },
-            {
-                name: 'Сырные палочки',
-                description: 'Хрустящие палочки с расплавленным сыром и чесночным соусом.',
-                image: 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=1200&auto=format&fit=crop',
-                categorySlug: 'snacks',
-                sortOrder: 1,
-                price: 8.5,
-            },
-        ];
-
-        const modifiers = [
-            { name: 'Сырный бортик', price: 3.5 },
-            { name: 'Халапеньо', price: 1.5 },
-        ];
-
-        const promotions = [
-            {
-                title: 'Комбо дня',
-                subtitle: '2 пиццы + напиток со скидкой 20%',
-                badgeText: 'Хит',
-                bgColor: '#EF4444',
-                imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&auto=format&fit=crop',
-                linkUrl: '/menu?promo=combo',
-                isActive: true,
-            },
-            {
-                title: 'Семейный вечер',
-                subtitle: 'Большая пицца в подарок при заказе от 60 BYN',
-                badgeText: 'Выгодно',
-                bgColor: '#2563EB',
-                imageUrl: 'https://images.unsplash.com/photo-1528137871618-79d2761e3fd5?w=1200&auto=format&fit=crop',
-                linkUrl: '/promotions/family',
-                isActive: true,
-            },
-        ];
-
-        const categoryMap = new Map();
-        const modifierIds = [];
-
-        await prisma.$transaction(async (tx) => {
-            await tx.productSize.deleteMany();
-            await tx.product.deleteMany();
-            await tx.productModifier.deleteMany();
-            await tx.promotion.deleteMany();
-            await tx.category.deleteMany();
-
-            for (const category of categories) {
-                const createdCategory = await tx.category.create({ data: category });
-                categoryMap.set(category.slug, createdCategory.id);
-            }
-
-            for (const modifier of modifiers) {
-                const createdModifier = await tx.productModifier.create({ data: modifier });
-                modifierIds.push(createdModifier.id);
-            }
-
-            for (const product of products) {
-                const isPizza = product.categorySlug === 'pizzas';
-
-                const createdProduct = await tx.product.create({
-                    data: {
-                        name: product.name,
-                        description: product.description,
-                        image: product.image,
-                        categoryId: categoryMap.get(product.categorySlug),
-                        sortOrder: product.sortOrder,
-                        isAvailable: true,
-                        allergenSlugs: [],
-                        modifiers: isPizza
-                            ? {
-                                connect: modifierIds.map((id) => ({ id })),
-                            }
-                            : undefined,
-                    },
-                });
-
-                await tx.productSize.create({
-                    data: {
-                        productId: createdProduct.id,
-                        label: 'Стандарт',
-                        weight: '—',
-                        price: product.price,
-                    },
-                });
-            }
-
-            await tx.promotion.createMany({
-                data: promotions,
-            });
-        });
-
-        return res.json({ success: true, message: 'База залита идеальными данными!' });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-});
 
 app.get('/api/seo/jsonld', async (req, res) => {
     try {
@@ -399,11 +238,6 @@ app.get('/oferta', (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', 'oferta.html'));
 });
 
-// ---- 404 for unknown API routes ----
-app.all('/api/(.*)', (req, res) => {
-    res.status(404).json({ error: 'API endpoint not found' });
-});
-
 // ---- KDS API ----
 // Get active orders for kitchen display
 app.get('/api/kds/:restaurantId/orders', requireAuth, checkRole(['COOK', 'ADMIN']), async (req, res) => {
@@ -489,6 +323,11 @@ app.post('/api/print/reprint/:receiptId', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// ---- 404 for unknown API routes ----
+app.all('/api/(.*)', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
 });
 
 // ---- Start Server (HTTP + WebSocket) ----

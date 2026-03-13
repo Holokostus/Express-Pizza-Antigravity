@@ -170,7 +170,6 @@ async function updateOrderStatus(orderId, newStatus) {
                 status: true,
                 userId: true,
                 total: true,
-                spentPoints: true,
                 restaurantId: true
             }
         });
@@ -204,7 +203,7 @@ async function updateOrderStatus(orderId, newStatus) {
         let loyaltyPoints = null;
 
         if (newStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
-            const baseAmount = Math.max(0, Number(existingOrder.total ?? 0) - Number(existingOrder.spentPoints ?? 0));
+            const baseAmount = Math.max(0, Number(existingOrder.total ?? 0));
             const cashbackAmount = Math.floor(baseAmount * 0.05);
 
             if (cashbackAmount > 0) {
