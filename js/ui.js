@@ -129,7 +129,7 @@ window.renderPromotions = (items = promotions) => {
         const safeTitle = String(promo.title || 'Акция').replace(/"/g, '&quot;');
         const safeDescription = String(promo.description || '').replace(/"/g, '&quot;');
         return `
-        <div class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]" data-link="${safeLink}" onclick-link="${safeLink}" data-promo-id="${promo.id}" data-promo-title="${safeTitle}" data-promo-description="${safeDescription}">
+        <div class="promo-card snap-start flex-shrink-0 w-[75vw] sm:w-[260px] h-36 rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.97] transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]" data-link="${safeLink}" onclick-link="${safeLink}" data-promo-id="${promo.id}" data-promo-title="${escapeHtml(promo.title || '')}" data-promo-description="${escapeHtml(promo.description || '')}">
             <div class="absolute inset-0 ${promo.bgColor}"></div>
             <div class="relative z-10 h-full flex flex-col justify-end p-4">
                 <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full self-start mb-1.5 backdrop-blur-sm">${escapeHtml(promo.badgeText)}</span>
@@ -162,8 +162,10 @@ if (!window.__promoCardClickBound) {
         if (!p) return;
 
         const promoTitle = p.dataset.promoTitle || 'Акция';
-        const promoDescription = p.dataset.promoDescription;
-        alert(promoTitle + '\n\n' + (promoDescription || 'Подробности акции уточняйте у оператора.'));
+        const promoDescription = p.dataset.promoDescription || 'Подробности акции уточняйте у оператора.';
+        alert(`${promoTitle}
+
+${promoDescription}`);
     });
 }
 

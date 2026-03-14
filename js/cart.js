@@ -456,10 +456,10 @@ window.openCustomizer = (itemId) => {
                     ${mods.map((m) => `
                         <label class="modifier-card">
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
-                            <span class="modifier-card-inner">
+                            <div class="modifier-card-inner">
                                 <span class="name">${m.name}</span>
                                 <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} р.</span>
-                            </span>
+                            </div>
                         </label>
                     `).join('')}
                 </div>
@@ -691,9 +691,10 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
     if (cardNumberInput) {
         cardNumberInput.removeAttribute('readonly');
         cardNumberInput.removeAttribute('disabled');
-        cardNumberInput.addEventListener('input', (event) => {
-            let v = event.target.value.replace(/\D/g, '').slice(0, 16);
-            event.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+        cardNumberInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            v = v.slice(0, 16);
+            e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
         });
         applyFocusStyle(cardNumberInput);
     }
@@ -701,10 +702,10 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
     if (cardExpInput) {
         cardExpInput.removeAttribute('readonly');
         cardExpInput.removeAttribute('disabled');
-        cardExpInput.addEventListener('input', (event) => {
-            let v = event.target.value.replace(/\D/g, '').slice(0, 4);
+        cardExpInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
             if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2, 4);
-            event.target.value = v;
+            e.target.value = v.slice(0, 5);
         });
         applyFocusStyle(cardExpInput);
     }
@@ -712,8 +713,8 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
     if (cardCvcInput) {
         cardCvcInput.removeAttribute('readonly');
         cardCvcInput.removeAttribute('disabled');
-        cardCvcInput.addEventListener('input', (event) => {
-            event.target.value = event.target.value.replace(/\D/g, '').slice(0, 3);
+        cardCvcInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
         });
         applyFocusStyle(cardCvcInput);
     }
