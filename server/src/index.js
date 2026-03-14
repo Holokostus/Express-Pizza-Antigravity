@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const prisma = require('./lib/prisma');
+const { categories, products, promotions } = require('../prisma/menu-data.js');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -73,61 +74,110 @@ app.use('/api/promotions', promotionsRoutes);
 app.get('/api/seed-db', async (req, res) => {
     try {
         await prisma.$transaction(async (tx) => {
+            await tx.restaurant.deleteMany({});
+            await tx.orderItemModifier.deleteMany({});
+            await tx.orderItem.deleteMany({});
             await tx.productSize.deleteMany({});
             await tx.productModifier.deleteMany({});
             await tx.product.deleteMany({});
             await tx.category.deleteMany({});
             await tx.promotion.deleteMany({});
 
-            const pizzasCategory = await tx.category.create({
-                data: { slug: 'pizzas', name: 'Пиццы', sortOrder: 1 },
-            });
-
-            const snacksCategory = await tx.category.create({
-                data: { slug: 'snacks', name: 'Закуски', sortOrder: 2 },
-            });
-
-            await tx.product.create({
+            await tx.restaurant.create({
                 data: {
-                    name: 'Пепперони',
-                    description: 'Томатный соус, моцарелла, пепперони',
-                    image: 'images/pepperoni.jpg',
-                    categoryId: pizzasCategory.id,
-                    sizes: {
-                        create: [
-                            { label: '30 см', price: 18.90, weight: '540г' },
-                            { label: '36 см', price: 26.90, weight: '780г' },
-                        ],
-                    },
+                    name: 'Express Pizza — Партизанский',
+                    address: 'г. Минск, пр-т Партизанский, 19',
+                    phone: '+375445891111',
+                    posType: 'IIKO',
+                    posConfig: { apiLogin: '', orgId: '', terminalId: '' },
+                    printerIp: '192.168.1.100',
+                    printerPort: 9100,
                 },
             });
 
-            await tx.product.create({
-                data: {
-                    name: 'Маргарита',
-                    description: 'Томатный соус, моцарелла, базилик, помидоры',
-                    image: 'images/margherita.jpg',
-                    categoryId: pizzasCategory.id,
-                    sizes: {
-                        create: [
-                            { label: '30 см', price: 15.90, weight: '490г' },
-                            { label: '36 см', price: 22.90, weight: '720г' },
-                        ],
-                    },
-                },
-            });
+            const categoryMap = new Map();
+            for (const category of categories) {
+                const createdCategory = await tx.category.create({ data: category });
+                categoryMap.set(category.slug, createdCategory.id);
+            }
 
-            await tx.product.create({
-                data: {
-                    name: 'Сырные палочки',
-                    description: 'Хрустящие палочки с моцареллой и чесночным соусом',
-                    image: 'images/cheese-sticks.jpg',
-                    categoryId: snacksCategory.id,
-                    sizes: {
-                        create: [{ label: 'Стандарт', price: 9.90, weight: '220г' }],
+            for (let idx = 0; idx < products.length; idx += 1) {
+                const product = products[idx];
+                const categoryId = categoryMap.get(product.categorySlug);
+
+                if (!categoryId) {
+                    throw new Error(`Category not found for slug: ${product.categorySlug}`);
+                }
+
+                const sizes = product.sizes || [{
+                    label: 'Стандарт',
+                    weight: product.weight || '',
+                    price: product.price ?? 0,
+                }];
+
+                const createdProduct = await tx.product.create({
+                    data: {
+                        name: product.name,
+                        description: product.description || '',
+                        image: product.image || '',
+                        badge: product.badge || null,
+                        sortOrder: product.sortOrder ?? idx + 1,
+                        calories: product.calories ?? null,
+                        proteins: product.proteins ?? null,
+                        fats: product.fats ?? null,
+                        carbs: product.carbs ?? null,
+                        allergenSlugs: product.allergenSlugs || [],
+                        categoryId,
+                        sizes: {
+                            create: sizes.map((size) => ({
+                                label: size.label,
+                                weight: size.weight || '',
+                                price: size.price ?? 0,
+                            })),
+                        },
                     },
-                },
-            });
+                });
+
+                if (Array.isArray(product.modifiers) && product.modifiers.length > 0) {
+                    for (const modifier of product.modifiers) {
+                        await tx.productModifier.upsert({
+                            where: { name: modifier.name },
+                            update: {
+                                price: modifier.price ?? 0,
+                                isRemoval: modifier.isRemoval ?? false,
+                                groupName: modifier.groupName || 'Допы',
+                                isMandatory: modifier.isMandatory ?? false,
+                                maxQuantity: modifier.maxQuantity ?? 1,
+                                kdsHighlight: modifier.kdsHighlight ?? false,
+                                kdsColor: modifier.kdsColor || '#FF6B00',
+                            },
+                            create: {
+                                name: modifier.name,
+                                price: modifier.price ?? 0,
+                                isRemoval: modifier.isRemoval ?? false,
+                                groupName: modifier.groupName || 'Допы',
+                                isMandatory: modifier.isMandatory ?? false,
+                                maxQuantity: modifier.maxQuantity ?? 1,
+                                kdsHighlight: modifier.kdsHighlight ?? false,
+                                kdsColor: modifier.kdsColor || '#FF6B00',
+                            },
+                        });
+
+                        await tx.product.update({
+                            where: { id: createdProduct.id },
+                            data: {
+                                modifiers: {
+                                    connect: { name: modifier.name },
+                                },
+                            },
+                        });
+                    }
+                }
+            }
+
+            for (const promo of promotions) {
+                await tx.promotion.create({ data: promo });
+            }
         });
 
         return res.json({ success: true, message: 'База успешно наполнена!' });
