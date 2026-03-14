@@ -38,8 +38,6 @@ const CATEGORY_FALLBACK_IMAGES = {
     drinks: 'https://images.unsplash.com/photo-1543253687-c931c8e01820?w=1200&q=80&auto=format&fit=crop',
 };
 
-const LEGACY_LOCAL_PRODUCT_IMAGE_RE = /^\/?images\/[\w.-]+\.(?:png|jpe?g|webp|gif|svg)$/i;
-
 function normalizeImagePath(imagePath) {
     if (!imagePath) return '';
     const image = String(imagePath).trim();
@@ -52,7 +50,7 @@ function normalizeImagePath(imagePath) {
 
 window.resolveMenuItemImage = function resolveMenuItemImage(item) {
     const normalizedOriginal = normalizeImagePath(item?.image);
-    if (normalizedOriginal && !LEGACY_LOCAL_PRODUCT_IMAGE_RE.test(normalizedOriginal)) return normalizedOriginal;
+    if (normalizedOriginal) return normalizedOriginal;
 
     const categoryImage = CATEGORY_FALLBACK_IMAGES[item?.categorySlug] || '/images/icon.jpg';
     return categoryImage;
