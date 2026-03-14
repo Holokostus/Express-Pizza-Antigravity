@@ -8,6 +8,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { categories: menuCategories, promotions: menuPromotions, products: menuProducts } = require('./menu-data');
 
 async function main() {
     console.log('🌱 Seeding Express Pizza v2 database...\n');
@@ -62,17 +63,7 @@ async function main() {
     // ================================================================
     // 3. Categories
     // ================================================================
-    const categories = [
-        { slug: 'pizza', name: 'Пицца', sortOrder: 1 },
-        { slug: 'calzone', name: 'Кальцоне', sortOrder: 2 },
-        { slug: 'togo', name: 'Пицца TOGO', sortOrder: 3 },
-        { slug: 'combo', name: 'Комбо & Акции', sortOrder: 4 },
-        { slug: 'snacks', name: 'Закуски', sortOrder: 5 },
-        { slug: 'desserts', name: 'Десерты', sortOrder: 6 },
-        { slug: 'sauce', name: 'Соусы', sortOrder: 7 },
-        { slug: 'juice', name: 'Соки', sortOrder: 8 },
-        { slug: 'drinks', name: 'Напитки', sortOrder: 9 },
-    ];
+    const categories = menuCategories;
 
     const catMap = {};
     for (const c of categories) {
@@ -86,276 +77,27 @@ async function main() {
     console.log(`✓ Categories: ${categories.length} seeded`);
 
     // ================================================================
-    // 4. Products with КБЖУ and Allergens
+    // 4. Products (menu import)
     // ================================================================
-    const products = [
-        // ----- Пицца -----
-        {
-            name: 'Пепперони', description: 'Томатный соус, моцарелла, пепперони',
-            image: 'images/pepperoni.jpg', categorySlug: 'pizza', sortOrder: 1,
-            badge: { text: 'Хит', color: 'bg-primary text-white' },
-            calories: 260, proteins: 11.5, fats: 12.0, carbs: 26.5,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [
-                { label: '30 см', weight: '540г', price: 18.90 },
-                { label: '36 см', weight: '780г', price: 26.90 },
-                { label: '60 см', weight: '1500г', price: 44.90 },
-            ],
-        },
-        {
-            name: 'Маргарита', description: 'Томатный соус, моцарелла, базилик, помидоры',
-            image: 'images/margherita.jpg', categorySlug: 'pizza', sortOrder: 2,
-            badge: null,
-            calories: 235, proteins: 9.8, fats: 9.5, carbs: 28.0,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [
-                { label: '30 см', weight: '490г', price: 15.90 },
-                { label: '36 см', weight: '720г', price: 22.90 },
-                { label: '60 см', weight: '1400г', price: 39.90 },
-            ],
-        },
-        {
-            name: '4 Сыра', description: 'Сливочный соус, моцарелла, дор-блю, пармезан, чеддер',
-            image: 'images/four-cheese.jpg', categorySlug: 'pizza', sortOrder: 3,
-            badge: { text: 'Новинка', color: 'bg-green-500 text-white' },
-            calories: 290, proteins: 14.2, fats: 15.8, carbs: 24.0,
-            allergenSlugs: ['gluten', 'dairy', 'eggs'],
-            sizes: [
-                { label: '30 см', weight: '550г', price: 21.90 },
-                { label: '36 см', weight: '800г', price: 29.90 },
-                { label: '60 см', weight: '1600г', price: 49.90 },
-            ],
-        },
-        {
-            name: 'Гавайская', description: 'Томатный соус, моцарелла, курица, ананас',
-            image: 'images/hawaiian.jpg', categorySlug: 'pizza', sortOrder: 4,
-            badge: null,
-            calories: 245, proteins: 12.0, fats: 8.5, carbs: 30.0,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [
-                { label: '30 см', weight: '560г', price: 19.90 },
-                { label: '36 см', weight: '790г', price: 27.90 },
-                { label: '60 см', weight: '1550г', price: 46.90 },
-            ],
-        },
-        {
-            name: 'BBQ Курица', description: 'Соус BBQ, моцарелла, курица, лук, перец',
-            image: 'images/bbq-chicken.jpg', categorySlug: 'pizza', sortOrder: 5,
-            badge: { text: '🔥 Острая', color: 'bg-orange-500 text-white' },
-            calories: 255, proteins: 13.0, fats: 10.5, carbs: 27.0,
-            allergenSlugs: ['gluten', 'dairy', 'mustard'],
-            sizes: [
-                { label: '30 см', weight: '570г', price: 20.90 },
-                { label: '36 см', weight: '810г', price: 28.90 },
-                { label: '60 см', weight: '1600г', price: 48.90 },
-            ],
-        },
-        {
-            name: 'Мясная', description: 'Томатный соус, моцарелла, ветчина, бекон, фарш, пепперони',
-            image: 'images/meat.jpg', categorySlug: 'pizza', sortOrder: 6,
-            badge: null,
-            calories: 285, proteins: 15.5, fats: 14.0, carbs: 25.0,
-            allergenSlugs: ['gluten', 'dairy', 'mustard'],
-            sizes: [
-                { label: '30 см', weight: '600г', price: 22.90 },
-                { label: '36 см', weight: '850г', price: 31.90 },
-                { label: '60 см', weight: '1700г', price: 52.90 },
-            ],
-        },
+    const products = menuProducts.map((p, idx) => ({
+        name: p.name,
+        description: p.description || '',
+        image: p.image || '',
+        categorySlug: p.categorySlug,
+        sortOrder: p.sortOrder ?? idx + 1,
+        badge: p.badge || null,
+        calories: p.calories ?? null,
+        proteins: p.proteins ?? null,
+        fats: p.fats ?? null,
+        carbs: p.carbs ?? null,
+        allergenSlugs: p.allergenSlugs || [],
+        sizes: p.sizes || [{ label: 'Стандарт', weight: p.weight || '', price: p.price ?? 0 }],
+    }));
 
-        // ----- Пицца TOGO -----
-        {
-            name: 'Пепперони TOGO', description: 'Мини-пицца пепперони на вынос',
-            image: 'images/pepperoni-togo.jpg', categorySlug: 'togo', sortOrder: 1,
-            badge: { text: 'TOGO', color: 'bg-accent text-black' },
-            calories: 265, proteins: 11.5, fats: 12.0, carbs: 27.0,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: '20 см', weight: '280г', price: 9.90 }],
-        },
-        {
-            name: 'Маргарита TOGO', description: 'Мини-пицца маргарита на вынос',
-            image: 'images/margherita-togo.jpg', categorySlug: 'togo', sortOrder: 2,
-            badge: { text: 'TOGO', color: 'bg-accent text-black' },
-            calories: 238, proteins: 9.8, fats: 9.5, carbs: 28.5,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: '20 см', weight: '260г', price: 7.90 }],
-        },
-
-        // ----- Кальцоне -----
-        {
-            name: 'Кальцоне Пепперони', description: 'Закрытая пицца с пепперони, моцареллой и томатным соусом',
-            image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80', categorySlug: 'calzone', sortOrder: 1,
-            calories: 320, proteins: 14, fats: 14, carbs: 32,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: 'Стандарт', weight: '450г', price: 15.90 }],
-        },
-        {
-            name: 'Кальцоне Ветчина-Сыр', description: 'Закрытая пицца с ветчиной, грибами и моцареллой',
-            image: 'https://images.unsplash.com/photo-1555072956-7758afb20e8f?w=800&q=80', categorySlug: 'calzone', sortOrder: 2,
-            calories: 310, proteins: 15, fats: 12, carbs: 30,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: 'Стандарт', weight: '470г', price: 16.90 }],
-        },
-
-        // ----- Закуски -----
-        {
-            name: 'Картофель фри', description: 'Хрустящий золотистый картофель фри с морской солью',
-            image: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=800&q=80', categorySlug: 'snacks', sortOrder: 1,
-            calories: 312, proteins: 3.4, fats: 15, carbs: 41,
-            allergenSlugs: [],
-            sizes: [
-                { label: 'Стандарт', weight: '150г', price: 5.90 },
-                { label: 'Большая', weight: '250г', price: 8.90 },
-            ],
-        },
-        {
-            name: 'Куриные крылышки', description: 'Крылышки в соусе на выбор: BBQ, острый или чесночный',
-            image: 'https://images.unsplash.com/photo-1524114664604-cd8133cd67ad?w=800&q=80', categorySlug: 'snacks', sortOrder: 2,
-            calories: 280, proteins: 22, fats: 18, carbs: 8,
-            allergenSlugs: [],
-            sizes: [
-                { label: '6 шт', weight: '300г', price: 9.90 },
-                { label: '12 шт', weight: '600г', price: 17.90 },
-            ],
-        },
-
-        // ----- Десерты -----
-        {
-            name: 'Чизкейк Нью-Йорк', description: 'Нежный сливочный чизкейк с ванильными нотами',
-            image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=800&q=80', categorySlug: 'desserts', sortOrder: 1,
-            calories: 340, proteins: 6.2, fats: 24, carbs: 27,
-            allergenSlugs: ['gluten', 'dairy', 'eggs'],
-            sizes: [{ label: '1 порция', weight: '120г', price: 8.90 }],
-        },
-        {
-            name: 'Брауни шоколадный', description: 'Плотный шоколадный брауни с какао и ореховой крошкой',
-            image: 'https://images.unsplash.com/photo-1617305855058-336d24456869?w=800&q=80', categorySlug: 'desserts', sortOrder: 2,
-            calories: 410, proteins: 5.5, fats: 22, carbs: 48,
-            allergenSlugs: ['gluten', 'dairy', 'eggs', 'nuts'],
-            sizes: [{ label: '1 порция', weight: '100г', price: 7.90 }],
-        },
-
-        // ----- Соусы -----
-        {
-            name: 'Чесночный', description: 'Сливочно-чесночный соус',
-            image: 'images/garlic-sauce.jpg', categorySlug: 'sauce', sortOrder: 1,
-            calories: 180, proteins: 1.5, fats: 18.0, carbs: 3.5,
-            allergenSlugs: ['dairy', 'eggs'],
-            sizes: [{ label: '40 мл', weight: '40г', price: 1.50 }],
-        },
-        {
-            name: 'Томатный', description: 'Классический томатный соус',
-            image: 'images/tomato-sauce.jpg', categorySlug: 'sauce', sortOrder: 2,
-            calories: 45, proteins: 1.0, fats: 0.5, carbs: 9.0,
-            allergenSlugs: [],
-            sizes: [{ label: '40 мл', weight: '40г', price: 1.50 }],
-        },
-        {
-            name: 'Сырный', description: 'Сливочный сырный соус',
-            image: 'images/cheese-sauce.jpg', categorySlug: 'sauce', sortOrder: 3,
-            calories: 200, proteins: 4.0, fats: 18.5, carbs: 4.0,
-            allergenSlugs: ['dairy'],
-            sizes: [{ label: '40 мл', weight: '40г', price: 1.50 }],
-        },
-        {
-            name: 'BBQ', description: 'Соус барбекю',
-            image: 'images/bbq-sauce.jpg', categorySlug: 'sauce', sortOrder: 4,
-            calories: 120, proteins: 0.8, fats: 0.5, carbs: 28.0,
-            allergenSlugs: ['mustard'],
-            sizes: [{ label: '40 мл', weight: '40г', price: 1.50 }],
-        },
-
-        // ----- Соки -----
-        {
-            name: 'Яблочный сок', description: 'Сок яблочный осветлённый',
-            image: 'images/apple-juice.jpg', categorySlug: 'juice', sortOrder: 1,
-            calories: 46, proteins: 0.1, fats: 0.1, carbs: 11.0,
-            allergenSlugs: [],
-            sizes: [
-                { label: '0.2 л', weight: '200мл', price: 2.50 },
-                { label: '1 л', weight: '1000мл', price: 4.90 },
-            ],
-        },
-        {
-            name: 'Апельсиновый сок', description: 'Сок апельсиновый',
-            image: 'images/orange-juice.jpg', categorySlug: 'juice', sortOrder: 2,
-            calories: 43, proteins: 0.5, fats: 0.1, carbs: 10.0,
-            allergenSlugs: [],
-            sizes: [
-                { label: '0.2 л', weight: '200мл', price: 2.50 },
-                { label: '1 л', weight: '1000мл', price: 4.90 },
-            ],
-        },
-
-        // ----- Напитки -----
-        {
-            name: 'Coca-Cola', description: 'Классическая Coca-Cola',
-            image: 'images/coca-cola.jpg', categorySlug: 'drinks', sortOrder: 1,
-            calories: 42, proteins: 0, fats: 0, carbs: 10.6,
-            allergenSlugs: [],
-            sizes: [
-                { label: '0.5 л', weight: '500мл', price: 3.50 },
-                { label: '1 л', weight: '1000мл', price: 5.90 },
-            ],
-        },
-        {
-            name: 'Fanta', description: 'Апельсиновая Fanta',
-            image: 'images/fanta.jpg', categorySlug: 'drinks', sortOrder: 2,
-            calories: 39, proteins: 0, fats: 0, carbs: 9.8,
-            allergenSlugs: [],
-            sizes: [
-                { label: '0.5 л', weight: '500мл', price: 3.50 },
-                { label: '1 л', weight: '1000мл', price: 5.90 },
-            ],
-        },
-        {
-            name: 'Sprite', description: 'Лимонная свежесть',
-            image: 'images/sprite.jpg', categorySlug: 'drinks', sortOrder: 3,
-            calories: 36, proteins: 0, fats: 0, carbs: 9.0,
-            allergenSlugs: [],
-            sizes: [{ label: '0.5 л', weight: '500мл', price: 3.50 }],
-        },
-        {
-            name: 'Вода', description: 'Минеральная вода негазированная',
-            image: 'images/water.jpg', categorySlug: 'drinks', sortOrder: 4,
-            calories: 0, proteins: 0, fats: 0, carbs: 0,
-            allergenSlugs: [],
-            sizes: [{ label: '0.5 л', weight: '500мл', price: 2.00 }],
-        },
-        {
-            name: 'Bonaqua', description: 'Минеральная газированная',
-            image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=800&q=80', categorySlug: 'drinks', sortOrder: 5,
-            calories: 0, proteins: 0, fats: 0, carbs: 0,
-            allergenSlugs: [],
-            sizes: [{ label: '0.5 л', weight: '500мл', price: 2.50 }],
-        },
-
-        // ----- Комбо & Акции -----
-        {
-            name: 'Комбо Family Pack', description: '2 больших пиццы 36см + 2 соуса + Coca-Cola 1л',
-            image: 'https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=800&q=80', categorySlug: 'combo', sortOrder: 1,
-            badge: { text: '-25%', color: 'bg-green-500 text-white' },
-            calories: 310, proteins: 13.0, fats: 13.0, carbs: 30.0,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: 'Набор', weight: '~2.5кг', price: 49.90 }],
-        },
-        {
-            name: 'Комбо Student Lunch', description: 'Пицца TOGO 20см + соус + напиток 0.5л',
-            image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', categorySlug: 'combo', sortOrder: 2,
-            badge: { text: 'Хит', color: 'bg-primary text-white' },
-            calories: 280, proteins: 11.0, fats: 10.5, carbs: 28.0,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: 'Набор', weight: '~500г', price: 14.90 }],
-        },
-        {
-            name: 'Комбо Date Night', description: '2 пиццы 30см + 2 соуса + 2 сока',
-            image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=800&q=80', categorySlug: 'combo', sortOrder: 3,
-            badge: { text: 'Для двоих', color: 'bg-pink-500 text-white' },
-            calories: 295, proteins: 12.5, fats: 12.0, carbs: 27.5,
-            allergenSlugs: ['gluten', 'dairy'],
-            sizes: [{ label: 'Набор', weight: '~1.8кг', price: 39.90 }],
-        },
-    ];
+    await prisma.orderItemModifier.deleteMany();
+    await prisma.orderItem.deleteMany();
+    await prisma.productSize.deleteMany();
+    await prisma.product.deleteMany();
 
     const createdProducts = [];
 
@@ -468,6 +210,15 @@ async function main() {
         });
     }
     console.log(`✓ Modifiers linked to ${pizzaProducts.length} pizza products`);
+
+    // ================================================================
+    // 5. Promotions (marketing banners)
+    // ================================================================
+    await prisma.promotion.deleteMany();
+    for (const promo of menuPromotions) {
+        await prisma.promotion.create({ data: promo });
+    }
+    console.log(`✓ Promotions: ${menuPromotions.length} seeded`);
 
     // ================================================================
     // 6. Promo Codes (extended with validity + min amount)
