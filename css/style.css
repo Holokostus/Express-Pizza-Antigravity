@@ -238,56 +238,61 @@ html {
 /* Dodo-style modifier tiles */
 .modifiers-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;
     padding: 10px 0;
 }
 
 .modifier-card {
-    background: #fff;
-    border: 1px solid #e2e2e9;
+    position: relative;
+    background: #f3f4f6;
+    border: 2px solid transparent;
     border-radius: 12px;
     padding: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
     cursor: pointer;
+    text-align: center;
     transition: 0.2s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.modifier-card:hover {
-    border-color: #ff6900;
+.modifier-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
 }
 
 .modifier-card-inner {
-    display: contents;
-}
-
-.modifier-card img,
-.modifier-card .modifier-card-image {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    margin-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .modifier-card span.name {
-    font-size: 12px;
-    color: #000;
+    font-size: 13px;
+    color: #111827;
     line-height: 1.2;
-    margin-bottom: 4px;
 }
 
 .modifier-card span.price {
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.modifier-card:has(input[type="checkbox"]:checked),
+.modifier-card.active {
+    border: 2px solid #ff6900;
+    background: #fff0e6;
     color: #ff6900;
 }
 
-.modifier-card.active {
-    border-color: #ff6900;
-    box-shadow: 0 0 0 1px #ff6900;
-    background: #fff0e6;
+.modifier-card:has(input[type="checkbox"]:checked) span.name,
+.modifier-card:has(input[type="checkbox"]:checked) span.price,
+.modifier-card.active span.name,
+.modifier-card.active span.price {
+    color: #ff6900;
 }
