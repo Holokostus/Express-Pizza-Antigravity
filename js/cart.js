@@ -647,23 +647,19 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
             </div>
 
             <div class="space-y-3">
-                <div>
-                    <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Номер карты</p>
-                    <div class="grid grid-cols-4 gap-2">
-                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
-                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
-                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
-                        <input maxlength="4" inputmode="numeric" class="sandbox-card-input bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2.5 text-center font-mono" placeholder="0000">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Срок</p>
-                        <input id="sandbox-card-exp" maxlength="5" placeholder="MM/YY" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-center font-mono">
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">CVC</p>
-                        <input id="sandbox-card-cvc" maxlength="3" inputmode="numeric" placeholder="123" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-center font-mono">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                    <label for="sandbox-card-number" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">Номер карты</label>
+                    <input id="sandbox-card-number" maxlength="19" inputmode="numeric" placeholder="0000 0000 0000 0000" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="sandbox-card-exp" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">Срок</label>
+                            <input id="sandbox-card-exp" maxlength="5" inputmode="numeric" placeholder="MM/YY" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+                        </div>
+                        <div>
+                            <label for="sandbox-card-cvc" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">CVC</label>
+                            <input id="sandbox-card-cvc" maxlength="3" inputmode="numeric" placeholder="123" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -679,6 +675,49 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
 
     const payBtn = $('sandbox-pay-btn');
     const bankStatus = $('sandbox-bank-status');
+    const cardNumberInput = $('sandbox-card-number');
+    const cardExpInput = $('sandbox-card-exp');
+    const cardCvcInput = $('sandbox-card-cvc');
+
+    const applyFocusStyle = (el) => {
+        if (!el) return;
+        el.addEventListener('focus', () => {
+            el.style.borderBottomColor = '#ff6900';
+        });
+        el.addEventListener('blur', () => {
+            el.style.borderBottomColor = '#e2e8f0';
+        });
+    };
+
+    const onlyDigits = (value) => value.replace(/\D/g, '');
+
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', (event) => {
+            const digits = onlyDigits(event.target.value).slice(0, 16);
+            event.target.value = digits.replace(/(.{4})/g, '$1 ').trim();
+        });
+        applyFocusStyle(cardNumberInput);
+    }
+
+    if (cardExpInput) {
+        cardExpInput.addEventListener('input', (event) => {
+            const digits = onlyDigits(event.target.value).slice(0, 4);
+            if (digits.length >= 3) {
+                event.target.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+            } else {
+                event.target.value = digits;
+            }
+        });
+        applyFocusStyle(cardExpInput);
+    }
+
+    if (cardCvcInput) {
+        cardCvcInput.addEventListener('input', (event) => {
+            event.target.value = onlyDigits(event.target.value).slice(0, 3);
+        });
+        applyFocusStyle(cardCvcInput);
+    }
+
     if (!payBtn) return resolve();
 
     payBtn.addEventListener('click', () => {
