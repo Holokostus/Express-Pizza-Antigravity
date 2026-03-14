@@ -46,13 +46,8 @@ function renderMenu() {
     if (!menuGrid) return;
     const filteredItems = db.getAvailableMenu(currentCategory);
     menuGrid.innerHTML = filteredItems.map((item, idx) => {
-        const imgUrl = item.image ? item.image : '/images/pepperoni.jpg';
-        const fallbackImage = item.categorySlug === 'drinks' || item.categorySlug === 'juice'
-            ? '/images/cola.jpg'
-            : '/images/pepperoni.jpg';
-        const imageSrc = item.image
-            ? window.resolveMenuItemImage(item)
-            : (item.categorySlug === 'drinks' || item.categorySlug === 'juice' ? '/images/cola.jpg' : imgUrl);
+        const fallbackImage = window.resolveMenuItemImage({ categorySlug: item.categorySlug, image: '' });
+        const imageSrc = window.resolveMenuItemImage(item);
         const sizeIdx = selectedSizeIndex[item.id] || 0;
         const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
         const hasSizes = item.sizes.length > 1;
