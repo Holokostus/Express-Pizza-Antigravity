@@ -455,11 +455,10 @@ window.openCustomizer = (itemId) => {
                 <div class="modifiers-grid">
                     ${mods.map((m) => `
                         <label class="modifier-card">
-                            <input type="checkbox" class="cust-mod-cb peer sr-only" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
+                            <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="modifier-card-inner">
-                                <img src="${m.imageUrl || itemInfo.image || 'https://placehold.co/120x120/ff6b00/white?text=+'}" alt="${m.name}" class="modifier-card-image" onerror="this.onerror=null;this.src='https://placehold.co/120x120/ff6b00/white?text=+'">
                                 <span class="name">${m.name}</span>
-                                <span class="price">+${parseFloat(m.price || 0).toFixed(2)} BYN</span>
+                                <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} р.</span>
                             </div>
                         </label>
                     `).join('')}
@@ -689,31 +688,33 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
         });
     };
 
-    const onlyDigits = (value) => value.replace(/\D/g, '');
-
     if (cardNumberInput) {
-        cardNumberInput.addEventListener('input', (event) => {
-            const digits = onlyDigits(event.target.value).slice(0, 16);
-            event.target.value = digits.replace(/(.{4})/g, '$1 ').trim();
+        cardNumberInput.removeAttribute('readonly');
+        cardNumberInput.removeAttribute('disabled');
+        cardNumberInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            v = v.slice(0, 16);
+            e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
         });
         applyFocusStyle(cardNumberInput);
     }
 
     if (cardExpInput) {
-        cardExpInput.addEventListener('input', (event) => {
-            const digits = onlyDigits(event.target.value).slice(0, 4);
-            if (digits.length >= 3) {
-                event.target.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-            } else {
-                event.target.value = digits;
-            }
+        cardExpInput.removeAttribute('readonly');
+        cardExpInput.removeAttribute('disabled');
+        cardExpInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2, 4);
+            e.target.value = v.slice(0, 5);
         });
         applyFocusStyle(cardExpInput);
     }
 
     if (cardCvcInput) {
-        cardCvcInput.addEventListener('input', (event) => {
-            event.target.value = onlyDigits(event.target.value).slice(0, 3);
+        cardCvcInput.removeAttribute('readonly');
+        cardCvcInput.removeAttribute('disabled');
+        cardCvcInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
         });
         applyFocusStyle(cardCvcInput);
     }
