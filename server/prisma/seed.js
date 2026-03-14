@@ -183,12 +183,12 @@ async function main() {
         const mod = await prisma.productModifier.upsert({
             where: { name: m.name },
             update: {
-                price: m.price, isRemoval: m.isRemoval,
+                price: m.price, image: m.image || null, isRemoval: m.isRemoval,
                 groupName: m.groupName, isMandatory: m.isMandatory,
                 maxQuantity: m.maxQuantity, kdsHighlight: m.kdsHighlight ?? false,
                 kdsColor: m.kdsColor || '#FF6B00',
             },
-            create: m,
+            create: { ...m, image: m.image || null },
         });
         createdModifiers.push(mod);
     }

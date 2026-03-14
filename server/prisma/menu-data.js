@@ -20,6 +20,13 @@ const promotions = [
   },
 ];
 
+
+const defaultPizzaModifiers = [
+  { name: 'Сырный бортик', price: 3.5, image: '/images/mod_cheese.jpg' },
+  { name: 'Халапеньо', price: 1.5, image: '/images/mod_jalapeno.jpg' },
+  { name: 'Ветчина', price: 2.5, image: '/images/mod_ham.jpg' },
+];
+
 const products = [
   // Pizza sets / combo
   { name: 'Пикник (выгода 50%)', categorySlug: 'combo', weight: '5×30 см', price: 84, description: 'Маргарита, Аппетитная, Ветчина и грибы, Цыпленок барбекю, Панская.' },
@@ -82,4 +89,10 @@ const products = [
   { name: 'Маринара', categorySlug: 'pizza', description: '600 г.', sizes: [{ label: '23 см', weight: '600г', price: 18.2 }, { label: '30 см', weight: '600г', price: 38 }, { label: '36 см', weight: '600г', price: 43 }] },
 ];
 
-module.exports = { categories, promotions, products };
+const productsWithPizzaModifiers = products.map((product) => (
+  product.categorySlug === 'pizza'
+    ? { ...product, modifiers: product.modifiers || defaultPizzaModifiers }
+    : product
+));
+
+module.exports = { categories, promotions, products: productsWithPizzaModifiers };

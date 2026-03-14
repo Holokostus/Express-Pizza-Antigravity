@@ -235,22 +235,57 @@ html {
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Dodo-style segmented control */
+.segmented-control {
+    background: #f3f4f6;
+    border-radius: 9999px;
+    display: inline-flex;
+    padding: 4px;
+    width: 100%;
+    gap: 4px;
+}
+
+.segment-option {
+    flex: 1;
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #4b5563;
+    transition: 0.3s;
+    border: none;
+    background: transparent;
+    position: relative;
+}
+
+.segment-option input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.segment-option.is-active,
+.segment-option:has(input:checked) {
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: #000;
+}
+
 /* Dodo-style modifier tiles */
 .modifiers-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+    gap: 12px;
 }
 
 .modifier-card {
     position: relative;
-    background: #f3f4f6;
-    border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 10px;
-    cursor: pointer;
-    text-align: center;
-    transition: 0.2s;
+    height: 100%;
 }
 
 .modifier-card input[type="checkbox"] {
@@ -267,31 +302,65 @@ html {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    position: relative;
+    height: 100%;
+    text-align: center;
+}
+
+.modifier-image {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 8px;
 }
 
 .modifier-card span.name {
-    font-size: 13px;
-    color: #111827;
+    font-size: 12px;
     line-height: 1.2;
+    margin-bottom: 4px;
+    flex-grow: 1;
+    color: #111827;
 }
 
 .modifier-card span.price {
-    font-size: 11px;
-    color: #6b7280;
+    font-size: 14px;
+    font-weight: bold;
+    color: #000;
 }
 
-.modifier-card:has(input[type="checkbox"]:checked),
-.modifier-card.active {
-    border: 2px solid #ff6900;
-    background: #fff0e6;
-    color: #ff6900;
+.modifier-checkmark {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #ff6900;
+    color: #fff;
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 700;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: 0.2s;
 }
 
-.modifier-card:has(input[type="checkbox"]:checked) span.name,
-.modifier-card:has(input[type="checkbox"]:checked) span.price,
-.modifier-card.active span.name,
-.modifier-card.active span.price {
-    color: #ff6900;
+.modifier-card:has(input[type="checkbox"]:checked) .modifier-card-inner,
+.modifier-card.active .modifier-card-inner {
+    border-color: #ff6900;
+    box-shadow: 0 0 0 1px #ff6900;
+}
+
+.modifier-card:has(input[type="checkbox"]:checked) .modifier-checkmark,
+.modifier-card.active .modifier-checkmark {
+    opacity: 1;
+    transform: scale(1);
 }

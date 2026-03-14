@@ -444,7 +444,10 @@ window.openCustomizer = (itemId) => {
     }, {});
 
     const sizesHtml = itemInfo.sizes.map((s, i) => `
-        <button type="button" data-size-idx="${i}" onclick="setCustomizerSize(${i})" class="cust-size-btn px-3 py-1.5 rounded-xl text-sm font-semibold border ${i === customizerState.sizeIdx ? 'bg-primary text-white border-primary' : 'border-gray-200 dark:border-gray-700'}">${s.label}</button>
+        <label class="segment-option ${i === customizerState.sizeIdx ? 'is-active' : ''}">
+            <input type="radio" name="cust-size" value="${i}" ${i === customizerState.sizeIdx ? 'checked' : ''} onchange="setCustomizerSize(${i})">
+            <span>${s.label}</span>
+        </label>
     `).join('');
 
     const modsHtml = Object.keys(grouped).length === 0
@@ -456,7 +459,9 @@ window.openCustomizer = (itemId) => {
                     ${mods.map((m) => `
                         <label class="modifier-card">
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
-                            <div class="modifier-card-inner">
+                            <div class="card-content modifier-card-inner">
+                                <span class="modifier-checkmark">✓</span>
+                                <img src="${m.image || '/images/icon.jpg'}" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px;" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
                                 <span class="name">${m.name}</span>
                                 <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} р.</span>
                             </div>
@@ -482,13 +487,19 @@ window.openCustomizer = (itemId) => {
                 <div class="p-5">
                     <div class="mb-5">
                         <p class="font-bold mb-2">Размер</p>
-                        <div class="flex flex-wrap gap-2">${sizesHtml}</div>
+                        <div class="segmented-control">${sizesHtml}</div>
                     </div>
                     <div class="mb-5">
                         <p class="font-bold mb-2">Тип теста</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="setCustomizerDough('traditional')" id="dough-traditional" class="rounded-2xl border px-3 py-2 text-sm font-semibold border-primary bg-primary/10">Традиционное</button>
-                            <button type="button" onclick="setCustomizerDough('thin')" id="dough-thin" class="rounded-2xl border px-3 py-2 text-sm font-semibold border-gray-200 dark:border-gray-700">Тонкое</button>
+                        <div class="segmented-control">
+                            <label class="segment-option is-active" id="dough-traditional">
+                                <input type="radio" name="cust-dough" checked onchange="setCustomizerDough('traditional')">
+                                <span>Традиционное</span>
+                            </label>
+                            <label class="segment-option" id="dough-thin">
+                                <input type="radio" name="cust-dough" onchange="setCustomizerDough('thin')">
+                                <span>Тонкое</span>
+                            </label>
                         </div>
                     </div>
                     <div>
@@ -519,11 +530,10 @@ window.setCustomizerSize = (idx) => {
     customizerState.sizeIdx = idx;
     customizerBasePrice = parseFloat(currentCustomizerItem.sizes[idx]?.price || 0);
 
-    document.querySelectorAll('.cust-size-btn').forEach((btn) => {
-        const active = Number(btn.dataset.sizeIdx) === Number(idx);
-        btn.classList.toggle('bg-primary', active);
-        btn.classList.toggle('text-white', active);
-        btn.classList.toggle('border-primary', active);
+    document.querySelectorAll('.segment-option input[name="cust-size"]').forEach((input, inputIdx) => {
+        const active = Number(inputIdx) === Number(idx);
+        input.checked = active;
+        input.closest('.segment-option')?.classList.toggle('is-active', active);
     });
 
     updateCustomizerTotal();
@@ -531,9 +541,10 @@ window.setCustomizerSize = (idx) => {
 
 window.setCustomizerDough = (type) => {
     customizerState.doughType = type;
-    $('dough-traditional')?.classList.remove('border-primary', 'bg-primary/10');
-    $('dough-thin')?.classList.remove('border-primary', 'bg-primary/10');
-    $(type === 'traditional' ? 'dough-traditional' : 'dough-thin')?.classList.add('border-primary', 'bg-primary/10');
+    $('dough-traditional')?.classList.toggle('is-active', type === 'traditional');
+    $('dough-thin')?.classList.toggle('is-active', type === 'thin');
+    const doughInput = (type === 'traditional' ? $('dough-traditional') : $('dough-thin'))?.querySelector('input');
+    if (doughInput) doughInput.checked = true;
 };
 
 window.closeCustomizer = () => {
