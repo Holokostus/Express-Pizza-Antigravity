@@ -152,6 +152,7 @@ app.get('/api/seed-db', async (req, res) => {
                             where: { name: modifier.name },
                             update: {
                                 price: modifier.price ?? 0,
+                                image: modifier.image || null,
                                 isRemoval: modifier.isRemoval ?? false,
                                 groupName: modifier.groupName || 'Допы',
                                 isMandatory: modifier.isMandatory ?? false,
@@ -162,6 +163,7 @@ app.get('/api/seed-db', async (req, res) => {
                             create: {
                                 name: modifier.name,
                                 price: modifier.price ?? 0,
+                                image: modifier.image || null,
                                 isRemoval: modifier.isRemoval ?? false,
                                 groupName: modifier.groupName || 'Допы',
                                 isMandatory: modifier.isMandatory ?? false,

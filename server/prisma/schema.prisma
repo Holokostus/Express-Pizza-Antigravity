@@ -302,6 +302,7 @@ model ProductModifier {
   id            Int     @id @default(autoincrement())
   name          String  @unique                         // "Сырный бортик", "Без лука"
   price         Decimal @db.Decimal(10, 2)              // 0.00 for removals
+  image         String?                                  // Modifier icon/image in UI
   isRemoval     Boolean @default(false)                 // true = "без ...", false = "+ ..."
 
   // ── POS Modifier Group Mapping ────────────────────────────────
