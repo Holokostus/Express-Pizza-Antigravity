@@ -475,7 +475,7 @@ window.openCustomizer = (itemId) => {
     sheet.innerHTML = `
             <div class="grid md:grid-cols-2 gap-0 flex-grow overflow-y-auto hide-scrollbar">
                 <div class="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
-                    <img src="${itemInfo.image || 'https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='https://placehold.co/600x400/ff6b00/white?text=Express+Pizza'">
+                    <img src="${window.resolveMenuItemImage(itemInfo)}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='/images/icon.jpg'">
                     <h3 class="font-display font-black text-2xl leading-tight">${itemInfo.name}</h3>
                     <p class="text-sm text-textMutedLight dark:text-textMutedDark mt-1">${itemInfo.description || ''}</p>
                 </div>

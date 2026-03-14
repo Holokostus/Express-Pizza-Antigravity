@@ -29,6 +29,33 @@ let menuItems = [];
 let menuCategories = [];
 let promotions = [];
 
+const CATEGORY_FALLBACK_IMAGES = {
+    pizza: '/images/margarita.jpg',
+    togo: '/images/calzone.jpg',
+    combo: '/images/pepperoni.jpg',
+    sauce: '/images/panskaya.jpg',
+    juice: '/images/cola.jpg',
+    drinks: '/images/cola.jpg',
+};
+
+function normalizeImagePath(imagePath) {
+    if (!imagePath) return '';
+    const image = String(imagePath).trim();
+    if (!image) return '';
+    if (/^(https?:)?\/\//i.test(image) || image.startsWith('data:') || image.startsWith('blob:')) {
+        return image;
+    }
+    return image.startsWith('/') ? image : `/${image}`;
+}
+
+window.resolveMenuItemImage = function resolveMenuItemImage(item) {
+    const normalizedOriginal = normalizeImagePath(item?.image);
+    if (normalizedOriginal) return normalizedOriginal;
+
+    const categoryImage = CATEGORY_FALLBACK_IMAGES[item?.categorySlug] || '/images/icon.jpg';
+    return categoryImage;
+};
+
 function safeLocalStorageGetJson(key, fallback = null) {
     try {
         const raw = localStorage.getItem(key);
