@@ -9,7 +9,7 @@ const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpEmail } = require('../services/emailService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_beta';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_jwt_secret_change_me';
 const otpStore = new Map();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,9 +27,7 @@ async function handleSendOtp(req, res) {
             return res.status(429).json({ error: 'Подождите 10 секунд перед повторной отправкой' });
         }
 
-        const code = process.env.NODE_ENV === 'production'
-            ? Math.floor(1000 + Math.random() * 9000).toString()
-            : '1111';
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
 
         otpStore.set(email, {
             code,
@@ -41,22 +39,27 @@ async function handleSendOtp(req, res) {
         try {
             await sendOtpEmail({ to: email, code });
         } catch (mailError) {
-            console.error('[Auth] Beta fallback: email delivery failed, using test OTP 1111:', mailError);
-            return res.json({
-                success: true,
-                message: 'Бета-режим: используйте код 1111',
-                isBetaFallback: true,
-            });
+            console.error('[Auth] Send OTP email error:', mailError);
+            if (process.env.NODE_ENV !== 'production') {
+                return res.json({
+                    success: true,
+                    message: 'Письмо не отправлено (dev-режим). Используйте debugCode.',
+                    debugCode: code,
+                    isDevFallback: true,
+                });
+            }
+
+            return res.status(502).json({ error: 'Не удалось отправить OTP. Попробуйте позже.' });
         }
 
-        return res.json({ success: true, message: 'OTP sent to email' });
+        const payload = { success: true, message: 'OTP sent to email' };
+        if (process.env.NODE_ENV !== 'production') {
+            payload.debugCode = code;
+        }
+        return res.json(payload);
     } catch (err) {
         console.error('[Auth] Send OTP email error:', err);
-        return res.json({
-            success: true,
-            message: 'Бета-режим: используйте код 1111',
-            isBetaFallback: true,
-        });
+        return res.status(500).json({ error: 'Не удалось сгенерировать OTP' });
     }
 }
 
@@ -114,10 +117,7 @@ async function handleVerifyOtp(req, res) {
             return res.status(403).json({ error: 'Too many failed attempts. Try later.' });
         }
 
-        let isValid = otpData.code === otp;
-        if (otp === '1111') {
-            isValid = true;
-        }
+        const isValid = otpData.code === otp;
 
         if (!isValid) {
             otpData.attempts += 1;

@@ -44,15 +44,15 @@ npx serve .
 The Admin dashboard (`admin.html`) is secured by JWT and requires the `ADMIN` database role. For local development, follow these steps to bootstrap an admin user:
 
 1.  Open the Admin Panel in your browser. It will immediately prompt you for your phone number.
-2.  Enter your phone number (e.g., `+375291112233`).
-3.  Enter the default development SMS PIN code: `1111`.
+2.  Enter your email address (e.g., `admin@example.com`).
+3.  Request OTP code and enter it from email. In development mode, backend additionally returns `debugCode` in `/api/auth/send-email` response when SMTP is unavailable.
 4.  *Important:* The first time you log in, you are automatically registered as a `CUSTOMER`. **Dashboard access will fail.**
 5.  Open Prisma Studio using your terminal:
     ```bash
     npx prisma studio
     ```
 6.  Navigate to the `User` table, find your newly created row, and change your `role` column to `ADMIN`. Commit the change.
-7.  Reload the `admin.html` page and re-enter your SMS auth. You will now have secured access to view Orders and manage the Menu Stop-lists.
+7.  Reload the `admin.html` page and re-enter your email OTP auth. You will now have secured access to view Orders and manage the Menu Stop-lists.
 
 ---
 

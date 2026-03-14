@@ -149,17 +149,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn('[Auth] Failed to persist auth token:', storageError);
             }
 
-            // BACKDOOR WARNING
-            if (authResult._backdoorUsed) {
-                setTimeout(() => {
-                    alert('🚨🚨🚨 ВЫ ВОШЛИ ПО БЭКДОРУ 1234! 🚨🚨🚨\n\n' +
-                        'ВАЖНО: НЕ ЗАБУДЬТЕ УДАЛИТЬ ЕГО ИЗ КОДА ПЕРЕД РЕЛИЗОМ!\n\n' +
-                        'Файл: server/src/routes/auth.js\n' +
-                        'Ищите: isBackdoor\n\n' +
-                        '🔴 ЭТО НЕ ШУТКА. УДАЛИТЕ БЭКДОР. 🔴');
-                }, 500);
-            }
-
             const address = $('user-address') ? $('user-address').value : '';
             const checkoutTotal = serverCalculation?.total || cart.reduce((sum, item) => sum + item.quantity * (parseFloat(item._display?.price) || 0), 0);
 
