@@ -29,7 +29,6 @@ router.post('/calculate', async (req, res) => {
         }
 
         const cartResult = await calculateCartTotal(items, promoCodeString);
-
         res.json({
             subtotal: cartResult.subtotal,
             discount: cartResult.discount,
@@ -119,6 +118,15 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // 1. Secure Server-Side Cart Calculation
         const cartResult = await calculateCartTotal(items, promoCodeString);
 
+
+        const restaurant = restaurantId
+            ? await prisma.restaurant.findUnique({ where: { id: restaurantId } })
+            : await prisma.restaurant.findFirst();
+
+        if (!restaurant) {
+            return res.status(500).json({ error: 'Ресторан не найден в БД' });
+        }
+
         // 2. Generate Idempotency Key
         let idempotencyKey;
         if (clientOrderId) {
@@ -198,7 +206,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     subtotal: cartResult.subtotal,
                     discount: cartResult.discount + finalSpentPoints,
                     total: finalTotal,
-                    restaurantId,
+                    restaurantId: restaurant.id,
                     promoCodeId: cartResult.validPromo ? cartResult.validPromo.id : null,
                     // Create items and their modifiers in nested write
                     items: {
@@ -234,7 +242,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     aggregateType: 'Order',
                     aggregateId: externalOrderId,
                     idempotencyKey,
-                    restaurantId,
+                    restaurantId: restaurant.id,
                     payload: order // The snapshot of the order at creation time
                 }
             });
@@ -269,7 +277,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         }
 
         // Push order to Kitchen Display System instantly for ALL orders
-        broadcastOrderToKDS(restaurantId, createdOrder);
+        broadcastOrderToKDS(restaurant.id, createdOrder);
 
         console.log(`[Order] Successfully created! externalOrderId: ${externalOrderId}, Total: ${cartResult.total} BYN`);
 
