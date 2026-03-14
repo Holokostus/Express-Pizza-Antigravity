@@ -30,13 +30,15 @@ let menuCategories = [];
 let promotions = [];
 
 const CATEGORY_FALLBACK_IMAGES = {
-    pizza: '/images/margarita.jpg',
-    togo: '/images/calzone.jpg',
-    combo: '/images/pepperoni.jpg',
-    sauce: '/images/panskaya.jpg',
-    juice: '/images/cola.jpg',
-    drinks: '/images/cola.jpg',
+    pizza: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&auto=format&fit=crop',
+    togo: 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=1200&q=80&auto=format&fit=crop',
+    combo: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=1200&q=80&auto=format&fit=crop',
+    sauce: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=1200&q=80&auto=format&fit=crop',
+    juice: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=1200&q=80&auto=format&fit=crop',
+    drinks: 'https://images.unsplash.com/photo-1543253687-c931c8e01820?w=1200&q=80&auto=format&fit=crop',
 };
+
+const LEGACY_LOCAL_PRODUCT_IMAGE_RE = /^\/?images\/[\w.-]+\.(?:png|jpe?g|webp|gif|svg)$/i;
 
 function normalizeImagePath(imagePath) {
     if (!imagePath) return '';
@@ -50,7 +52,7 @@ function normalizeImagePath(imagePath) {
 
 window.resolveMenuItemImage = function resolveMenuItemImage(item) {
     const normalizedOriginal = normalizeImagePath(item?.image);
-    if (normalizedOriginal) return normalizedOriginal;
+    if (normalizedOriginal && !LEGACY_LOCAL_PRODUCT_IMAGE_RE.test(normalizedOriginal)) return normalizedOriginal;
 
     const categoryImage = CATEGORY_FALLBACK_IMAGES[item?.categorySlug] || '/images/icon.jpg';
     return categoryImage;
