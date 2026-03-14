@@ -101,10 +101,10 @@ function renderProducts() {
                     return `
                         <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div class="min-w-0 flex items-start gap-3">
-                                <img src="${imageSrc || 'https://placehold.co/80x80/0f172a/cbd5e1?text=%F0%9F%8D%95'}" alt="${product.name || 'Изображение товара'}"
+                                <img src="${imageSrc || '/images/pepperoni.jpg'}" alt="${product.name || 'Изображение товара'}"
                                     class="w-14 h-14 rounded-lg object-cover bg-slate-800 border border-slate-700 shrink-0"
                                     loading="lazy"
-                                    onerror="this.onerror=null;this.src='https://placehold.co/80x80/0f172a/cbd5e1?text=%F0%9F%8D%95'">
+                                    onerror="this.onerror=null;this.src='/images/pepperoni.jpg'">
                                 <div>
                                     <div class="font-semibold">${product.name}</div>
                                     <div class="text-slate-400 text-sm">${product.description || ''}</div>

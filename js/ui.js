@@ -46,6 +46,13 @@ function renderMenu() {
     if (!menuGrid) return;
     const filteredItems = db.getAvailableMenu(currentCategory);
     menuGrid.innerHTML = filteredItems.map((item, idx) => {
+        const imgUrl = item.image ? item.image : '/images/pepperoni.jpg';
+        const fallbackImage = item.categorySlug === 'drinks' || item.categorySlug === 'juice'
+            ? '/images/cola.jpg'
+            : '/images/pepperoni.jpg';
+        const imageSrc = item.image
+            ? window.resolveMenuItemImage(item)
+            : (item.categorySlug === 'drinks' || item.categorySlug === 'juice' ? '/images/cola.jpg' : imgUrl);
         const sizeIdx = selectedSizeIndex[item.id] || 0;
         const activeSize = item.sizes[sizeIdx] || item.sizes[0] || { label: '—', weight: '', price: '0' };
         const hasSizes = item.sizes.length > 1;
@@ -56,9 +63,9 @@ function renderMenu() {
         return `
         <div class="bg-white dark:bg-bgElementDark rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 md:hover:shadow-2xl md:hover:-translate-y-1 transition-all duration-300 group menu-card-anim cursor-pointer js-menu-card" style="animation-delay: ${idx * 0.04}s" data-item-id="${item.id}">
             <div class="relative overflow-hidden aspect-square">
-                <img src="${window.resolveMenuItemImage(item)}" alt="${escapeHtml(item.name)}" loading="lazy"
+                <img src="${imageSrc}" alt="${escapeHtml(item.name)}" loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                     onerror="this.onerror=null;this.src='/images/icon.jpg'">
+                     onerror="this.onerror=null;this.src='${fallbackImage}';">
                 ${badgeHtml}
             </div>
             <div class="p-3 lg:p-4">
