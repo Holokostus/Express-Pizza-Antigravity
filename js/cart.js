@@ -77,7 +77,7 @@ async function recalculateCartFromServer() {
             modifierIds: i.modifierIds || [],
             quantity: i.quantity,
         })),
-        promoCode: appliedPromoCode || undefined,
+        promoCodeString: appliedPromoCode || undefined,
     };
 
     try {
@@ -178,11 +178,19 @@ function renderCartUI(serverData) {
                         : (mods.length > 0
                             ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => escapeHtml(m)).join(', ') + '</div>'
                             : '');
-                    const linePrice = sd ? (sd.unitPrice * sd.quantity) : null;
+                    const serverLinePrice = sd ? (Number(sd.unitPrice) * Number(sd.quantity || item.quantity || 1)) : null;
+                    const localLinePrice = Number(item._meta?.finalPrice || 0) * Number(item.quantity || 1);
+                    const linePrice = Number.isFinite(serverLinePrice) && serverLinePrice > 0
+                        ? serverLinePrice
+                        : (Number.isFinite(localLinePrice) ? localLinePrice : null);
 
-                    const imageSrc = image && image.startsWith('http') ? image : (image ? API_BASE + '/' + image.replace(/^\//, '') : '');
-                    const imageHtml = image
-                        ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy">`
+                    const imageSrc = window.resolveMenuItemImage({
+                        name,
+                        image,
+                        categorySlug: item?._meta?.categorySlug,
+                    });
+                    const imageHtml = imageSrc
+                        ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">`
                         : `<div class="w-[50px] h-[50px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
 
                     return `
@@ -291,6 +299,7 @@ function addCartLine(itemPayload) {
             itemId: itemPayload.itemId,
             doughType: itemPayload.doughType || 'traditional',
             finalPrice: Number.isFinite(normalizedPrice) ? normalizedPrice : 0,
+            categorySlug: itemPayload.categorySlug || '',
         },
     });
 }
@@ -314,6 +323,7 @@ window.cart = {
                 weight: itemPayload.weight,
                 modifierNames: (itemPayload.modifiers || []).map((mod) => mod.name).filter(Boolean),
                 finalPrice: Number(itemPayload.price || itemPayload.finalPrice || 0),
+                categorySlug: itemPayload.categorySlug,
             };
 
         if (!normalizedPayload.productSizeId) {
@@ -362,6 +372,7 @@ window.addToCart = (id) => {
         weight: size.weight,
         modifierNames: [],
         finalPrice: Number.isFinite(Number(size.price)) ? Number(size.price) : 0,
+        categorySlug: item.categorySlug,
     });
 
     // Bounce animation on cart badge
@@ -461,7 +472,7 @@ window.openCustomizer = (itemId) => {
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="card-content modifier-card-inner">
                                 <span class="modifier-checkmark">✓</span>
-                                <img src="${m.image || '/images/icon.jpg'}" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px;" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+                                <img src="${window.resolveModifierImage(m)}" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px;" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
                                 <span class="name">${m.name}</span>
                                 <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} р.</span>
                             </div>
@@ -786,10 +797,10 @@ function renderUpsells() {
 
     widget.classList.remove('hidden');
     container.innerHTML = upsells.map(item => {
-        const imageSrc = item.image && item.image.startsWith('http') ? item.image : (item.image ? API_BASE + '/' + item.image.replace(/^\//, '') : '');
+        const imageSrc = window.resolveMenuItemImage(item);
         return `
         <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
-            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy">
+            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
             <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
         </div>
