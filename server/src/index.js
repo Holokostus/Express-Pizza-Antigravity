@@ -7,6 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const prisma = require('./lib/prisma');
 const { categories, products, promotions } = require('../prisma/menu-data.js');
 const PORT = process.env.PORT || 3000;
@@ -22,8 +23,15 @@ app.use(express.json({
     }
 }));
 
-// Serve frontend static files from the parent directory
-app.use(express.static(path.join(__dirname, '..', '..')));
+// Serve frontend static files.
+// In local development files live in the repo root; in Docker they are copied to /app/public.
+const localStaticDir = path.join(__dirname, '..', '..');
+const dockerStaticDir = path.join(__dirname, '..', 'public');
+const staticDir = fs.existsSync(path.join(dockerStaticDir, 'index.html'))
+    ? dockerStaticDir
+    : localStaticDir;
+
+app.use(express.static(staticDir));
 
 // ---- Import Routes ----
 const authRoutes = require('./routes/auth');
