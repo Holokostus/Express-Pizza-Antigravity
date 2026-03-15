@@ -201,38 +201,30 @@ async function refetchDrinksAndCalzones() {
 
 
 async function refetchCriticalImages() {
-    const criticalTargets = [
-        { match: ['аппетитн'], query: 'пицца Аппетитная на белом фоне -суши -роллы' },
-        { match: ['охотнич'], query: 'пицца мясная на белом фоне -курьер -велосипед -человек' },
-        { match: ['ранчо'], query: 'пицца мясная на белом фоне -курьер -велосипед -человек' },
-        { match: ['сырн'], query: 'пицца 4 сыра на белом фоне -тарелка -виноград' },
-        { match: ['маринар'], query: 'пицца на белом фоне -watermark -logo -minaki.ru -stock' },
-        { match: ['бавар'], query: 'пицца на белом фоне -watermark -logo -minaki.ru -stock' },
-        { match: ['пикник'], query: 'комбо набор пицц -круассаны -вафли' },
-        { match: ['чизбургер'], query: 'пицца чизбургер на белом фоне -checkerboard' },
-        { match: ['кока-кола', 'кока кола', 'coca cola', 'coca-cola'], query: 'бутылка coca cola изолированный фон -checkerboard' },
-    ];
+    const queryByName = {
+        'Аппетитная': 'пицца Аппетитная на белом фоне -суши -роллы',
+        'Охотничья': 'пицца мясная на белом фоне -курьер -велосипед -человек',
+        'Ранчо': 'пицца мясная на белом фоне -курьер -велосипед -человек',
+        'Сырная': 'пицца 4 сыра на белом фоне -тарелка -виноград',
+        'Маринара': 'пицца на белом фоне -watermark -logo -minaki.ru -stock',
+        'Баварская': 'пицца на белом фоне -watermark -logo -minaki.ru -stock',
+        'Пикник': 'комбо набор пицц -круассаны -вафли',
+        'Чизбургер': 'пицца чизбургер на белом фоне -checkerboard',
+        'Кока-кола': 'бутылка coca cola изолированный фон -checkerboard',
+    };
 
+    const productNames = Object.keys(queryByName);
     const products = await prisma.product.findMany({
+        where: { name: { in: productNames } },
         select: { id: true, name: true },
     });
 
-    const targetRows = [];
     for (const product of products) {
-        const normalizedName = String(product.name || '').trim().toLowerCase();
-        const target = criticalTargets.find((entry) => entry.match.some((token) => normalizedName.includes(token)));
-        if (target) {
-            targetRows.push({ ...product, query: target.query });
-        }
-    }
-
-    const seen = new Set();
-    for (const product of targetRows) {
-        if (seen.has(product.id)) continue;
-        seen.add(product.id);
+        const query = queryByName[product.name];
+        if (!query) continue;
 
         try {
-            const foundUrl = await findImageUrl(product.query);
+            const foundUrl = await findImageUrl(query);
             if (!/^https?:\/\//i.test(foundUrl)) {
                 throw new Error('Found URL is not absolute');
             }
@@ -249,7 +241,6 @@ async function refetchCriticalImages() {
         await new Promise((resolve) => setTimeout(resolve, 350));
     }
 }
-
 
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
