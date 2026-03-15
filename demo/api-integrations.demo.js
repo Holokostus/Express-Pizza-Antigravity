@@ -1,3 +1,7 @@
+// DEPRECATED / DEMO-ONLY: This file is intentionally excluded from production bundle.
+// It contains API stubs/mocks and fake responses for demo scenarios only.
+// Do not use as a production integration implementation.
+
 // ============================================================
 // Express Pizza — API Integration Layer (Stubs)
 // ============================================================

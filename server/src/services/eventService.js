@@ -10,40 +10,48 @@ const { randomUUID } = require('crypto');
 const prisma = require('../lib/prisma');
 
 // ============================================================
-// Event Types Registry
+// Canonical Event Types Registry (single source of truth)
 // ============================================================
-const EventTypes = {
+const EventTypes = Object.freeze({
     // Order lifecycle
-    ORDER_PLACED: 'OrderPlaced',
-    ORDER_CONFIRMED: 'OrderConfirmed',
-    ORDER_COOKING: 'OrderCooking',
-    ORDER_BAKING: 'OrderBaking',
-    ORDER_READY: 'OrderReady',
-    ORDER_DELIVERY: 'OrderDelivery',
-    ORDER_COMPLETED: 'OrderCompleted',
-    ORDER_CANCELLED: 'OrderCancelled',
+    ORDER_PLACED: 'ORDER_PLACED',
+    ORDER_CONFIRMED: 'ORDER_CONFIRMED',
+    ORDER_COOKING: 'ORDER_COOKING',
+    ORDER_BAKING: 'ORDER_BAKING',
+    ORDER_READY: 'ORDER_READY',
+    ORDER_DELIVERY: 'ORDER_DELIVERY',
+    ORDER_COMPLETED: 'ORDER_COMPLETED',
+    ORDER_CANCELLED: 'ORDER_CANCELLED',
+    ORDER_STATUS_CHANGED: 'ORDER_STATUS_CHANGED',
 
     // POS sync
-    POS_SYNC_STARTED: 'PosSyncStarted',
-    POS_SYNC_SUCCESS: 'PosSyncSuccess',
-    POS_SYNC_FAILED: 'PosSyncFailed',
-    POS_VALIDATED: 'PosValidated',
+    POS_SYNC_STARTED: 'POS_SYNC_STARTED',
+    POS_SYNC_SUCCESS: 'POS_SYNC_SUCCESS',
+    POS_SYNC_FAILED: 'POS_SYNC_FAILED',
+    POS_VALIDATED: 'POS_VALIDATED',
 
     // Payment
-    PAYMENT_RECEIVED: 'PaymentReceived',
-    PAYMENT_FAILED: 'PaymentFailed',
+    PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',
+    PAYMENT_FAILED: 'PAYMENT_FAILED',
 
     // Stock
-    STOCK_OUT: 'StockOut',
-    STOCK_BACK: 'StockBack',
+    STOCK_OUT: 'STOCK_OUT',
+    STOCK_BACK: 'STOCK_BACK',
 
     // Menu
-    PRODUCT_UPDATED: 'ProductUpdated',
-    PRODUCT_STOPPED: 'ProductStopped',
+    PRODUCT_UPDATED: 'PRODUCT_UPDATED',
+    PRODUCT_STOPPED: 'PRODUCT_STOPPED',
+});
 
-    // Security
-    AGGREGATOR_INVALID_SIGNATURE: 'AggregatorInvalidSignature',
-};
+const EventTypeSet = new Set(Object.values(EventTypes));
+
+function assertValidEventType(eventType) {
+    if (!EventTypeSet.has(eventType)) {
+        throw new Error(
+            `[Event] Invalid eventType "${eventType}". Allowed values: ${Array.from(EventTypeSet).join(', ')}`
+        );
+    }
+}
 
 /**
  * Append an event to the event log.
@@ -54,13 +62,15 @@ const EventTypes = {
  * @param {object} payload — event data (prices, items, status changes, etc.)
  * @param {object} [metadata] — optional: { source, userId, restaurantId }
  * @param {string} [idempotencyKey] — auto-generated if not provided (used for offline sync)
+ * @param {import('@prisma/client').PrismaClient|import('@prisma/client').Prisma.TransactionClient} [dbClient]
  * @returns {Promise<EventLog>}
  */
-async function appendEvent(eventType, aggregateType, aggregateId, payload, metadata = null, idempotencyKey = null) {
+async function appendEvent(eventType, aggregateType, aggregateId, payload, metadata = null, idempotencyKey = null, dbClient = prisma) {
+    assertValidEventType(eventType);
     const key = idempotencyKey || `${eventType}_${aggregateId}_${randomUUID()}`;
 
     try {
-        const event = await prisma.eventLog.create({
+        const event = await dbClient.eventLog.create({
             data: {
                 eventType,
                 aggregateType,
@@ -170,6 +180,8 @@ async function getLatestSequence() {
 
 module.exports = {
     EventTypes,
+    EventTypeSet,
+    assertValidEventType,
     appendEvent,
     getEventsForAggregate,
     getEventsSince,
