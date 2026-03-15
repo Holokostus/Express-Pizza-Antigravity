@@ -4,12 +4,11 @@
 
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { JWT_SECRET } = require('../utils/jwt');
 const { sendOtpEmail } = require('../services/emailService');
-const { otpService } = require('../services/otpService');
+const { signToken } = require('../utils/jwt');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_jwt_secret_change_me';
 
@@ -276,11 +275,12 @@ async function handleVerifyOtp(req, res) {
             });
         }
 
-        const token = jwt.sign(
-            { userId: user.id, email: user.email, phone: user.phone, role: user.role },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        const token = signToken({
+            userId: user.id,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+        });
 
         res.json({
             success: true,

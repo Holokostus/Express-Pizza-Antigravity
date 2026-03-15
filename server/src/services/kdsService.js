@@ -171,7 +171,37 @@ function broadcastStatusSync(restaurantId, payloadData) {
 }
 
 function initKDSWebSocket(server) {
-    wss = new WebSocket.Server({ server, path: '/ws/kds' });
+    wss = new WebSocket.Server({
+        server,
+        path: '/ws/kds',
+        verifyClient: (info, done) => {
+            try {
+                const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+                const restaurantId = Number.parseInt(url.searchParams.get('restaurantId'), 10);
+
+                if (!Number.isInteger(restaurantId) || restaurantId <= 0) {
+                    return done(false, 400, 'Invalid restaurantId');
+                }
+
+                const token = extractBearerToken(info.req, url);
+                if (!token) {
+                    return done(false, 401, 'Missing auth token');
+                }
+
+                const decoded = verifyToken(token);
+                if (!hasRestaurantAccess(decoded, restaurantId)) {
+                    return done(false, 403, 'Restaurant access denied');
+                }
+
+                info.req.auth = decoded;
+                info.req.restaurantId = restaurantId;
+                return done(true);
+            } catch (err) {
+                console.warn('[KDS] WebSocket handshake rejected:', err.message);
+                return done(false, 401, 'Invalid auth token');
+            }
+        }
+    });
 
     console.log('[KDS] WebSocket server initialized on /ws/kds');
 
@@ -212,8 +242,24 @@ function initKDSWebSocket(server) {
         ws.send(JSON.stringify({ type: 'CONNECTED', data: { restaurantId } }));
 
         ws.on('message', async (messageAsString) => {
+            if (isRateLimited(ws)) {
+                console.warn(`[KDS] Rate limit exceeded for user ${ws.user?.userId || 'unknown'} at restaurant ${restaurantId}`);
+                ws.close(1008, 'Rate limit exceeded');
+                return;
+            }
+
             try {
-                const message = JSON.parse(messageAsString);
+                if (typeof messageAsString !== 'string' && !Buffer.isBuffer(messageAsString)) {
+                    console.warn('[KDS] Unsupported message type received');
+                    return;
+                }
+
+                const rawMessage = Buffer.isBuffer(messageAsString) ? messageAsString.toString('utf-8') : messageAsString;
+                const message = JSON.parse(rawMessage);
+                if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
+                    console.warn('[KDS] Invalid message payload structure');
+                    return;
+                }
 
                 if (message.type === 'KDS_ACK' && message.orderId) {
                     const ackKey = getAckKey(restaurantId, message.orderId);
@@ -239,7 +285,12 @@ function initKDSWebSocket(server) {
                     });
                 }
             } catch (err) {
-                console.error('[KDS] Error parsing message:', err);
+                if (err instanceof SyntaxError) {
+                    console.warn('[KDS] Invalid JSON received from client');
+                    return;
+                }
+
+                console.error('[KDS] Error handling message:', err);
             }
         });
 

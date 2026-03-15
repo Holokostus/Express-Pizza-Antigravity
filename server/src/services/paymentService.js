@@ -135,6 +135,14 @@ function verifyWebhookSignature(payload, signature) {
         return false;
     }
 
+    const normalizedPayload = Buffer.isBuffer(payload)
+        ? payload
+        : Buffer.from(typeof payload === 'string' ? payload : String(payload ?? ''));
+
+    const normalizedSignature = Buffer.isBuffer(signature)
+        ? signature.toString('utf8')
+        : String(signature).trim();
+
     // bePaid signature logic: HMAC-SHA256 of the raw JSON body
     // In Express, we need raw body for accurate verification, 
     // assuming payload is stringified JSON exactly as received
