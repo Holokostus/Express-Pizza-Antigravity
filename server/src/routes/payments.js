@@ -16,9 +16,8 @@ const prisma = require('../lib/prisma');
  */
 // Use express.text() or raw-body to get exactly the raw payload for HMAC verification
 router.post('/webhook', async (req, res) => {
-    try {
-        const signature = req.headers['content-signature'];
-        const rawBody = req.rawBody; // raw buffer from express.json verify
+    const signature = req.headers['content-signature'];
+    const rawBody = req.rawBody; // raw buffer from express.json verify
 
         // 1. Verify HMAC Signature
         const verification = verifyWebhookSignature(rawBody, signature);
@@ -110,7 +109,7 @@ router.post('/webhook', async (req, res) => {
         res.status(200).send('OK');
 
     } catch (error) {
-        console.error('[Webhook Processing Error]', error);
+        console.error('[Webhook Processing Error]', error.message);
         res.status(500).send('Internal Error');
     }
 });
