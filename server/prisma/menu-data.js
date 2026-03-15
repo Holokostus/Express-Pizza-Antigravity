@@ -42,24 +42,24 @@ const products = [
   { name: 'Сет чикен', categorySlug: 'combo', weight: '1 кг', price: 41.5, description: 'Сыр, рубленое филе цыпленка, жареные грибы, бекон, соус Ранч, сосиски Хот, чеддер, картофель.' },
 
   // Pizza TOGO (Calzone)
-  { name: 'Кальцоне грудинка с салями', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Моцарелла, грудинка, салями, халапеньо, сладкий перец.' },
-  { name: 'Кальцоне с ветчиной и грибами', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Моцарелла, шампиньоны, ветчина.' },
-  { name: 'Кальцоне с колбаской по-охотничьи', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Моцарелла, огурец консерв., колбаски, томатный соус, горчица.' },
-  { name: 'Кальцоне с курицей и грибами', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Рубленое филе цыпленка, моцарелла, сливки, шампиньоны.' },
+  { name: 'Кальцоне грудинка с салями', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Сыр моцарелла, грудинка, салями, сладкий перец и томатный соус в хрустящем тесте.' },
+  { name: 'Кальцоне с ветчиной и грибами', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Сыр моцарелла, ветчина, шампиньоны и сливочный соус.' },
+  { name: 'Кальцоне с колбаской по-охотничьи', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Сыр моцарелла, охотничьи колбаски, маринованный огурчик, томатный соус и лёгкая горчица.' },
+  { name: 'Кальцоне с курицей и грибами', categorySlug: 'togo', image: '/images/calzone.jpg', weight: '300г', price: 16, description: 'Рубленое филе цыплёнка, сыр моцарелла, шампиньоны и нежный сливочный соус.' },
 
   // Drinks
-  { name: 'Coca-Cola', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Кока-Кола', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
-  { name: 'Sprite', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Спрайт', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
-  { name: 'Fanta', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Фанта', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
+  { name: 'Coca-Cola', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Освежающий газированный напиток с классическим вкусом колы.', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
+  { name: 'Sprite', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Лимонно-лаймовый газированный напиток без кофеина.', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
+  { name: 'Fanta', categorySlug: 'drinks', image: '/images/cola.jpg', description: 'Яркий апельсиновый газированный напиток.', sizes: [ { label: '1.0 л', weight: '1.0л', price: 6.9 }, { label: '0.5 л', weight: '0.5л', price: 4.9 } ] },
   { name: 'Бонаква негазированная', categorySlug: 'drinks', image: '/images/cola.jpg', weight: '0.5л', price: 1.6, description: 'Вода негазированная.' },
   { name: 'Бонаква среднегазированная', categorySlug: 'drinks', image: '/images/cola.jpg', weight: '0.5л', price: 1.6, description: 'Вода среднегазированная.' },
   { name: 'Burn', categorySlug: 'drinks', image: '/images/cola.jpg', weight: '0.25л', price: 0, description: 'Энергетический напиток.' },
 
   // Juice
-  { name: 'Сок Rich апельсин', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Сок Rich апельсиновый.' },
-  { name: 'Сок Rich томатный', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Сок Rich томатный.' },
-  { name: 'Сок Rich яблочный', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Сок Rich яблочный.' },
-  { name: 'Сок Rich мультифрукт', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Сок Rich мультифрукт.' },
+  { name: 'Сок Rich апельсин', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Натуральный фруктовый сок с насыщенным апельсиновым вкусом.' },
+  { name: 'Сок Rich томатный', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Натуральный томатный сок с мягкой текстурой и сбалансированным вкусом.' },
+  { name: 'Сок Rich яблочный', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Натуральный яблочный сок с лёгкой сладостью.' },
+  { name: 'Сок Rich мультифрукт', categorySlug: 'juice', image: '/images/cola.jpg', weight: '1.0л', price: 4.75, description: 'Натуральный мультифруктовый сок из смеси спелых фруктов.' },
 
   // Pizza
   { name: 'Восемь ломтиков', categorySlug: 'pizza', description: '2 кг фирменная пицца.', sizes: [{ label: '60 см', weight: '2кг', price: 98 }] },

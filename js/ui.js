@@ -435,8 +435,7 @@ async function renderProfileView() {
 
         const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
-        // ExpressCoins: fetched from the Server User Object
-        // (the server now populates it correctly based on PointsBalance)
+        // Бонусные баллы пользователя
         const coins = data.loyaltyPoints || 0;
         
         // Update header and cart badges
@@ -469,7 +468,7 @@ async function renderProfileView() {
                         <span class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white font-bold">C</span>
                         <div>
                             <p class="font-bold text-white text-2xl leading-none">${coins}</p>
-                            <p class="text-xs text-gray-400 font-medium mt-1">ExpressCoins</p>
+                            <p class="text-xs text-gray-400 font-medium mt-1">Бонусные баллы</p>
                         </div>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-4 leading-relaxed font-medium">Оплачивайте коинами до 50% заказа. 1 Coin = 1 BYN. Кэшбэк 5% с каждого заказа.</p>

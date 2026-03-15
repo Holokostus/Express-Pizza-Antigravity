@@ -37,7 +37,7 @@ body {
 }
 
 .menu-tab.active {
-    box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
+    box-shadow: none;
 }
 
 .js-menu-card,
@@ -225,7 +225,7 @@ button.bg-primary:hover,
 
 /* Menu Tab Active State */
 .menu-tab.active {
-    box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
+    box-shadow: none;
 }
 
 /* Glassmorphism */
