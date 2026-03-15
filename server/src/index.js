@@ -266,7 +266,7 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-app.get('/api/fetch-images', async (req, res) => {
+app.get('/api/fetch-images', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     res.json({
         success: true,
         message: 'Процесс поиска картинок запущен в фоновом режиме. Обновите страницу через пару минут.',
@@ -355,7 +355,7 @@ app.post('/api/sync/events', async (req, res) => {
 });
 
 // ---- Stock Management (stop-list) ----
-app.post('/api/stock/out', async (req, res) => {
+app.post('/api/stock/out', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const { productId, restaurantId, reason } = req.body;
         await stockService.setOutOfStock(productId, restaurantId, reason);
@@ -365,7 +365,7 @@ app.post('/api/stock/out', async (req, res) => {
     }
 });
 
-app.post('/api/stock/back', async (req, res) => {
+app.post('/api/stock/back', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const { productId, restaurantId } = req.body;
         await stockService.setBackInStock(productId, restaurantId);
@@ -385,7 +385,7 @@ app.get('/api/stock/stop-list/:restaurantId', async (req, res) => {
 });
 
 // ---- POS Sync Retry ----
-app.post('/api/pos/retry', async (req, res) => {
+app.post('/api/pos/retry', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const result = await retryFailedSyncs();
         res.json(result);
@@ -441,7 +441,7 @@ app.get('/api/eta/spillover/:restaurantId', async (req, res) => {
 });
 
 // ---- Printer API ----
-app.post('/api/print/service', async (req, res) => {
+app.post('/api/print/service', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const { orderId } = req.body;
         const order = await prisma.order.findUnique({
@@ -459,7 +459,7 @@ app.post('/api/print/service', async (req, res) => {
     }
 });
 
-app.post('/api/print/kitchen', async (req, res) => {
+app.post('/api/print/kitchen', requireAuth, checkRole(['ADMIN', 'COOK']), async (req, res) => {
     try {
         const { orderId } = req.body;
         const order = await prisma.order.findUnique({
@@ -477,7 +477,7 @@ app.post('/api/print/kitchen', async (req, res) => {
     }
 });
 
-app.post('/api/print/reprint/:receiptId', async (req, res) => {
+app.post('/api/print/reprint/:receiptId', requireAuth, checkRole(['ADMIN']), async (req, res) => {
     try {
         const result = await printerService.reprint(parseInt(req.params.receiptId));
         res.json(result);
