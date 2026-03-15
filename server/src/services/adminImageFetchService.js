@@ -199,6 +199,58 @@ async function refetchDrinksAndCalzones() {
     }
 }
 
+
+async function refetchCriticalImages() {
+    const criticalTargets = [
+        { match: ['аппетитн'], query: 'пицца Аппетитная на белом фоне -суши -роллы' },
+        { match: ['охотнич'], query: 'пицца мясная на белом фоне -курьер -велосипед -человек' },
+        { match: ['ранчо'], query: 'пицца мясная на белом фоне -курьер -велосипед -человек' },
+        { match: ['сырн'], query: 'пицца 4 сыра на белом фоне -тарелка -виноград' },
+        { match: ['маринар'], query: 'пицца на белом фоне -watermark -logo -minaki.ru -stock' },
+        { match: ['бавар'], query: 'пицца на белом фоне -watermark -logo -minaki.ru -stock' },
+        { match: ['пикник'], query: 'комбо набор пицц -круассаны -вафли' },
+        { match: ['чизбургер'], query: 'пицца чизбургер на белом фоне -checkerboard' },
+        { match: ['кока-кола', 'кока кола', 'coca cola', 'coca-cola'], query: 'бутылка coca cola изолированный фон -checkerboard' },
+    ];
+
+    const products = await prisma.product.findMany({
+        select: { id: true, name: true },
+    });
+
+    const targetRows = [];
+    for (const product of products) {
+        const normalizedName = String(product.name || '').trim().toLowerCase();
+        const target = criticalTargets.find((entry) => entry.match.some((token) => normalizedName.includes(token)));
+        if (target) {
+            targetRows.push({ ...product, query: target.query });
+        }
+    }
+
+    const seen = new Set();
+    for (const product of targetRows) {
+        if (seen.has(product.id)) continue;
+        seen.add(product.id);
+
+        try {
+            const foundUrl = await findImageUrl(product.query);
+            if (!/^https?:\/\//i.test(foundUrl)) {
+                throw new Error('Found URL is not absolute');
+            }
+
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { image: foundUrl },
+            });
+            console.log(`✅ Critical image refreshed for product#${product.id} (${product.name})`);
+        } catch (error) {
+            console.warn(`⚠️ Critical re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+}
+
+
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
         return true;
@@ -320,5 +372,6 @@ module.exports = {
     triggerImageFetchJobByAdmin,
     refetchBadProductImages,
     refetchDrinksAndCalzones,
+    refetchCriticalImages,
     JobConflictError,
 };

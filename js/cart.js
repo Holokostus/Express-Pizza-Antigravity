@@ -187,9 +187,9 @@ function renderCartUI(serverData) {
                     const sizeLabel = sd?.sizeLabel || item._display.sizeLabel;
                     const mods = Array.isArray(sd?.modifiers) ? sd.modifiers.map((m) => m?.name).filter(Boolean) : (Array.isArray(item._display?.modifierNames) ? item._display.modifierNames : []);
                     const modsHtml = (item.modifiers && item.modifiers.length)
-                        ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + item.modifiers.map(m => m.name).join(', ') + '</div>'
+                        ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + item.modifiers.map(m => window.formatModifierLabel ? window.formatModifierLabel(m.name) : `${window.resolveModifierEmoji(m.name)} ${escapeHtml(m.name)}`).join(', ') + '</div>'
                         : (mods.length > 0
-                            ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => escapeHtml(m)).join(', ') + '</div>'
+                            ? '<div style="font-size: 12px; color: #aaa; margin-top: 4px;">+ ' + mods.map((m) => window.formatModifierLabel ? window.formatModifierLabel(m) : `${window.resolveModifierEmoji(m)} ${escapeHtml(m)}`).join(', ') + '</div>'
                             : '');
                     const serverLinePrice = sd ? (Number(sd.unitPrice) * Number(sd.quantity || item.quantity || 1)) : null;
                     const localLinePrice = Number(item._meta?.finalPrice || 0) * Number(item.quantity || 1);
@@ -495,7 +495,8 @@ window.openCustomizer = (itemId) => {
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="card-content modifier-card-inner">
                                 <span class="modifier-checkmark">✓</span>
-                                <img src="${window.resolveModifierImage(m)}" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='${window.resolveMenuItemImage({ categorySlug: itemInfo.categorySlug })}'">
+                                <img src="${window.resolveModifierImage(m)}" class="modifier-image" alt="${m.name}" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
+                                <span class="modifier-emoji-fallback hidden" aria-hidden="true">${window.resolveModifierEmoji(m)}</span>
                                 <span class="name">${m.name}</span>
                                 <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} BYN</span>
                                 <span class="tap-hint">Нажмите, чтобы добавить</span>
