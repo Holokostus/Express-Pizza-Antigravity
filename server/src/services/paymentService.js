@@ -3,8 +3,6 @@
 // ============================================================
 
 const crypto = require('crypto');
-const fetch = require('node-fetch'); // Assuming node-fetch is available in Node 20 or using native fetch
-
 // Using native fetch in Node 18+
 const SHOP_ID = process.env.BEPAID_SHOP_ID;
 const SECRET_KEY = process.env.BEPAID_SECRET_KEY;
@@ -54,6 +52,8 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
         console.warn(`[bePaid] Missing credentials. Returning fallback checkout URL for order ${externalOrderId}`);
         return `order-success.html?order=${externalOrderId}&payment=temporarily_unavailable`;
     }
+    const fetchImpl = global.fetch || require('node-fetch');
+
     // ── REAL MODE: call bePaid API ──
     const amountInCents = Math.round(amount * 100);
 
@@ -88,7 +88,7 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
     const authHeader = 'Basic ' + Buffer.from(`${SHOP_ID}:${SECRET_KEY}`).toString('base64');
 
     try {
-        const response = await fetch('https://checkout.bepaid.by/ctp/api/checkouts', {
+        const response = await fetchImpl('https://checkout.bepaid.by/ctp/api/checkouts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -129,11 +129,17 @@ function verifyWebhookSignature(payload, signature) {
         return { isValid: false, reason: 'invalid_signature_format' };
     }
 
+    const webhookSecret = process.env.BEPAID_WEBHOOK_SECRET || WEBHOOK_SECRET;
+    if (!webhookSecret) {
+        console.error('[bePaid] Missing BEPAID_WEBHOOK_SECRET. Webhook signature verification is disabled due to misconfiguration.');
+        return false;
+    }
+
     // bePaid signature logic: HMAC-SHA256 of the raw JSON body
     // In Express, we need raw body for accurate verification, 
     // assuming payload is stringified JSON exactly as received
     const hash = crypto
-        .createHmac('sha256', WEBHOOK_SECRET)
+        .createHmac('sha256', webhookSecret)
         .update(payload)
         .digest('hex');
 
@@ -152,7 +158,12 @@ function verifyWebhookSignature(payload, signature) {
     };
 }
 
+function isWebhookSecretConfigured() {
+    return Boolean(process.env.BEPAID_WEBHOOK_SECRET || WEBHOOK_SECRET);
+}
+
 module.exports = {
     createPaymentSession,
-    verifyWebhookSignature
+    verifyWebhookSignature,
+    isWebhookSecretConfigured
 };
