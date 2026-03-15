@@ -96,6 +96,17 @@ async function findImageUrl(query) {
     }
 }
 
+
+function buildSearchQuery(item) {
+    if (item.type === 'product') {
+        const categoryName = item.category?.name || item.category?.slug || 'еда';
+        return `${item.name} ${categoryName} аппетитная food photography studio light close-up`;
+    }
+
+    const modifierType = item.isRemoval ? 'ingredient icon' : 'pizza topping ingredient';
+    return `${item.name} ${item.groupName || 'допы'} ${modifierType} isolated on white background`;
+}
+
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
         return true;
@@ -117,7 +128,7 @@ async function runImageFetchJob() {
                         { image: { equals: '/images/icon.jpg' } },
                     ],
                 },
-                select: { id: true, name: true },
+                select: { id: true, name: true, category: { select: { slug: true, name: true } } },
             }),
             prisma.productModifier.findMany({
                 where: {
@@ -127,7 +138,7 @@ async function runImageFetchJob() {
                         { image: { equals: '/images/icon.jpg' } },
                     ],
                 },
-                select: { id: true, name: true },
+                select: { id: true, name: true, groupName: true, isRemoval: true },
             }),
         ]);
 
@@ -139,7 +150,7 @@ async function runImageFetchJob() {
         console.log(`🧾 Image fetch queue size: ${queue.length}`);
 
         for (const item of queue) {
-            const query = `${item.name} доставка еда профессиональное фото изолированный фон`;
+            const query = buildSearchQuery(item);
 
             try {
                 const foundUrl = await findImageUrl(query);

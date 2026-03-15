@@ -6,6 +6,90 @@ html {
     scroll-behavior: smooth;
 }
 
+:root {
+    --brand-primary: #FF4B3A;
+    --brand-primary-hover: #E63929;
+    --brand-secondary: #FFC107;
+    --bg-main: #F9FAFB;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+    --radius-card: 16px;
+    --radius-btn: 9999px;
+    --shadow-card: 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-hover: 0 10px 20px rgba(255, 75, 58, 0.15);
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+.site-header {
+    background: #fff !important;
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06);
+    border-bottom: none !important;
+}
+
+.brand-express {
+    color: var(--brand-primary);
+}
+
+.menu-tab.active {
+    box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
+}
+
+.js-menu-card,
+.product-card {
+    background: #fff !important;
+    border-radius: var(--radius-card) !important;
+    border: none !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.js-menu-card:hover,
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover) !important;
+}
+
+button.bg-red-600,
+button.bg-primary,
+.cart-add-btn,
+.btn-primary {
+    background: var(--brand-primary) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius-btn) !important;
+    font-weight: 700 !important;
+}
+
+button.bg-red-600:hover,
+button.bg-primary:hover,
+.cart-add-btn:hover,
+.btn-primary:hover {
+    background: var(--brand-primary-hover) !important;
+}
+
+.promo-card {
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    border: none;
+}
+
+.promo-card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.modifier-card-inner {
+    border-radius: var(--radius-card);
+    border: none;
+    box-shadow: var(--shadow-card);
+    background: #fff;
+}
+
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
@@ -281,8 +365,8 @@ html {
 
 .segment-option.is-active,
 .segment-option:has(input:checked) {
-    background: #ef4444;
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+    background: var(--brand-primary);
+    box-shadow: 0 8px 20px rgba(255, 75, 58, 0.35);
     color: #fff;
 }
 
