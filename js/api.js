@@ -43,18 +43,26 @@ const PRODUCT_IMAGE_BY_NAME = {
     'sprite': 'https://images.unsplash.com/photo-1610873167013-2dd675d30ef4?w=1200&q=80&auto=format&fit=crop',
     'fanta': 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=1200&q=80&auto=format&fit=crop',
     'burn': 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?w=1200&q=80&auto=format&fit=crop',
-    'бон': 'https://images.unsplash.com/photo-1564419439260-858f4c6740d7?w=1200&q=80&auto=format&fit=crop',
+    'бонаква': 'https://images.unsplash.com/photo-1564419439260-858f4c6740d7?w=1200&q=80&auto=format&fit=crop',
     'rich': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=1200&q=80&auto=format&fit=crop',
     'сок': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=1200&q=80&auto=format&fit=crop',
     'кальцоне': 'https://images.unsplash.com/photo-1515516969-d4008cc6241a?w=1200&q=80&auto=format&fit=crop',
     'соус': 'https://images.unsplash.com/photo-1598514983318-2f64f8f4796c?w=1200&q=80&auto=format&fit=crop',
     'сет': 'https://images.unsplash.com/photo-1608039755401-742074f0548d?w=1200&q=80&auto=format&fit=crop',
     'пикник': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&auto=format&fit=crop',
+    'пепперони': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&auto=format&fit=crop',
+    'маргарита': 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=1200&q=80&auto=format&fit=crop',
+    'цезарь': 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?w=1200&q=80&auto=format&fit=crop',
+    'чизбургер': 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=1200&q=80&auto=format&fit=crop',
+    'жульен': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1200&q=80&auto=format&fit=crop',
+    'барбекю': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&auto=format&fit=crop',
+    'сырная': 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=1200&q=80&auto=format&fit=crop',
 };
 
 const MODIFIER_IMAGE_BY_NAME = {
     'сырный бортик': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=800&q=80&auto=format&fit=crop',
     'халапеньо': 'https://images.unsplash.com/photo-1550109161-7262e652bf82?w=800&q=80&auto=format&fit=crop',
+    'ветчина': 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=800&q=80&auto=format&fit=crop',
     'двойной сыр': 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=800&q=80&auto=format&fit=crop',
     'без лука': 'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=80&auto=format&fit=crop',
     'дополнительный соус': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=800&q=80&auto=format&fit=crop',
@@ -88,7 +96,8 @@ window.resolveModifierImage = function resolveModifierImage(modifier) {
     if (normalizedOriginal) return normalizedOriginal;
 
     const normalizedName = String(modifier?.name || '').trim().toLowerCase();
-    const byName = MODIFIER_IMAGE_BY_NAME[normalizedName];
+    const byName = MODIFIER_IMAGE_BY_NAME[normalizedName]
+        || Object.entries(MODIFIER_IMAGE_BY_NAME).find(([key]) => normalizedName.includes(key))?.[1];
     return byName || '/images/icon.jpg';
 };
 
