@@ -14,6 +14,12 @@ const otpStore = new Map();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function shouldUseOtpFallback() {
+    if (process.env.OTP_ALLOW_DEBUG_FALLBACK === 'true') return true;
+    if (process.env.OTP_ALLOW_DEBUG_FALLBACK === 'false') return false;
+    return process.env.NODE_ENV !== 'production' || !process.env.EMAIL_USER || !process.env.EMAIL_PASS;
+}
+
 async function handleSendOtp(req, res) {
     try {
         const email = String(req.body?.email || '').trim().toLowerCase();
@@ -40,10 +46,10 @@ async function handleSendOtp(req, res) {
             await sendOtpEmail({ to: email, code });
         } catch (mailError) {
             console.error('[Auth] Send OTP email error:', mailError);
-            if (process.env.NODE_ENV !== 'production') {
+            if (shouldUseOtpFallback()) {
                 return res.json({
                     success: true,
-                    message: 'Письмо не отправлено (dev-режим). Используйте debugCode.',
+                    message: 'OTP сохранен локально. Используйте debugCode для входа.',
                     debugCode: code,
                     isDevFallback: true,
                 });

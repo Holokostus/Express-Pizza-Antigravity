@@ -64,17 +64,17 @@ const PRODUCT_IMAGE_BY_NAME = {
 };
 
 const MODIFIER_IMAGE_BY_NAME = {
-    'сырный бортик': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=800&q=80&auto=format&fit=crop',
-    'халапеньо': 'https://images.unsplash.com/photo-1550109161-7262e652bf82?w=800&q=80&auto=format&fit=crop',
-    'ветчина': 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=800&q=80&auto=format&fit=crop',
-    'двойной сыр': 'https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?w=800&q=80&auto=format&fit=crop',
-    'без лука': 'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=80&auto=format&fit=crop',
-    'дополнительный соус': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=800&q=80&auto=format&fit=crop',
-    'двойной пепперони': 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop',
-    'доп сыр': 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=800&q=80&auto=format&fit=crop',
-    'грибы': 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?w=800&q=80&auto=format&fit=crop',
-    'бекон': 'https://images.unsplash.com/photo-1528607929212-2636ec44253e?w=800&q=80&auto=format&fit=crop',
-    'соус': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=800&q=80&auto=format&fit=crop',
+    'сырный бортик': 'https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'халапеньо': 'https://images.pexels.com/photos/1268101/pexels-photo-1268101.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'ветчина': 'https://images.pexels.com/photos/1927377/pexels-photo-1927377.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'бекон': 'https://images.pexels.com/photos/4113908/pexels-photo-4113908.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'двойной сыр': 'https://images.pexels.com/photos/4109084/pexels-photo-4109084.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'без лука': 'https://images.pexels.com/photos/533280/pexels-photo-533280.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'дополнительный соус': 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'двойной пепперони': 'https://images.pexels.com/photos/708587/pexels-photo-708587.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'доп сыр': 'https://images.pexels.com/photos/4109084/pexels-photo-4109084.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'грибы': 'https://images.pexels.com/photos/255469/pexels-photo-255469.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'соус': 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&cs=tinysrgb&w=800',
 };
 
 function normalizeImagePath(imagePath) {

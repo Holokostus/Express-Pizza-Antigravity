@@ -22,10 +22,11 @@ const promotions = [
 
 
 const defaultPizzaModifiers = [
-  { name: 'Сырный бортик', price: 3.5, image: 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=1200&q=80&auto=format&fit=crop' },
-  { name: 'Халапеньо', price: 1.5, image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=1200&q=80&auto=format&fit=crop' },
-  { name: 'Ветчина', price: 2.5, image: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=1200&q=80&auto=format&fit=crop' },
-  { name: 'Двойной сыр', price: 3.2, image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=80&auto=format&fit=crop' },
+  { name: 'Сырный бортик', price: 3.5, image: 'https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=1200' },
+  { name: 'Халапеньо', price: 1.5, image: 'https://images.pexels.com/photos/1268101/pexels-photo-1268101.jpeg?auto=compress&cs=tinysrgb&w=1200' },
+  { name: 'Ветчина', price: 2.5, image: 'https://images.pexels.com/photos/1927377/pexels-photo-1927377.jpeg?auto=compress&cs=tinysrgb&w=1200' },
+  { name: 'Бекон', price: 2.7, image: 'https://images.pexels.com/photos/4113908/pexels-photo-4113908.jpeg?auto=compress&cs=tinysrgb&w=1200' },
+  { name: 'Двойной сыр', price: 3.2, image: 'https://images.pexels.com/photos/4109084/pexels-photo-4109084.jpeg?auto=compress&cs=tinysrgb&w=1200' },
 ];
 
 const products = [
