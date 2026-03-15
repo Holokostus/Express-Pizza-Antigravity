@@ -7,60 +7,91 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { JWT_SECRET } = require('../utils/jwt');
 const { sendOtpEmail } = require('../services/emailService');
 const { otpService } = require('../services/otpService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_jwt_secret_change_me';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^\+?[0-9]{7,15}$/;
+const OTP_TTL_MS = Number(process.env.OTP_TTL_MS || 3 * 60 * 1000);
+const OTP_RESEND_COOLDOWN_MS = Number(process.env.OTP_RESEND_COOLDOWN_MS || 10 * 1000);
+const OTP_MAX_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS || 3);
+const OTP_RATE_LIMIT_EMAIL_MAX = Number(process.env.OTP_RATE_LIMIT_EMAIL_MAX || 5);
+const OTP_RATE_LIMIT_EMAIL_WINDOW_MS = Number(process.env.OTP_RATE_LIMIT_EMAIL_WINDOW_MS || 10 * 60 * 1000);
+const OTP_RATE_LIMIT_IP_MAX = Number(process.env.OTP_RATE_LIMIT_IP_MAX || 20);
+const OTP_RATE_LIMIT_IP_WINDOW_MS = Number(process.env.OTP_RATE_LIMIT_IP_WINDOW_MS || 10 * 60 * 1000);
+const OTP_CLEANUP_INTERVAL_MS = Number(process.env.OTP_CLEANUP_INTERVAL_MS || 5 * 60 * 1000);
 
-function shouldUseOtpFallback() {
-    if (process.env.OTP_ALLOW_DEBUG_FALLBACK === 'true') return true;
-    if (process.env.OTP_ALLOW_DEBUG_FALLBACK === 'false') return false;
-    return process.env.NODE_ENV !== 'production' || !process.env.EMAIL_USER || !process.env.EMAIL_PASS;
-}
-
-function shouldExposeDebugCode(req) {
-    if (process.env.NODE_ENV === 'production') {
-        return false;
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim()) {
+        return forwarded.split(',')[0].trim();
     }
 
-    const queryDebug = String(req.query?.debug || '').toLowerCase() === 'true';
-    const headerDebug = String(req.headers['x-debug-otp'] || '').toLowerCase() === 'true';
-    const bodyDebug = req.body?.debug === true || String(req.body?.debug || '').toLowerCase() === 'true';
-
-    return queryDebug || headerDebug || bodyDebug;
+    return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-function resolveOtpTarget(req) {
-    const email = String(req.body?.email || '').trim().toLowerCase();
-    const phone = String(req.body?.phone || '').trim();
+function isLocalRequest(req) {
+    const ip = getClientIp(req);
+    return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost';
+}
 
-    if (email) {
-        if (!EMAIL_RE.test(email)) {
-            return { error: 'Введите корректный email' };
+function canUseDebugOtp(req) {
+    return process.env.OTP_ENABLE_DEBUG_CODE === 'true' && process.env.NODE_ENV !== 'production' && isLocalRequest(req);
+}
+
+async function consumeRateLimit(key, maxHits, windowMs) {
+    const windowExpiresAt = new Date(Date.now() + windowMs);
+
+    const [row] = await prisma.$queryRaw`
+        INSERT INTO otp_rate_limits ("key", "hits", "windowExpiresAt", "createdAt", "updatedAt")
+        VALUES (${key}, 1, ${windowExpiresAt}, NOW(), NOW())
+        ON CONFLICT ("key")
+        DO UPDATE
+        SET
+            "hits" = CASE
+                WHEN otp_rate_limits."windowExpiresAt" <= NOW() THEN 1
+                ELSE otp_rate_limits."hits" + 1
+            END,
+            "windowExpiresAt" = CASE
+                WHEN otp_rate_limits."windowExpiresAt" <= NOW() THEN ${windowExpiresAt}
+                ELSE otp_rate_limits."windowExpiresAt"
+            END,
+            "updatedAt" = NOW()
+        RETURNING "hits", "windowExpiresAt";
+    `;
+
+    const hits = Number(row?.hits || 0);
+    const retryAfterMs = row?.windowExpiresAt ? Math.max(new Date(row.windowExpiresAt).getTime() - Date.now(), 0) : 0;
+
+    return {
+        limited: hits > maxHits,
+        hits,
+        retryAfterMs,
+    };
+}
+
+function startOtpCleanupTask() {
+    const timer = setInterval(async () => {
+        try {
+            const now = new Date();
+            await prisma.otpCode.deleteMany({ where: { expiresAt: { lt: now } } });
+            await prisma.otpRateLimit.deleteMany({ where: { windowExpiresAt: { lt: now } } });
+        } catch (cleanupError) {
+            console.error('[Auth] OTP cleanup task failed:', cleanupError?.message || cleanupError);
         }
+    }, OTP_CLEANUP_INTERVAL_MS);
 
-        return { channel: 'email', id: email, email };
-    }
-
-    if (phone) {
-        if (!PHONE_RE.test(phone)) {
-            return { error: 'Введите корректный номер телефона' };
-        }
-
-        return { channel: 'sms', id: phone, phone };
-    }
-
-    return { error: 'Email или phone обязательны' };
+    timer.unref();
 }
+
+startOtpCleanupTask();
 
 async function handleSendOtp(req, res) {
     try {
-        const target = resolveOtpTarget(req);
-        if (target.error) {
-            return res.status(400).json({ error: target.error });
-        }
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        const ip = getClientIp(req);
 
         await otpService.ensureReady();
 
@@ -70,22 +101,58 @@ async function handleSendOtp(req, res) {
             return res.status(429).json({ error: 'Слишком много попыток. Попробуйте позже.' });
         }
 
-        if (issueResult.status === 'RATE_LIMIT') {
+        const ipRateLimit = await consumeRateLimit(`ip:${ip}`, OTP_RATE_LIMIT_IP_MAX, OTP_RATE_LIMIT_IP_WINDOW_MS);
+        if (ipRateLimit.limited) {
+            return res.status(429).json({
+                error: 'Слишком много попыток с этого IP. Попробуйте позже.',
+                retryAfterMs: ipRateLimit.retryAfterMs,
+            });
+        }
+
+        const emailRateLimit = await consumeRateLimit(`email:${email}`, OTP_RATE_LIMIT_EMAIL_MAX, OTP_RATE_LIMIT_EMAIL_WINDOW_MS);
+        if (emailRateLimit.limited) {
+            return res.status(429).json({
+                error: 'Слишком много запросов OTP для этого email. Попробуйте позже.',
+                retryAfterMs: emailRateLimit.retryAfterMs,
+            });
+        }
+
+        const existing = await prisma.otpCode.findUnique({ where: { email } });
+        if (existing?.lastSentAt && Date.now() - new Date(existing.lastSentAt).getTime() < OTP_RESEND_COOLDOWN_MS) {
             return res.status(429).json({ error: 'Подождите 10 секунд перед повторной отправкой' });
         }
 
-        const code = issueResult.code;
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        await prisma.otpCode.upsert({
+            where: { email },
+            create: {
+                email,
+                code,
+                attempts: 0,
+                expiresAt: new Date(Date.now() + OTP_TTL_MS),
+                lastSentAt: new Date(),
+            },
+            update: {
+                code,
+                attempts: 0,
+                expiresAt: new Date(Date.now() + OTP_TTL_MS),
+                lastSentAt: new Date(),
+            },
+        });
 
         try {
             if (target.channel === 'email') {
                 await sendOtpEmail({ to: target.email, code });
             }
         } catch (mailError) {
-            console.error('[Auth] Send OTP email error:', mailError);
-            if (shouldUseOtpFallback()) {
-                const payload = {
+            console.error('[Auth] Send OTP email error:', mailError?.message || mailError);
+
+            if (canUseDebugOtp(req)) {
+                return res.json({
                     success: true,
-                    message: 'OTP отправлен в debug-режиме',
+                    message: 'SMTP недоступен. OTP доступен в debug-режиме для локальной среды.',
+                    debugCode: code,
                     isDevFallback: true,
                 };
 
@@ -99,13 +166,14 @@ async function handleSendOtp(req, res) {
             return res.status(502).json({ error: 'Не удалось отправить OTP. Попробуйте позже.' });
         }
 
-        const payload = { success: true, message: 'OTP sent' };
-        if (shouldExposeDebugCode(req)) {
+        const payload = { success: true, message: 'OTP sent to email' };
+        if (canUseDebugOtp(req)) {
             payload.debugCode = code;
+            payload.isDevFallback = false;
         }
         return res.json(payload);
     } catch (err) {
-        console.error('[Auth] Send OTP email error:', err);
+        console.error('[Auth] Send OTP email error:', err?.message || err);
         return res.status(500).json({ error: 'Не удалось сгенерировать OTP' });
     }
 }
@@ -149,26 +217,45 @@ async function handleVerifyOtp(req, res) {
             return res.status(400).json({ error: 'Email/phone и code обязательны' });
         }
 
-        await otpService.ensureReady();
-        const verification = await otpService.verifyOtp(target.id, otp);
-
-        if (verification.status === 'NOT_FOUND') {
+        const otpData = await prisma.otpCode.findUnique({ where: { email } });
+        if (!otpData) {
             return res.status(400).json({ error: 'No OTP requested or code expired' });
         }
 
-        if (verification.status === 'REPLAY') {
-            return res.status(400).json({ error: 'OTP уже использован. Запросите новый код.' });
+        if (Date.now() > new Date(otpData.expiresAt).getTime()) {
+            await prisma.otpCode.delete({ where: { email } }).catch(() => null);
+            return res.status(400).json({ error: 'OTP code expired. Request a new one.' });
         }
 
-        if (verification.status === 'LOCKED') {
+        if (otpData.attempts >= OTP_MAX_ATTEMPTS) {
+            await prisma.otpCode.delete({ where: { email } }).catch(() => null);
             return res.status(403).json({ error: 'Too many failed attempts. Try later.' });
         }
 
-        if (verification.status === 'INVALID') {
-            return res.status(400).json({ error: `Invalid code. ${verification.remainingAttempts} attempts remaining.` });
+        const isValid = otpData.code === otp;
+
+        if (!isValid) {
+            const [attemptsUpdate] = await prisma.$queryRaw`
+                UPDATE otp_codes
+                SET "attempts" = "attempts" + 1,
+                    "updatedAt" = NOW()
+                WHERE "email" = ${email}
+                  AND "attempts" < ${OTP_MAX_ATTEMPTS}
+                RETURNING "attempts";
+            `;
+
+            const attemptsNow = Number(attemptsUpdate?.attempts || OTP_MAX_ATTEMPTS);
+            const attemptsRemaining = Math.max(OTP_MAX_ATTEMPTS - attemptsNow, 0);
+
+            if (attemptsRemaining === 0) {
+                await prisma.otpCode.delete({ where: { email } }).catch(() => null);
+                return res.status(403).json({ error: 'Too many failed attempts. Try later.' });
+            }
+
+            return res.status(400).json({ error: `Invalid code. ${attemptsRemaining} attempts remaining.` });
         }
 
-        const email = target.email || `phone:${target.phone}`;
+        await prisma.otpCode.delete({ where: { email } }).catch(() => null);
 
         let user = await prisma.user.findUnique({
             where: { email },
@@ -208,7 +295,7 @@ async function handleVerifyOtp(req, res) {
             },
         });
     } catch (err) {
-        console.error('[Auth] Verify error:', err);
+        console.error('[Auth] Verify error:', err?.message || err);
         res.status(500).json({ error: 'Verification failed' });
     }
 }

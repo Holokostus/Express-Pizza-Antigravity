@@ -3,11 +3,7 @@
 // ============================================================
 
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is missing.');
-}
+const { JWT_SECRET } = require('../utils/jwt');
 
 /**
  * Middleware: Requires a valid JWT token in Authorization header

@@ -136,6 +136,30 @@ model User {
   @@map("users")
 }
 
+model OtpCode {
+  email      String   @id
+  code       String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  lastSentAt DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+model OtpRateLimit {
+  key             String   @id
+  hits            Int      @default(0)
+  windowExpiresAt DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([windowExpiresAt])
+  @@map("otp_rate_limits")
+}
+
 
 // =====================================================================================
 // 2. RESTAURANT — Multi-location support
@@ -500,15 +524,15 @@ model PromoCode {
 //   Local SQLite queue → POST /api/sync/events → insert with idempotencyKey dedup
 //
 // Event types (defined in eventService.js):
-//   OrderPlaced, OrderConfirmed, OrderCooking, OrderReady, OrderDelivered, OrderCancelled
-//   PosSyncStarted, PosSyncSuccess, PosSyncFailed
-//   StockOut, StockBack
-//   PaymentReceived, PaymentFailed
+//   ORDER_PLACED, ORDER_CONFIRMED, ORDER_COOKING, ORDER_READY, ORDER_DELIVERY, ORDER_CANCELLED
+//   POS_SYNC_STARTED, POS_SYNC_SUCCESS, POS_SYNC_FAILED
+//   STOCK_OUT, STOCK_BACK
+//   PAYMENT_RECEIVED, PAYMENT_FAILED
 
 model EventLog {
   id              Int       @id @default(autoincrement())
   sequenceNum     BigInt    @unique @default(autoincrement()) // Monotonic sync cursor
-  eventType       String                                      // "OrderPlaced", "StockOut"
+  eventType       String                                      // Canonical event name, e.g. "ORDER_PLACED"
   aggregateType   String                                      // "Order", "Product", "Stock"
   aggregateId     String                                      // UUID or entity ID string
   payload         Json                                        // Full event data (JSONB)
@@ -529,8 +553,25 @@ model EventLog {
 }
 
 
+
 // =====================================================================================
-// 12. POS SYNC — Track synchronization status with POS systems
+// 12. CHECKOUT IDEMPOTENCY — Token store with TTL for order replay protection
+// =====================================================================================
+
+model CheckoutIdempotency {
+  id               Int      @id @default(autoincrement())
+  idempotencyKey   String   @unique
+  orderExternalId  String
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("checkout_idempotency")
+}
+
+
+// =====================================================================================
+// 13. POS SYNC — Track synchronization status with POS systems
 // =====================================================================================
 // One-to-one with Order. Tracks the lifecycle of pushing an order to iiko/r_keeper.
 // Used by posSyncService.js retry mechanism (retries up to 5 failed syncs).
