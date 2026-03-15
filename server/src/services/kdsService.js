@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const loyaltyService = require('./loyaltyService');
-const { JWT_SECRET } = require('../middleware/auth');
+const { appendEvent, EventTypes } = require('./eventService');
 
 let wss = null;
 
@@ -309,16 +309,14 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
         console.log(`[KDS] Order #${order.orderNumber} status updated to ${newStatus}`);
 
         // Log to Event Sourcing table
-        await prisma.eventLog.create({
-            data: {
-                eventType: 'ORDER_STATUS_CHANGED',
-                aggregateType: 'Order',
-                aggregateId: order.externalOrderId,
-                idempotencyKey: `status_${order.externalOrderId}_${newStatus}_${Date.now()}`,
-                restaurantId: order.restaurantId,
-                payload: { oldStatus: existingOrder.status, newStatus }
-            }
-        });
+        await appendEvent(
+            EventTypes.ORDER_STATUS_CHANGED,
+            'Order',
+            order.externalOrderId,
+            { oldStatus: existingOrder.status, newStatus },
+            { restaurantId: order.restaurantId },
+            `status_${order.externalOrderId}_${newStatus}_${Date.now()}`
+        );
 
         let loyaltyPoints = null;
 

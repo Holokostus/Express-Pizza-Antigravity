@@ -12,8 +12,78 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
 const { sendTelegramMessage } = require('../services/telegramService');
+const { appendEvent, EventTypes } = require('../services/eventService');
 
 const router = express.Router();
+const CHECKOUT_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+
+const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const ORDER_SOURCE_ENUM = ['WEBSITE', 'DELIVIO', 'WOLT', 'PHONE', 'LOCAL_NODE'];
+const PAYMENT_METHOD_ENUM = ['BEPAID_ONLINE', 'OPLATI_QR', 'CASH_IKASSA'];
+const PAYMENT_STATUS_ENUM = ['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED'];
+
+const SOURCE_LEGACY_ALIAS_MAP = {
+    web: 'WEBSITE',
+    website: 'WEBSITE',
+    site: 'WEBSITE',
+    delivio: 'DELIVIO',
+    wolt: 'WOLT',
+    phone: 'PHONE',
+    local_node: 'LOCAL_NODE',
+    localnode: 'LOCAL_NODE',
+    kiosk: 'LOCAL_NODE'
+};
+
+const PAYMENT_LEGACY_ALIAS_MAP = {
+    online: 'BEPAID_ONLINE',
+    card: 'BEPAID_ONLINE',
+    bepaid: 'BEPAID_ONLINE',
+    bepaid_online: 'BEPAID_ONLINE',
+    oplati: 'OPLATI_QR',
+    oplati_qr: 'OPLATI_QR',
+    qr: 'OPLATI_QR',
+    cash: 'CASH_IKASSA',
+    terminal: 'CASH_IKASSA',
+    cash_ikassa: 'CASH_IKASSA'
+};
+
+const PAYMENT_STATUS_LEGACY_ALIAS_MAP = {
+    pending: 'PENDING',
+    created: 'PENDING',
+    unpaid: 'PENDING',
+    paid: 'PAID',
+    success: 'PAID',
+    succeeded: 'PAID',
+    failed: 'FAILED',
+    error: 'FAILED',
+    cancelled: 'CANCELLED',
+    canceled: 'CANCELLED',
+    refunded: 'REFUNDED'
+};
+
+function normalizeEnumValue(value, aliasMap) {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed) return trimmed;
+
+    const normalizedKey = trimmed.toLowerCase();
+    if (aliasMap[normalizedKey]) {
+        return aliasMap[normalizedKey];
+    }
+
+    return trimmed.toUpperCase();
+}
+
+function normalizeCheckoutEnums(payload = {}) {
+    return {
+        ...payload,
+        source: normalizeEnumValue(payload.source, SOURCE_LEGACY_ALIAS_MAP),
+        payment: normalizeEnumValue(payload.payment, PAYMENT_LEGACY_ALIAS_MAP),
+        paymentMethod: normalizeEnumValue(payload.paymentMethod, PAYMENT_LEGACY_ALIAS_MAP),
+        paymentStatus: normalizeEnumValue(payload.paymentStatus, PAYMENT_STATUS_LEGACY_ALIAS_MAP)
+    };
+}
 
 /**
  * POST /api/orders/calculate
@@ -68,23 +138,28 @@ const checkoutSchema = z.object({
     items: z.array(z.any()).min(1, "Cart is empty"),
     promoCodeString: z.string().optional(),
     restaurantId: z.union([z.number().int(), z.string().regex(/^\d+$/).transform((v) => parseInt(v, 10))]).optional(),
-    source: z.string().optional(),
-    payment: z.string().optional(),
-    paymentMethod: z.string().optional(),
-    paymentStatus: z.string().optional(),
+    source: z.enum(ORDER_SOURCE_ENUM).optional(),
+    payment: z.enum(PAYMENT_METHOD_ENUM).optional(),
+    paymentMethod: z.enum(PAYMENT_METHOD_ENUM).optional(),
+    paymentStatus: z.enum(PAYMENT_STATUS_ENUM).optional(),
     transactionId: z.string().optional(),
     spentPoints: z.number().int().nonnegative().optional(),
-    clientOrderId: z.string().optional()
+    clientOrderId: z.string().uuid().refine((value) => uuidV4Regex.test(value), {
+        message: 'clientOrderId must be UUIDv4'
+    }).optional()
 }).refine(data => data.address || data.customerAddress, {
     message: "Address is required",
     path: ["address"]
 });
 
 router.post('/checkout', requireAuth, async (req, res) => {
+    let resolvedIdempotencyKey = null;
+
     try {
-        const validation = checkoutSchema.safeParse(req.body);
+        const normalizedPayload = normalizeCheckoutEnums(req.body);
+        const validation = checkoutSchema.safeParse(normalizedPayload);
         if (!validation.success) {
-            return res.status(400).json({ error: 'Invalid input data', details: validation.error.issues });
+            return res.status(422).json({ error: 'Validation failed', details: validation.error.issues });
         }
 
         const {
@@ -101,7 +176,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
             transactionId,
             spentPoints = 0,
             clientOrderId
-        } = req.body;
+        } = validation.data;
 
         const finalAddress = customerAddress || address;
 
@@ -128,26 +203,29 @@ router.post('/checkout', requireAuth, async (req, res) => {
             : await prisma.restaurant.findFirst({ where: { isActive: true } });
 
         // 2. Generate Idempotency Key
-        let idempotencyKey;
-        if (clientOrderId) {
-            idempotencyKey = "checkout_" + clientOrderId;
-        } else {
-            const timeWindow = Math.floor(Date.now() / 10000); // 10 second window
-            const hashInput = `${customerPhone}-${JSON.stringify(items)}-${timeWindow}`;
-            idempotencyKey = crypto.createHash('sha256').update(hashInput).digest('hex');
-        }
+        const requestToken = clientOrderId || crypto.randomBytes(32).toString('hex');
+        const idempotencyKey = `checkout_${requestToken}`;
+        resolvedIdempotencyKey = idempotencyKey;
+        const ttlExpiresAt = new Date(Date.now() + CHECKOUT_IDEMPOTENCY_TTL_MS);
 
-        // Check if EventLog already has this idempotency key (deduplication)
-        const duplicateEvent = await prisma.eventLog.findUnique({
+        // Check dedicated idempotency table first to avoid accidental long-term deduplication
+        const existingIdempotency = await prisma.checkoutIdempotency.findUnique({
             where: { idempotencyKey }
         });
 
-        if (duplicateEvent) {
-            console.log(`[Order] Debounced duplicate order`);
+        if (existingIdempotency && existingIdempotency.expiresAt > new Date() && existingIdempotency.orderExternalId) {
+            console.log(`[Order] Idempotent replay detected for key ${idempotencyKey}`);
             return res.status(200).json({
                 success: true,
                 message: 'Order already processed',
-                orderId: duplicateEvent.aggregateId // Returned UUID of existing order
+                orderId: existingIdempotency.orderExternalId,
+                idempotentReplay: true
+            });
+        }
+
+        if (existingIdempotency && existingIdempotency.expiresAt <= new Date()) {
+            await prisma.checkoutIdempotency.delete({
+                where: { idempotencyKey }
             });
         }
 
@@ -155,7 +233,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const externalOrderId = crypto.randomUUID();
 
         // 3. Prisma $transaction (Atomicity)
-        const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
+        const [createdOrder] = await prisma.$transaction(async (tx) => {
             
             let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
             
@@ -236,24 +314,31 @@ router.post('/checkout', requireAuth, async (req, res) => {
             }
 
             // C. Create EventLog entry (Event Sourcing)
-            const event = await tx.eventLog.create({
+            const event = await appendEvent(
+                EventTypes.ORDER_PLACED,
+                'Order',
+                externalOrderId,
+                order, // The snapshot of the order at creation time
+                { restaurantId: restaurant?.id ?? null },
+                idempotencyKey,
+                tx
+            );
+
+            await tx.checkoutIdempotency.create({
                 data: {
-                    eventType: 'ORDER_PLACED',
-                    aggregateType: 'Order',
-                    aggregateId: externalOrderId,
                     idempotencyKey,
-                    restaurantId: restaurant?.id ?? null,
-                    payload: order // The snapshot of the order at creation time
+                    orderExternalId: externalOrderId,
+                    expiresAt: ttlExpiresAt
                 }
             });
 
-            return [order, event];
+            return [order];
         });
 
         // 4. Integrations: Payments & Notifications
         let checkoutUrl = null;
 
-        if ((payment === 'BEPAID_ONLINE' || payment === 'OPLATI_QR') && paymentStatus !== 'paid') {
+        if ((payment === 'BEPAID_ONLINE' || payment === 'OPLATI_QR') && paymentStatus !== 'PAID') {
             // Generate bePaid payment URL
             checkoutUrl = await createPaymentSession(createdOrder.externalOrderId, createdOrder.total, {
                 name: customerName,
@@ -291,11 +376,32 @@ router.post('/checkout', requireAuth, async (req, res) => {
             total: createdOrder.total,
             status: createdOrder.status,
             checkoutUrl, // Will be null for CASH
-            message: 'Order placed, event logged'
+            message: 'Order placed, event logged',
+            idempotentReplay: false
         });
 
     } catch (error) {
+        const uniqueTarget = Array.isArray(error.meta?.target) ? error.meta.target.join(',') : String(error.meta?.target || '');
+
+        if (error.code === 'P2002' && resolvedIdempotencyKey && uniqueTarget.includes('idempotencyKey')) {
+            const duplicate = await prisma.checkoutIdempotency.findUnique({
+                where: { idempotencyKey: resolvedIdempotencyKey }
+            });
+
+            if (duplicate?.orderExternalId) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Order already processed',
+                    orderId: duplicate.orderExternalId,
+                    idempotentReplay: true
+                });
+            }
+        }
+
         console.error('[Checkout Error]', error);
+        if (error instanceof z.ZodError) {
+            return res.status(422).json({ error: 'Validation failed', details: error.issues });
+        }
         res.status(400).json({ error: error.message || 'Checkout failed' });
     }
 });
@@ -426,3 +532,10 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
 });
 
 module.exports = router;
+module.exports.__test = {
+    checkoutSchema,
+    normalizeCheckoutEnums,
+    ORDER_SOURCE_ENUM,
+    PAYMENT_METHOD_ENUM,
+    PAYMENT_STATUS_ENUM
+};
