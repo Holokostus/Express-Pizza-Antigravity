@@ -12,6 +12,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const prisma = require('./lib/prisma');
+const { products } = require('../prisma/menu-data');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -154,6 +155,26 @@ app.get('/api/categories', async (req, res) => {
         res.json(categories);
     } catch (err) {
         res.status(500).json({ error: 'Ошибка загрузки категорий' });
+    }
+});
+
+app.get('/api/fix-descriptions', async (req, res) => {
+    try {
+        const targetProducts = products.filter((product) => (
+            ['drinks', 'juice', 'togo'].includes(product.categorySlug) && Boolean(product.description)
+        ));
+
+        for (const product of targetProducts) {
+            await prisma.product.updateMany({
+                where: { name: product.name },
+                data: { description: product.description },
+            });
+        }
+
+        res.json({ success: true, message: 'Описания товаров успешно обновлены в базе данных!' });
+    } catch (err) {
+        console.error('❌ Ошибка обновления описаний товаров:', err);
+        res.status(500).json({ success: false, error: 'Не удалось обновить описания товаров.' });
     }
 });
 
