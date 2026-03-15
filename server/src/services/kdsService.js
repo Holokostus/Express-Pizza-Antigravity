@@ -298,15 +298,17 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
             throw new Error(`Invalid status transition: ${existingOrder.status} -> ${newStatus}`);
         }
 
+        assertAllowedStatusTransition(existingOrder.status, normalizedStatus);
+
         const order = await prisma.order.update({
             where: { id: normalizedOrderId },
             data: {
-                status: newStatus,
-                completedAt: newStatus === 'COMPLETED' ? new Date() : null
+                status: normalizedStatus,
+                completedAt: normalizedStatus === 'COMPLETED' ? new Date() : null
             }
         });
 
-        console.log(`[KDS] Order #${order.orderNumber} status updated to ${newStatus}`);
+        console.log(`[KDS] Order #${order.orderNumber} status updated to ${normalizedStatus}`);
 
         // Log to Event Sourcing table
         await appendEvent(
@@ -320,7 +322,7 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
 
         let loyaltyPoints = null;
 
-        if (newStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
+        if (normalizedStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
             const baseAmount = Math.max(0, Number(existingOrder.total ?? 0));
             const cashbackAmount = Math.floor(baseAmount * 0.05);
 
@@ -344,7 +346,7 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
         broadcastStatusSync(order.restaurantId, {
             orderId: order.id,
             externalOrderId: order.externalOrderId,
-            status: newStatus,
+            status: normalizedStatus,
             userId: existingOrder.userId,
             loyaltyPoints
         });

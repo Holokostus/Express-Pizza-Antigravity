@@ -8,6 +8,7 @@ const { calculateCartTotal } = require('../services/cartService');
 const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
+const { normalizeOrderStatus, assertKnownOrderStatus, assertAllowedStatusTransition } = require('../services/orderStatusPolicy');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
@@ -515,15 +516,8 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
             return res.status(400).json({ error: 'Invalid orderId or status' });
         }
 
-        const statusMap = {
-            'new': 'NEW',
-            'cooking': 'COOKING',
-            'baking': 'BAKING',
-            'delivery': 'DELIVERY',
-            'completed': 'COMPLETED',
-            'cancelled': 'CANCELLED'
-        };
-        const dbStatus = statusMap[status.toLowerCase()] || status.toUpperCase();
+        const dbStatus = normalizeOrderStatus(status);
+        assertKnownOrderStatus(dbStatus);
 
         const order = await prisma.order.findUnique({
             where: { id: orderId },
@@ -539,11 +533,16 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
             return res.status(404).json({ error: 'Order not found' });
         }
 
+        assertAllowedStatusTransition(order.status, dbStatus);
+
         await updateOrderStatus(orderId, dbStatus);
 
         res.json({ success: true, status: dbStatus });
     } catch (err) {
         console.error('[Admin Status Update]', err);
+        if (err.statusCode === 400) {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to update order status' });
     }
 });
