@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { verifyWebhookSignature } = require('../services/paymentService');
+const { verifyWebhookSignature, isWebhookSecretConfigured } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
+const { appendEvent, EventTypes } = require('../services/eventService');
 
 // ============================================================
 // Express Pizza — Payments Webhook Router (Sprint 3)
@@ -15,20 +16,38 @@ const prisma = require('../lib/prisma');
  */
 // Use express.text() or raw-body to get exactly the raw payload for HMAC verification
 router.post('/webhook', async (req, res) => {
-    try {
-        const signature = req.headers['content-signature'];
-        const rawBody = req.rawBody; // raw buffer from express.json verify
+    const signature = req.headers['content-signature'];
+    const rawBody = req.rawBody; // raw buffer from express.json verify
+
+        if (!isWebhookSecretConfigured()) {
+            console.error('[Webhook] BEPAID_WEBHOOK_SECRET is not configured. Rejecting webhook.');
+            return res.status(500).json({ error: 'Webhook verification misconfigured' });
+        }
 
         // 1. Verify HMAC Signature
-        if (!verifyWebhookSignature(rawBody, signature)) {
-            console.warn('[Webhook] Invalid bePaid signature!');
+        const verification = verifyWebhookSignature(rawBody, signature);
+        if (!verification.isValid) {
+            console.warn(`[Webhook] Invalid bePaid signature (reason: ${verification.reason})`);
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const payload = JSON.parse(rawBody?.toString?.() || '{}');
+        const payloadString = rawBody?.toString?.();
+        if (!payloadString) {
+            console.warn('[Webhook] Rejected webhook: empty payload');
+            return res.status(400).json({ error: 'Malformed payload' });
+        }
+
+        let payload;
+        try {
+            payload = JSON.parse(payloadString);
+        } catch (parseError) {
+            console.warn('[Webhook] Rejected webhook: invalid JSON payload');
+            return res.status(400).json({ error: 'Malformed payload' });
+        }
         const transaction = payload.transaction;
 
         if (!transaction) {
+            console.warn('[Webhook] Rejected webhook: missing transaction object');
             return res.status(400).json({ error: 'Malformed payload' });
         }
 
@@ -52,25 +71,27 @@ router.post('/webhook', async (req, res) => {
             // Only update if not already processed
             if (order.status !== 'CONFIRMED' && order.status !== 'COOKING') {
 
-                const [updatedOrder] = await prisma.$transaction([
+                const updatedOrder = await prisma.$transaction(async (tx) => {
                     // A. Update Order Status
-                    prisma.order.update({
+                    const updated = await tx.order.update({
                         where: { externalOrderId },
                         data: { status: 'CONFIRMED' }, // Moving to confirmed after payment
                         include: { items: { include: { product: true, productSize: true, modifiers: { include: { modifier: true } } } } }
-                    }),
+                    });
+
                     // B. Log Event
-                    prisma.eventLog.create({
-                        data: {
-                            eventType: 'PAYMENT_RECEIVED',
-                            aggregateType: 'Order',
-                            aggregateId: externalOrderId,
-                            idempotencyKey: `pay_${externalOrderId}_${Date.now()}`,
-                            restaurantId: order.restaurantId,
-                            payload: { transactionId: transaction.uid, amount: transaction.amount }
-                        }
-                    })
-                ]);
+                    await appendEvent(
+                        EventTypes.PAYMENT_RECEIVED,
+                        'Order',
+                        externalOrderId,
+                        { transactionId: transaction.uid, amount: transaction.amount },
+                        { restaurantId: order.restaurantId },
+                        `pay_${externalOrderId}_${Date.now()}`,
+                        tx
+                    );
+
+                    return updated;
+                });
 
                 console.log(`[Webhook] Order ${updatedOrder.orderNumber} marked as PAID/CONFIRMED`);
 
@@ -79,22 +100,21 @@ router.post('/webhook', async (req, res) => {
             }
         } else if (status === 'failed' || status === 'declined') {
             // Log failed payment event
-            await prisma.eventLog.create({
-                data: {
-                    eventType: 'PAYMENT_FAILED',
-                    aggregateType: 'Order',
-                    aggregateId: externalOrderId,
-                    idempotencyKey: `payfail_${externalOrderId}_${Date.now()}`,
-                    payload: { reason: transaction.message }
-                }
-            });
+            await appendEvent(
+                EventTypes.PAYMENT_FAILED,
+                'Order',
+                externalOrderId,
+                { reason: transaction.message },
+                null,
+                `payfail_${externalOrderId}_${Date.now()}`
+            );
         }
 
         // Always reply 200 OK to acknowledge receipt
         res.status(200).send('OK');
 
     } catch (error) {
-        console.error('[Webhook Processing Error]', error);
+        console.error('[Webhook Processing Error]', error.message);
         res.status(500).send('Internal Error');
     }
 });

@@ -19,25 +19,49 @@ const { appendEvent, EventTypes } = require('../services/eventService');
 // Webhook Signature Verification
 // ============================================================
 
-function verifySignature(rawBody, signature, secret) {
-    const normalizedSecret = typeof secret === 'string' ? secret.trim() : '';
+function normalizeSignature(signature) {
+    if (typeof signature !== 'string') return '';
 
-    if (!normalizedSecret || normalizedSecret.startsWith('change-me')) {
-        return { isValid: false, isMisconfigured: true };
+    const normalized = signature.trim().toLowerCase();
+    return normalized.startsWith('sha256=') ? normalized.slice(7) : normalized;
+}
+
+function verifySignature(rawBody, signature, secret) {
+    if (!secret || secret.startsWith('change-me')) {
+        return { ok: false, configError: true, reason: 'missing_or_placeholder_secret' };
     }
 
-    const expected = crypto.createHmac('sha256', normalizedSecret).update(rawBody).digest('hex');
-    const expectedBuffer = Buffer.from(expected, 'utf8');
-    const signatureBuffer = Buffer.from(String(signature || ''), 'utf8');
+    const normalizedSignature = normalizeSignature(signature);
+    if (!/^[0-9a-f]+$/.test(normalizedSignature) || normalizedSignature.length % 2 !== 0) {
+        return { ok: false, configError: false, reason: 'invalid_signature_format' };
+    }
 
-    if (expectedBuffer.length !== signatureBuffer.length) {
-        return { isValid: false, isMisconfigured: false };
+    const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const providedBuffer = Buffer.from(normalizedSignature, 'hex');
+
+    if (expectedBuffer.length !== providedBuffer.length) {
+        return { ok: false, configError: false, reason: 'signature_length_mismatch' };
     }
 
     return {
-        isValid: crypto.timingSafeEqual(expectedBuffer, signatureBuffer),
-        isMisconfigured: false,
+        ok: crypto.timingSafeEqual(expectedBuffer, providedBuffer),
+        configError: false,
+        reason: 'signature_mismatch',
     };
+}
+
+async function logInvalidSignature(channel, reason, req) {
+    console.error(`[${channel}] Invalid signature (${reason})`, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || 'unknown',
+    });
+
+    await appendEvent(EventTypes.AGGREGATOR_INVALID_SIGNATURE, 'AggregatorWebhook', channel, {
+        reason,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || 'unknown',
+    }, { source: channel }).catch(() => { });
 }
 
 // ============================================================
@@ -54,22 +78,26 @@ router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) =
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-delivio-signature'] || '';
 
-        const verification = verifySignature(rawBody, sig, channel.webhookSecret);
-        if (verification.isMisconfigured) {
-            console.error('[Delivio] Misconfiguration: aggregator_channels.webhookSecret is empty or default. Rejecting webhook.');
-            return res.status(500).json({ error: 'Webhook channel misconfiguration' });
+        const signatureCheck = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (signatureCheck.configError) {
+            console.error('[Delivio] Webhook secret is not configured correctly.');
+            return res.status(503).json({ error: 'Webhook misconfigured: missing or placeholder secret' });
         }
 
-        if (!verification.isValid) {
+        if (!signatureCheck.ok) {
+            await logInvalidSignature('delivio', signatureCheck.reason, req);
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
         const payload = JSON.parse(rawBody);
         const normalized = normalizeDelivioOrder(payload);
 
-        const order = await createOrderFromAggregator(normalized, 'DELIVIO');
+        const result = await createOrderFromAggregator(normalized, 'DELIVIO');
+        if (!result.created) {
+            return res.status(200).json({ status: 'skipped', reason: result.reason, externalId: normalized.externalId });
+        }
 
-        res.json({ status: 'accepted', orderId: order.id });
+        res.json({ status: 'accepted', orderId: result.order.id });
     } catch (err) {
         console.error('[Delivio] Webhook error:', err);
         res.status(200).json({ status: 'error', message: err.message });
@@ -90,22 +118,26 @@ router.post('/wolt/webhook', express.raw({ type: '*/*' }), async (req, res) => {
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-wolt-signature'] || '';
 
-        const verification = verifySignature(rawBody, sig, channel.webhookSecret);
-        if (verification.isMisconfigured) {
-            console.error('[Wolt] Misconfiguration: aggregator_channels.webhookSecret is empty or default. Rejecting webhook.');
-            return res.status(500).json({ error: 'Webhook channel misconfiguration' });
+        const signatureCheck = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (signatureCheck.configError) {
+            console.error('[Wolt] Webhook secret is not configured correctly.');
+            return res.status(503).json({ error: 'Webhook misconfigured: missing or placeholder secret' });
         }
 
-        if (!verification.isValid) {
+        if (!signatureCheck.ok) {
+            await logInvalidSignature('wolt', signatureCheck.reason, req);
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
         const payload = JSON.parse(rawBody);
         const normalized = normalizeWoltOrder(payload);
 
-        const order = await createOrderFromAggregator(normalized, 'WOLT');
+        const result = await createOrderFromAggregator(normalized, 'WOLT');
+        if (!result.created) {
+            return res.status(200).json({ status: 'skipped', reason: result.reason, externalId: normalized.externalId });
+        }
 
-        res.json({ status: 'accepted', orderId: order.id });
+        res.json({ status: 'accepted', orderId: result.order.id });
     } catch (err) {
         console.error('[Wolt] Webhook error:', err);
         res.status(200).json({ status: 'error', message: err.message });
@@ -189,6 +221,16 @@ async function createOrderFromAggregator(normalized, source) {
 
     const productMap = new Map(products.map(p => [p.posExternalId, p]));
 
+    const unmatchedPosExternalIds = [...new Set(
+        normalized.items
+            .map(item => item.posExternalId)
+            .filter(id => id !== null && id !== undefined && !productMap.has(id))
+    )];
+
+    if (unmatchedPosExternalIds.length > 0) {
+        console.warn(`[Aggregator] ${source} unmapped posExternalId values:`, unmatchedPosExternalIds);
+    }
+
     const items = [];
     for (const item of normalized.items) {
         const product = item.posExternalId ? productMap.get(item.posExternalId) : null;
@@ -208,6 +250,24 @@ async function createOrderFromAggregator(normalized, source) {
         });
     }
 
+    const validItems = items.filter(i => i.productId && i.productSizeId);
+
+    if (validItems.length === 0) {
+        console.warn(
+            `[Aggregator] Skipping ${source} order ${normalized.externalId}: no valid items after product mapping`,
+            { unmatchedPosExternalIds }
+        );
+
+        return {
+            created: false,
+            reason: 'no_valid_items',
+        };
+    }
+
+    const calculatedSubtotal = validItems.reduce((sum, item) => {
+        return sum + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+    }, 0);
+
     // Create order
     const order = await prisma.order.create({
         data: {
@@ -218,13 +278,12 @@ async function createOrderFromAggregator(normalized, source) {
             customerAddress: normalized.customerAddress,
             payment: normalized.payment,
             status: 'NEW',
-            subtotal: normalized.total,
+            subtotal: calculatedSubtotal,
             discount: 0,
-            total: normalized.total,
+            total: calculatedSubtotal,
             restaurantId: restaurant?.id || null,
             items: {
-                create: items
-                    .filter(i => i.productId && i.productSizeId)
+                create: validItems
                     .map(i => ({
                         productId: i.productId,
                         productSizeId: i.productSizeId,
@@ -249,7 +308,7 @@ async function createOrderFromAggregator(normalized, source) {
 
     // Event log
     await appendEvent(EventTypes.ORDER_PLACED, 'Order', order.externalOrderId, {
-        orderId: order.id, source, total: normalized.total,
+        orderId: order.id, source, total: order.total,
     }, { source }).catch(() => { });
 
     // Auto-forward to POS (non-blocking)
@@ -258,7 +317,7 @@ async function createOrderFromAggregator(normalized, source) {
     // Notify manager (non-blocking)
     notifyNewOrder(order).catch(err => console.error(`[Telegram] Notify error:`, err));
 
-    return order;
+    return { created: true, order };
 }
 
 module.exports = router;

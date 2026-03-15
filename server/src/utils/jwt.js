@@ -4,10 +4,21 @@
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is missing.');
+function getJwtSecret() {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (jwtSecret) return jwtSecret;
+
+    if (process.env.NODE_ENV === 'test') {
+        return 'test_jwt_secret';
+    }
+
+    throw new Error(
+        `FATAL: JWT_SECRET environment variable is missing (NODE_ENV=${process.env.NODE_ENV || 'undefined'}). `
+        + 'Set JWT_SECRET before starting the server.'
+    );
 }
+
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = '7d';
 
 /**

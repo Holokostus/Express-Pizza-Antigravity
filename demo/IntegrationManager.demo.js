@@ -1,3 +1,7 @@
+// DEPRECATED / DEMO-ONLY: This file is intentionally excluded from production bundle.
+// It contains mock adapters and console-based simulation for integration demos only.
+// Do not use as a real integration implementation.
+
 // ============================================================
 // Express Pizza — Integration Hub (Adapter Pattern + Event Bus)
 // ============================================================
