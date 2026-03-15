@@ -107,6 +107,54 @@ function buildSearchQuery(item) {
     return `${item.name} ${item.groupName || 'допы'} ${modifierType} isolated on white background`;
 }
 
+
+function buildForcedRefetchQuery(productName) {
+    const normalizedName = String(productName || '').trim().toLowerCase();
+    if (normalizedName.includes('трофей победителя')) {
+        return 'комбо набор пицца и напитки фото +"на белом фоне изолированный" -watermark -checkerboard -stock';
+    }
+
+    return `${productName} +"на белом фоне изолированный" -watermark -checkerboard -stock`;
+}
+
+async function refetchBadProductImages() {
+    const flaggedNames = ['Баварская', 'Хуторская', 'Трофей победителя'];
+    const products = await prisma.product.findMany({
+        where: {
+            OR: [
+                { name: { in: flaggedNames } },
+                { image: { contains: 'watermark' } },
+                { image: { contains: 'checkerboard' } },
+                { image: { contains: 'stock' } },
+                { image: { contains: 'shutterstock' } },
+                { image: { contains: 'getty' } },
+                { image: { contains: 'adobe' } },
+            ],
+        },
+        select: { id: true, name: true },
+    });
+
+    for (const product of products) {
+        const query = buildForcedRefetchQuery(product.name);
+        try {
+            const foundUrl = await findImageUrl(query);
+            if (!/^https?:\/\//i.test(foundUrl)) {
+                throw new Error('Found URL is not absolute');
+            }
+
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { image: foundUrl },
+            });
+            console.log(`✅ Re-fetched bad image for product#${product.id} (${product.name})`);
+        } catch (error) {
+            console.warn(`⚠️ Re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+}
+
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
         return true;
@@ -226,5 +274,6 @@ async function triggerImageFetchJobByAdmin({ initiatorId, initiatorRole, ipAddre
 module.exports = {
     isImageFetchEndpointEnabled,
     triggerImageFetchJobByAdmin,
+    refetchBadProductImages,
     JobConflictError,
 };

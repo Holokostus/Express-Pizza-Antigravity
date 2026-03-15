@@ -53,7 +53,7 @@ const stockService = require('./services/stockService');
 const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
-const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, JobConflictError } = require('./services/adminImageFetchService');
+const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, refetchBadProductImages, JobConflictError } = require('./services/adminImageFetchService');
 
 const rateLimit = require('express-rate-limit');
 const { requireAuth, checkRole } = require('./middleware/auth');
@@ -89,6 +89,19 @@ app.use('/api/admin', requireAuth, checkRole(['ADMIN']), adminRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/promotions', promotionsRoutes);
 
+
+
+app.get('/api/refetch-bad-images', async (req, res) => {
+    res.json({ success: true, message: 'Бракованные фото отправлены на перекачку' });
+
+    setImmediate(async () => {
+        try {
+            await refetchBadProductImages();
+        } catch (error) {
+            console.error('❌ Failed to re-fetch bad product images:', error);
+        }
+    });
+});
 
 
 // ---- Health Check ----

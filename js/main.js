@@ -1,7 +1,7 @@
 // ============================================================
 // Express Pizza — main.js (Module 4/4)
 // ============================================================
-// Boot logic, OTP flow, event wiring.
+// Boot logic, confirmation code flow, event wiring.
 // Depends on: api.js, ui.js, cart.js (loaded first)
 // ============================================================
 
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ── OTP Flow ──
+    // ── Confirmation code flow ──
     const orderForm = $('order-form');
     let selectedPaymentMethod = 'cash';
 
@@ -103,9 +103,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const otpInput = $('otp-input');
             if (otpInput) otpInput.focus();
         } catch (err) {
-            console.error('[OTP] Send email error:', err);
-            const backendDetails = err?.message || 'Ошибка отправки кода';
-            showAppModal(`Ошибка отправки кода: ${backendDetails}`, 'Ошибка');
+            console.error('[Auth] Send confirmation code error:', err);
+            const backendDetails = err?.message || 'Не удалось отправить код подтверждения. Проверьте email и попробуйте позже';
+            showAppModal(backendDetails, 'Ошибка');
             showToast('error', backendDetails);
             if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
         }
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const name = $('user-name') ? $('user-name').value : '';
 
         if (!code || code.length < 4) {
-            showToast('error', 'Введите 4-значный код');
+            showToast('error', 'Введите 4-значный код подтверждения');
             return;
         }
 
