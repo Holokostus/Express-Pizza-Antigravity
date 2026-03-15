@@ -158,10 +158,10 @@ router.post('/checkout', optionalAuth, async (req, res) => {
 
     try {
         const normalizedPayload = normalizeCheckoutEnums(req.body);
-        const isOtpFallbackCheckout = normalizedPayload.otpFallback === true || normalizedPayload.otpFallback === 'true';
+        const isGuestCheckout = !req.user;
 
-        if (!req.user && !isOtpFallbackCheckout) {
-            return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+        if (isGuestCheckout && !normalizedPayload.customerPhone) {
+            return res.status(422).json({ error: 'Validation failed', details: [{ path: ['customerPhone'], message: 'Phone is required for guest checkout' }] });
         }
 
         const validation = checkoutSchema.safeParse(normalizedPayload);
