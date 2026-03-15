@@ -58,6 +58,7 @@ The Admin dashboard (`admin.html`) is secured by JWT and requires the `ADMIN` da
 
 ## 📡 Integrations Configuration
 
+*   **Demo-only integrations:** `demo/IntegrationManager.demo.js` and `demo/api-integrations.demo.js` are **deprecated/demo-only** mocks. They are intentionally excluded from `index.html` production scripts to avoid accidental use as working integrations.
 *   **CORS:** By default, Express is configured with `cors()` with wide-open origins for MVP phase. Secure this in `app.use(cors({ origins: [...] }))` prior to serious production load.
 *   **Payments (bePaid):** Ensure `BEPAID_SHOP_ID` and `BEPAID_SECRET_KEY` are placed in `.env` to enable secure card acquiring sessions.
 *   **KDS (Kitchen Display System):** The dashboard relies on `ws` / `socket.io` for real-time kitchen tracking.

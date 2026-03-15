@@ -251,17 +251,10 @@ window.addEventListener('online', async () => {
             const tempId = order._tempId;
             delete order._tempId;
 
-            const res = await fetch(`${API_BASE}/api/orders/checkout`, {
+            const data = await api('/api/orders/checkout', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': authToken ? `Bearer ${authToken}` : ''
-                },
                 body: JSON.stringify(order)
             });
-            
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Sync Failed');
             
             showToast('success', `Ваш офлайн-заказ успешно отправлен на кухню!`);
             if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', data.order);
