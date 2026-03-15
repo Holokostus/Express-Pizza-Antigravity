@@ -511,8 +511,25 @@ model EventLog {
 }
 
 
+
 // =====================================================================================
-// 12. POS SYNC — Track synchronization status with POS systems
+// 12. CHECKOUT IDEMPOTENCY — Token store with TTL for order replay protection
+// =====================================================================================
+
+model CheckoutIdempotency {
+  id               Int      @id @default(autoincrement())
+  idempotencyKey   String   @unique
+  orderExternalId  String
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("checkout_idempotency")
+}
+
+
+// =====================================================================================
+// 13. POS SYNC — Track synchronization status with POS systems
 // =====================================================================================
 // One-to-one with Order. Tracks the lifecycle of pushing an order to iiko/r_keeper.
 // Used by posSyncService.js retry mechanism (retries up to 5 failed syncs).
