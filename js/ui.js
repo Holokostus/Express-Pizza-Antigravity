@@ -79,12 +79,31 @@ function renderMenu() {
                     <button onclick="event.stopPropagation(); addToCart(${item.id})"
                         class="menu-card-add-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl transition-all active:scale-95 text-sm"
                         aria-label="Добавить в корзину ${escapeHtml(item.name)} за ${parseFloat(activeSize.price).toFixed(2)} BYN">
-                        В корзину · ${parseFloat(activeSize.price).toFixed(2)} BYN
+                        <span class="menu-card-add-btn-desktop">В корзину</span><span class="menu-card-add-btn-mobile" aria-hidden="true">+</span>
                     </button>
                 </div>
             </div>
         </div>`;
     }).join('');
+}
+
+
+function updateLoyaltyBalanceVisual(points = 0) {
+    const safePoints = Number(points) || 0;
+    const headerBadge = $('coins-header-badge');
+    const cartLine = $('cart-coins-line');
+
+    const isZero = safePoints <= 0;
+
+    if (headerBadge) {
+        headerBadge.classList.toggle('balance-neutral', isZero);
+        headerBadge.classList.toggle('balance-positive', !isZero);
+    }
+
+    if (cartLine) {
+        cartLine.classList.toggle('balance-neutral', isZero);
+        cartLine.classList.toggle('balance-positive', !isZero);
+    }
 }
 
 // ── Render Category Tabs ──
@@ -255,6 +274,7 @@ function showOrderTracker(orderId) {
                         const cartCoinsEl = document.getElementById('cart-coins-val');
                         if (coinsEl) coinsEl.textContent = loyaltyPoints;
                         if (cartCoinsEl) cartCoinsEl.textContent = loyaltyPoints;
+                        updateLoyaltyBalanceVisual(loyaltyPoints);
                         window.userLoyaltyPoints = loyaltyPoints;
                     }
                 }
@@ -444,7 +464,8 @@ async function renderProfileView() {
         const cartCoinsEl = document.getElementById('cart-coins-val');
         if (coinsEl) coinsEl.textContent = coins;
         if (cartCoinsEl) cartCoinsEl.textContent = coins;
-        
+        updateLoyaltyBalanceVisual(coins);
+
         // Expose globally for cart use
         window.userLoyaltyPoints = coins;
 

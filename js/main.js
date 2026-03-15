@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const btn = $('btn-request-otp');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Отправка кода...'; }
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Отправляем код...'; }
 
         try {
             await api('/api/auth/send-email', {
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const verifyBtn = $('btn-verify-otp');
-        if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Проверка...'; }
+        if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.innerHTML = 'Проверяем код...'; }
 
         try {
             const authResult = await api('/api/auth/verify', {
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await window.simulateSandboxCardPayment(checkoutTotal);
             }
 
-            if (verifyBtn) verifyBtn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Оформляем...';
+            if (verifyBtn) verifyBtn.innerHTML = 'Оформляем заказ...';
 
             const payload = {
                 items: cart.map(i => ({
