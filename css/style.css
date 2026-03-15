@@ -237,12 +237,18 @@ html {
 
 /* Dodo-style segmented control */
 .segmented-control {
-    background: #f3f4f6;
+    background: #e5e7eb;
     border-radius: 9999px;
     display: inline-flex;
     padding: 4px;
     width: 100%;
     gap: 4px;
+    border: 1px solid #d1d5db;
+}
+
+[data-theme="dark"] .segmented-control {
+    background: #1f2937;
+    border-color: #374151;
 }
 
 .segment-option {
@@ -251,12 +257,16 @@ html {
     padding: 8px 16px;
     border-radius: 9999px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     color: #4b5563;
-    transition: 0.3s;
+    transition: 0.2s;
     border: none;
     background: transparent;
     position: relative;
+}
+
+[data-theme="dark"] .segment-option {
+    color: #d1d5db;
 }
 
 .segment-option input {
@@ -271,9 +281,9 @@ html {
 
 .segment-option.is-active,
 .segment-option:has(input:checked) {
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: #000;
+    background: #ef4444;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+    color: #fff;
 }
 
 /* Dodo-style modifier tiles */
