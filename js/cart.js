@@ -476,9 +476,10 @@ window.openCustomizer = (itemId) => {
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="card-content modifier-card-inner">
                                 <span class="modifier-checkmark">✓</span>
-                                <img src="${window.resolveModifierImage(m)}" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px;" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+                                <img src="${window.resolveModifierImage(m)}" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
                                 <span class="name">${m.name}</span>
-                                <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} р.</span>
+                                <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} BYN</span>
+                                <span class="tap-hint">Нажмите, чтобы добавить</span>
                             </div>
                         </label>
                     `).join('')}
@@ -631,6 +632,7 @@ window.addCustomizedItem = () => {
         image: currentCustomizerItem.image || '',
         weight: size.weight,
         modifierNames,
+        categorySlug: currentCustomizerItem.categorySlug,
     };
 
     try {
@@ -660,7 +662,8 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
         document.body.appendChild(modal);
     }
 
-    const amount = Number(total || 0).toFixed(2);
+    const parsedTotal = Number(total || 0);
+    const amount = Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal.toFixed(2) : '0.00';
 
     modal.className = 'fixed inset-0 z-[300] flex items-center justify-center opacity-0 transition-opacity duration-300';
     modal.innerHTML = `
@@ -674,16 +677,16 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
             <div class="space-y-3">
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
                     <label for="sandbox-card-number" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">Номер карты</label>
-                    <input id="sandbox-card-number" maxlength="19" inputmode="numeric" placeholder="0000 0000 0000 0000" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+                    <input id="sandbox-card-number" maxlength="19" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%; color: #111827; caret-color: #ef4444;" class="sandbox-pay-field font-mono">
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label for="sandbox-card-exp" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">Срок</label>
-                            <input id="sandbox-card-exp" maxlength="5" inputmode="numeric" placeholder="MM/YY" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+                            <input id="sandbox-card-exp" maxlength="5" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%; color: #111827; caret-color: #ef4444;" class="sandbox-pay-field font-mono">
                         </div>
                         <div>
                             <label for="sandbox-card-cvc" style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold;">CVC</label>
-                            <input id="sandbox-card-cvc" maxlength="3" inputmode="numeric" placeholder="123" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%;" class="sandbox-pay-field font-mono">
+                            <input id="sandbox-card-cvc" maxlength="3" inputmode="numeric" autocomplete="cc-csc" placeholder="123" style="border: none; border-bottom: 2px solid #e2e8f0; background: transparent; font-size: 16px; padding: 8px 0; outline: none; transition: 0.3s; width: 100%; color: #111827; caret-color: #ef4444;" class="sandbox-pay-field font-mono">
                         </div>
                     </div>
                 </div>
@@ -712,6 +715,10 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
         el.addEventListener('blur', () => {
             el.style.borderBottomColor = '#e2e8f0';
         });
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+            el.style.color = '#f8fafc';
+            el.style.borderBottomColor = '#334155';
+        }
     };
 
     if (cardNumberInput) {
@@ -748,6 +755,15 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
     if (!payBtn) return resolve();
 
     payBtn.addEventListener('click', () => {
+        const cardNumber = (cardNumberInput?.value || '').replace(/\s/g, '');
+        const exp = cardExpInput?.value || '';
+        const cvc = cardCvcInput?.value || '';
+
+        if (cardNumber.length < 16 || exp.length < 5 || cvc.length < 3) {
+            showToast('error', 'Введите корректные реквизиты карты');
+            return;
+        }
+
         payBtn.disabled = true;
         if (bankStatus) bankStatus.classList.remove('hidden');
 

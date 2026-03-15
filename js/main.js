@@ -150,7 +150,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const address = $('user-address') ? $('user-address').value : '';
-            const checkoutTotal = serverCalculation?.total || cart.reduce((sum, item) => sum + item.quantity * (parseFloat(item._display?.price) || 0), 0);
+            const checkoutTotal = Number(serverCalculation?.total ?? cart.reduce((sum, item) => {
+                const unit = Number(item?._meta?.finalPrice ?? item?._display?.price ?? 0);
+                const qty = Number(item?.quantity ?? 0);
+                return sum + ((Number.isFinite(unit) ? unit : 0) * qty);
+            }, 0));
 
             if (selectedPaymentMethod === 'card') {
                 await window.simulateSandboxCardPayment(checkoutTotal);

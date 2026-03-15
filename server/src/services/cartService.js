@@ -4,6 +4,14 @@
 
 const prisma = require('../lib/prisma');
 
+function toPositiveInt(value, fieldName) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+        throw new Error(`Invalid ${fieldName}: ${value}`);
+    }
+    return parsed;
+}
+
 /**
  * Calculates authoritative cart totals based on DB prices.
  * The frontend payload is NEVER trusted for pricing.
@@ -12,9 +20,20 @@ async function calculateCartTotal(items, promoCodeString = null) {
     let subtotal = 0;
     const validatedItems = [];
 
+    const normalizedItems = items.map((item) => ({
+        ...item,
+        productSizeId: toPositiveInt(item.productSizeId, 'productSizeId'),
+        quantity: toPositiveInt(item.quantity, 'quantity'),
+        modifierIds: Array.isArray(item.modifierIds)
+            ? item.modifierIds
+                .map((id) => Number.parseInt(id, 10))
+                .filter((id) => Number.isInteger(id) && id > 0)
+            : [],
+    }));
+
     // 1. Collect all IDs for batch fetching
-    const productSizeIds = items.map(item => item.productSizeId);
-    const modifierIds = items.flatMap(item => item.modifierIds || []);
+    const productSizeIds = [...new Set(normalizedItems.map((item) => item.productSizeId))];
+    const modifierIds = [...new Set(normalizedItems.flatMap((item) => item.modifierIds || []))];
 
     // 2. Batch fetch product sizes and modifiers
     const productSizes = await prisma.productSize.findMany({
@@ -22,7 +41,7 @@ async function calculateCartTotal(items, promoCodeString = null) {
         include: { product: true }
     });
 
-    const modifiers = modifierIds.length > 0 
+    const modifiers = modifierIds.length > 0
         ? await prisma.productModifier.findMany({ where: { id: { in: modifierIds } } })
         : [];
 
@@ -31,11 +50,11 @@ async function calculateCartTotal(items, promoCodeString = null) {
     const modifierMap = new Map(modifiers.map(m => [m.id, m]));
 
     // 3. Calculate totals using memory maps
-    for (const item of items) {
+    for (const item of normalizedItems) {
         const productSize = productSizeMap.get(item.productSizeId);
 
         if (!productSize || !productSize.product.isAvailable) {
-            throw new Error(`Item ${item.productId} is unavailable or size invalid`);
+            throw new Error(`Item ${item.productId || item.productSizeId} is unavailable or size invalid`);
         }
 
         let itemUnitPrice = Number(productSize.price);
@@ -51,6 +70,8 @@ async function calculateCartTotal(items, promoCodeString = null) {
                 itemUnitPrice += Number(modifier.price);
                 validatedModifiers.push({
                     modifierId: modifier.id,
+                    name: modifier.name,
+                    image: modifier.image || null,
                     priceAtOrder: Number(modifier.price)
                 });
             }
@@ -62,7 +83,10 @@ async function calculateCartTotal(items, promoCodeString = null) {
         // Build validated item for insertion
         validatedItems.push({
             productId: productSize.productId,
+            productName: productSize.product.name,
+            productImage: productSize.product.image || '',
             productSizeId: productSize.id,
+            sizeLabel: productSize.label,
             quantity: item.quantity,
             unitPrice: itemUnitPrice,
             note: item.note || '',
