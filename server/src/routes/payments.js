@@ -22,7 +22,7 @@ router.post('/webhook', async (req, res) => {
         // 1. Verify HMAC Signature
         if (!verifyWebhookSignature(rawBody, signature)) {
             console.warn('[Webhook] Invalid bePaid signature!');
-            return res.status(401).json({ error: 'Invalid signature' });
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const payload = JSON.parse(rawBody?.toString?.() || '{}');
@@ -95,7 +95,7 @@ router.post('/webhook', async (req, res) => {
 
     } catch (error) {
         console.error('[Webhook Processing Error]', error);
-        res.status(500).send('Internal Error');
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

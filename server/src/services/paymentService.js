@@ -89,17 +89,37 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
  * Verifies the HMAC-SHA256 signature from bePaid webhook
  */
 function verifyWebhookSignature(payload, signature) {
+    if (!WEBHOOK_SECRET) {
+        console.error('[bePaid] Missing BEPAID_WEBHOOK_SECRET. Webhook signature verification is disabled.');
+        return false;
+    }
+
     if (!signature) return false;
+
+    const normalizedPayload = Buffer.isBuffer(payload)
+        ? payload
+        : Buffer.from(typeof payload === 'string' ? payload : String(payload ?? ''));
+
+    const normalizedSignature = Buffer.isBuffer(signature)
+        ? signature.toString('utf8')
+        : String(signature).trim();
 
     // bePaid signature logic: HMAC-SHA256 of the raw JSON body
     // In Express, we need raw body for accurate verification, 
     // assuming payload is stringified JSON exactly as received
     const hash = crypto
         .createHmac('sha256', WEBHOOK_SECRET)
-        .update(payload)
+        .update(normalizedPayload)
         .digest('hex');
 
-    return hash === signature;
+    const expectedSignatureBuffer = Buffer.from(hash, 'utf8');
+    const providedSignatureBuffer = Buffer.from(normalizedSignature, 'utf8');
+
+    if (expectedSignatureBuffer.length !== providedSignatureBuffer.length) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(expectedSignatureBuffer, providedSignatureBuffer);
 }
 
 module.exports = {
