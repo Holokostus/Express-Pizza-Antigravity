@@ -379,10 +379,10 @@ window.requestLoginCode = async function () {
     if (!email) return showToast('error', 'Введите email');
 
     try {
-        const res = await fetch(`${API_BASE}/api/auth/send-email`, {
-            method: 'POST', body: JSON.stringify({ email }), headers: { 'Content-Type': 'application/json' }
+        const data = await api('/api/auth/send-email', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
         });
-        const data = await res.json();
 
         if (data.success) {
             $('login-step-1').classList.add('hidden');
@@ -397,7 +397,7 @@ window.requestLoginCode = async function () {
         }
     } catch (e) {
         console.error('[Login] send-email network error:', e);
-        showToast('error', 'Ошибка сети');
+        showToast('error', e.message || 'Ошибка сети');
     }
 };
 
@@ -407,10 +407,10 @@ window.verifyLoginCode = async function () {
     if (!code) return showToast('error', 'Введите код');
 
     try {
-        const res = await fetch(`${API_BASE}/api/auth/verify`, {
-            method: 'POST', body: JSON.stringify({ email, code }), headers: { 'Content-Type': 'application/json' }
+        const data = await api('/api/auth/verify', {
+            method: 'POST',
+            body: JSON.stringify({ email, code }),
         });
-        const data = await res.json();
 
         if (data.token) {
             localStorage.setItem('ep_auth_token', data.token);
@@ -420,7 +420,9 @@ window.verifyLoginCode = async function () {
         } else {
             showToast('error', data.error || 'Неверный код');
         }
-    } catch (e) { showToast('error', 'Ошибка сети'); }
+    } catch (e) {
+        showToast('error', e.message || 'Ошибка сети');
+    }
 };
 
 async function renderProfileView() {
@@ -428,12 +430,9 @@ async function renderProfileView() {
     body.innerHTML = '<div class="flex justify-center py-10"><div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>';
 
     try {
-        const res = await fetch(`${API_BASE}/api/orders/my`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await res.json();
+        const data = await api('/api/orders/my');
 
-        if (!data.success) throw new Error(data.error);
+        if (!data.success) throw new Error(data.error || 'Ошибка загрузки профиля');
 
         const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
@@ -484,7 +483,7 @@ async function renderProfileView() {
             <button onclick="userLogout()" class="w-full bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 font-bold py-4 rounded-2xl transition-all active:scale-95 cursor-pointer">Выйти из аккаунта</button>
         `;
     } catch (e) {
-        if (e.message.includes('Unauthorized')) userLogout();
+        if ((e.message || '').includes('Unauthorized')) userLogout();
         else body.innerHTML = '<p class="text-red-500 text-center py-4">Ошибка загрузки</p>';
     }
 }

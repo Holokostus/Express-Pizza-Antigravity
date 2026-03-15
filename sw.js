@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pizza-cache-v1';
+const CACHE_NAME = 'pizza-cache-v2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
