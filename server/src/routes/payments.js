@@ -20,15 +20,29 @@ router.post('/webhook', async (req, res) => {
         const rawBody = req.rawBody; // raw buffer from express.json verify
 
         // 1. Verify HMAC Signature
-        if (!verifyWebhookSignature(rawBody, signature)) {
-            console.warn('[Webhook] Invalid bePaid signature!');
+        const verification = verifyWebhookSignature(rawBody, signature);
+        if (!verification.isValid) {
+            console.warn(`[Webhook] Invalid bePaid signature (reason: ${verification.reason})`);
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const payload = JSON.parse(rawBody?.toString?.() || '{}');
+        const payloadString = rawBody?.toString?.();
+        if (!payloadString) {
+            console.warn('[Webhook] Rejected webhook: empty payload');
+            return res.status(400).json({ error: 'Malformed payload' });
+        }
+
+        let payload;
+        try {
+            payload = JSON.parse(payloadString);
+        } catch (parseError) {
+            console.warn('[Webhook] Rejected webhook: invalid JSON payload');
+            return res.status(400).json({ error: 'Malformed payload' });
+        }
         const transaction = payload.transaction;
 
         if (!transaction) {
+            console.warn('[Webhook] Rejected webhook: missing transaction object');
             return res.status(400).json({ error: 'Malformed payload' });
         }
 
