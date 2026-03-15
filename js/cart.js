@@ -111,7 +111,10 @@ function evaluateRisk(total) {
         if (warning) warning.classList.remove('hidden');
         if (cashRadio.checked) {
             const onlineRadio = document.querySelector('input[value="card"]');
-            if (onlineRadio) onlineRadio.checked = true;
+            if (onlineRadio) {
+                onlineRadio.checked = true;
+                onlineRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     } else {
         cashRadio.disabled = false;

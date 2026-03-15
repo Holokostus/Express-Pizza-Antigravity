@@ -660,3 +660,93 @@ button.bg-primary:hover,
     background: linear-gradient(180deg, #1E1E1E 0%, #171717 100%);
     border-left: 1px solid #2A2A2A;
 }
+
+/* UX audit refactor */
+.header-icons {
+    display: flex;
+}
+
+.category-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+}
+
+.category-tabs .menu-tab {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+}
+
+.category-tabs .menu-tab.active {
+    background: rgba(255, 75, 58, 0.12);
+    color: var(--brand-primary);
+    border-color: rgba(255, 75, 58, 0.32);
+    box-shadow: none;
+}
+
+.js-menu-card,
+.product-card {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;
+}
+
+.js-menu-card:hover,
+.product-card:hover {
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
+}
+
+.menu-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-card-price {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.menu-card-add-btn {
+    white-space: nowrap;
+    box-shadow: none !important;
+}
+
+.menu-item-desc {
+    color: var(--text-muted) !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.2rem;
+}
+
+#toast {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+#toast:not(.is-visible) {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px);
+}
+
+.checkout-cta {
+    min-height: 56px;
+}
+
+.consent-wrap a {
+    color: var(--brand-primary);
+}
+
+@media (max-width: 768px) {
+    .header-icons {
+        display: none;
+    }
+}
