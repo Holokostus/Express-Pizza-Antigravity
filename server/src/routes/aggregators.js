@@ -92,9 +92,12 @@ router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) =
         const payload = JSON.parse(rawBody);
         const normalized = normalizeDelivioOrder(payload);
 
-        const order = await createOrderFromAggregator(normalized, 'DELIVIO');
+        const result = await createOrderFromAggregator(normalized, 'DELIVIO');
+        if (!result.created) {
+            return res.status(200).json({ status: 'skipped', reason: result.reason, externalId: normalized.externalId });
+        }
 
-        res.json({ status: 'accepted', orderId: order.id });
+        res.json({ status: 'accepted', orderId: result.order.id });
     } catch (err) {
         console.error('[Delivio] Webhook error:', err);
         res.status(200).json({ status: 'error', message: err.message });
@@ -129,9 +132,12 @@ router.post('/wolt/webhook', express.raw({ type: '*/*' }), async (req, res) => {
         const payload = JSON.parse(rawBody);
         const normalized = normalizeWoltOrder(payload);
 
-        const order = await createOrderFromAggregator(normalized, 'WOLT');
+        const result = await createOrderFromAggregator(normalized, 'WOLT');
+        if (!result.created) {
+            return res.status(200).json({ status: 'skipped', reason: result.reason, externalId: normalized.externalId });
+        }
 
-        res.json({ status: 'accepted', orderId: order.id });
+        res.json({ status: 'accepted', orderId: result.order.id });
     } catch (err) {
         console.error('[Wolt] Webhook error:', err);
         res.status(200).json({ status: 'error', message: err.message });
@@ -215,6 +221,16 @@ async function createOrderFromAggregator(normalized, source) {
 
     const productMap = new Map(products.map(p => [p.posExternalId, p]));
 
+    const unmatchedPosExternalIds = [...new Set(
+        normalized.items
+            .map(item => item.posExternalId)
+            .filter(id => id !== null && id !== undefined && !productMap.has(id))
+    )];
+
+    if (unmatchedPosExternalIds.length > 0) {
+        console.warn(`[Aggregator] ${source} unmapped posExternalId values:`, unmatchedPosExternalIds);
+    }
+
     const items = [];
     for (const item of normalized.items) {
         const product = item.posExternalId ? productMap.get(item.posExternalId) : null;
@@ -234,6 +250,24 @@ async function createOrderFromAggregator(normalized, source) {
         });
     }
 
+    const validItems = items.filter(i => i.productId && i.productSizeId);
+
+    if (validItems.length === 0) {
+        console.warn(
+            `[Aggregator] Skipping ${source} order ${normalized.externalId}: no valid items after product mapping`,
+            { unmatchedPosExternalIds }
+        );
+
+        return {
+            created: false,
+            reason: 'no_valid_items',
+        };
+    }
+
+    const calculatedSubtotal = validItems.reduce((sum, item) => {
+        return sum + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+    }, 0);
+
     // Create order
     const order = await prisma.order.create({
         data: {
@@ -244,13 +278,12 @@ async function createOrderFromAggregator(normalized, source) {
             customerAddress: normalized.customerAddress,
             payment: normalized.payment,
             status: 'NEW',
-            subtotal: normalized.total,
+            subtotal: calculatedSubtotal,
             discount: 0,
-            total: normalized.total,
+            total: calculatedSubtotal,
             restaurantId: restaurant?.id || null,
             items: {
-                create: items
-                    .filter(i => i.productId && i.productSizeId)
+                create: validItems
                     .map(i => ({
                         productId: i.productId,
                         productSizeId: i.productSizeId,
@@ -275,7 +308,7 @@ async function createOrderFromAggregator(normalized, source) {
 
     // Event log
     await appendEvent(EventTypes.ORDER_PLACED, 'Order', order.externalOrderId, {
-        orderId: order.id, source, total: normalized.total,
+        orderId: order.id, source, total: order.total,
     }, { source }).catch(() => { });
 
     // Auto-forward to POS (non-blocking)
@@ -284,7 +317,7 @@ async function createOrderFromAggregator(normalized, source) {
     // Notify manager (non-blocking)
     notifyNewOrder(order).catch(err => console.error(`[Telegram] Notify error:`, err));
 
-    return order;
+    return { created: true, order };
 }
 
 module.exports = router;
