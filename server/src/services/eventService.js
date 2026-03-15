@@ -40,6 +40,9 @@ const EventTypes = {
     // Menu
     PRODUCT_UPDATED: 'ProductUpdated',
     PRODUCT_STOPPED: 'ProductStopped',
+
+    // Security
+    AGGREGATOR_INVALID_SIGNATURE: 'AggregatorInvalidSignature',
 };
 
 /**

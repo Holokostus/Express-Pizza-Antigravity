@@ -19,16 +19,49 @@ const { appendEvent, EventTypes } = require('../services/eventService');
 // Webhook Signature Verification
 // ============================================================
 
+function normalizeSignature(signature) {
+    if (typeof signature !== 'string') return '';
+
+    const normalized = signature.trim().toLowerCase();
+    return normalized.startsWith('sha256=') ? normalized.slice(7) : normalized;
+}
+
 function verifySignature(rawBody, signature, secret) {
     if (!secret || secret.startsWith('change-me')) {
-        return true; // Dev mode — accept all
+        return { ok: false, configError: true, reason: 'missing_or_placeholder_secret' };
     }
+
+    const normalizedSignature = normalizeSignature(signature);
+    if (!/^[0-9a-f]+$/.test(normalizedSignature) || normalizedSignature.length % 2 !== 0) {
+        return { ok: false, configError: false, reason: 'invalid_signature_format' };
+    }
+
     const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-    try {
-        return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-    } catch {
-        return false;
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const providedBuffer = Buffer.from(normalizedSignature, 'hex');
+
+    if (expectedBuffer.length !== providedBuffer.length) {
+        return { ok: false, configError: false, reason: 'signature_length_mismatch' };
     }
+
+    return {
+        ok: crypto.timingSafeEqual(expectedBuffer, providedBuffer),
+        configError: false,
+        reason: 'signature_mismatch',
+    };
+}
+
+async function logInvalidSignature(channel, reason, req) {
+    console.error(`[${channel}] Invalid signature (${reason})`, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || 'unknown',
+    });
+
+    await appendEvent(EventTypes.AGGREGATOR_INVALID_SIGNATURE, 'AggregatorWebhook', channel, {
+        reason,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || 'unknown',
+    }, { source: channel }).catch(() => { });
 }
 
 // ============================================================
@@ -45,7 +78,14 @@ router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) =
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-delivio-signature'] || '';
 
-        if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
+        const signatureCheck = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (signatureCheck.configError) {
+            console.error('[Delivio] Webhook secret is not configured correctly.');
+            return res.status(503).json({ error: 'Webhook misconfigured: missing or placeholder secret' });
+        }
+
+        if (!signatureCheck.ok) {
+            await logInvalidSignature('delivio', signatureCheck.reason, req);
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
@@ -75,7 +115,14 @@ router.post('/wolt/webhook', express.raw({ type: '*/*' }), async (req, res) => {
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-wolt-signature'] || '';
 
-        if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
+        const signatureCheck = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (signatureCheck.configError) {
+            console.error('[Wolt] Webhook secret is not configured correctly.');
+            return res.status(503).json({ error: 'Webhook misconfigured: missing or placeholder secret' });
+        }
+
+        if (!signatureCheck.ok) {
+            await logInvalidSignature('wolt', signatureCheck.reason, req);
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
