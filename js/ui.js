@@ -65,7 +65,7 @@ function renderMenu() {
             </div>
             <div class="p-3 lg:p-4">
                 <h3 class="font-bold text-sm lg:text-base leading-tight mb-1 line-clamp-2">${escapeHtml(item.name)}</h3>
-                <p class="text-textMutedLight dark:text-textMutedDark text-[11px] lg:text-xs mb-2 line-clamp-1">${escapeHtml(item.description || '')}</p>
+                <p class="menu-item-desc text-textMutedLight dark:text-textMutedDark text-[11px] lg:text-xs mb-3">${escapeHtml(item.description || '')}</p>
                 ${hasSizes ? `
                 <div class="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     ${item.sizes.map((s, i) => `
@@ -74,11 +74,13 @@ function renderMenu() {
                     `).join('')}
                 </div>
                 ` : ''}
-                <button onclick="event.stopPropagation(); addToCart(${item.id})"
-                    class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-2xl transition-all active:scale-95 shadow-glow-red flex items-center justify-center gap-1.5 text-sm">
-                    <span data-role="price-text">${parseFloat(activeSize.price).toFixed(2)} BYN</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                </button>
+                <div class="menu-card-footer">
+                    <span data-role="price-text" class="menu-card-price">${parseFloat(activeSize.price).toFixed(2)} BYN</span>
+                    <button onclick="event.stopPropagation(); addToCart(${item.id})"
+                        class="menu-card-add-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl transition-all active:scale-95 text-sm">
+                        В корзину +
+                    </button>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -101,21 +103,16 @@ window.renderCategories = (categories = menuCategories) => {
     currentCategory = safeCurrentCategory;
 
     container.innerHTML = categories.map(({ slug, name }) => {
-        const activeClasses = slug === currentCategory
-            ? 'active bg-red-600 text-white shadow-glow-red'
-            : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700';
-
-        return `<button class="menu-tab ${activeClasses} px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="${slug}">${escapeHtml(name)}</button>`;
+        const activeClasses = slug === currentCategory ? 'active' : '';
+        return `<button class="menu-tab category-btn ${activeClasses} px-4 py-2 font-bold text-sm whitespace-nowrap transition-all cursor-pointer" data-category="${slug}">${escapeHtml(name)}</button>`;
     }).join('');
 
     document.querySelectorAll('.menu-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.menu-tab').forEach((t) => {
-                t.classList.remove('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
-                t.classList.add('bg-gray-100', 'dark:bg-gray-800');
+                t.classList.remove('active');
             });
-            tab.classList.remove('bg-gray-100', 'dark:bg-gray-800');
-            tab.classList.add('active', 'bg-red-600', 'text-white', 'shadow-glow-red');
+            tab.classList.add('active');
             currentCategory = tab.dataset.category;
             renderMenu();
         });
@@ -168,10 +165,8 @@ if (!window.__promoCardClickBound) {
         if (!p) return;
 
         const promoTitle = p.dataset.promoTitle || 'Акция';
-        const promoDescription = p.dataset.promoDescription || 'Подробности акции уточняйте у оператора.';
-        alert(`${promoTitle}
-
-${promoDescription}`);
+        const promoDescription = p.dataset.promoDescription || 'Скидка применена к вашему заказу!';
+        showAppModal(promoDescription, promoTitle);
     });
 }
 
@@ -396,7 +391,7 @@ window.requestLoginCode = async function () {
             const details = data.details ? ` (${data.details})` : '';
             const message = `${data.error || 'Ошибка'}${details}`;
             console.error('[Login] send-email error:', data);
-            alert(message);
+            showAppModal(message, 'Ошибка входа');
             showToast('error', message);
         }
     } catch (e) {
@@ -440,8 +435,7 @@ async function renderProfileView() {
 
         const statusMap = { 'NEW': 'Новый', 'COOKING': 'Готовится', 'BAKING': 'В печи', 'DELIVERY': 'Доставка', 'COMPLETED': 'Выполнен', 'CANCELLED': 'Отменён' };
 
-        // ExpressCoins: fetched from the Server User Object
-        // (the server now populates it correctly based on PointsBalance)
+        // Бонусные баллы пользователя
         const coins = data.loyaltyPoints || 0;
         
         // Update header and cart badges
@@ -474,7 +468,7 @@ async function renderProfileView() {
                         <span class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white font-bold">C</span>
                         <div>
                             <p class="font-bold text-white text-2xl leading-none">${coins}</p>
-                            <p class="text-xs text-gray-400 font-medium mt-1">ExpressCoins</p>
+                            <p class="text-xs text-gray-400 font-medium mt-1">Бонусные баллы</p>
                         </div>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-4 leading-relaxed font-medium">Оплачивайте коинами до 50% заказа. 1 Coin = 1 BYN. Кэшбэк 5% с каждого заказа.</p>

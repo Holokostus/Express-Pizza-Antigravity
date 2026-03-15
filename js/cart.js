@@ -111,7 +111,10 @@ function evaluateRisk(total) {
         if (warning) warning.classList.remove('hidden');
         if (cashRadio.checked) {
             const onlineRadio = document.querySelector('input[value="card"]');
-            if (onlineRadio) onlineRadio.checked = true;
+            if (onlineRadio) {
+                onlineRadio.checked = true;
+                onlineRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     } else {
         cashRadio.disabled = false;
@@ -819,10 +822,11 @@ function renderUpsells() {
     container.innerHTML = upsells.map(item => {
         const imageSrc = window.resolveMenuItemImage(item);
         return `
-        <div class="flex-shrink-0 w-24 bg-white dark:bg-bgElementDark rounded-2xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center cursor-pointer hover:border-primary transition-colors" onclick="addToCart(${item.id})">
-            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="mx-auto mb-2" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+        <div class="upsell-card flex-shrink-0 w-28 bg-white dark:bg-bgElementDark rounded-xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center hover:border-primary transition-colors">
+            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" class="upsell-card-image mx-auto mb-1.5" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
-            <div class="mt-2 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
+            <div class="mt-1 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
+            <button type="button" class="upsell-add-btn mt-1.5" onclick="addToCart(${item.id}); event.stopPropagation();">+ Добавить</button>
         </div>
     `}).join('');
 }

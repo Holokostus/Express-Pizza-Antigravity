@@ -34,6 +34,51 @@ const imageInput = document.getElementById('image');
 let products = [];
 let categories = [];
 
+function showAppModal(message, title = 'Уведомление') {
+    return new Promise((resolve) => {
+        let modal = document.getElementById('app-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'app-modal';
+            modal.className = 'fixed inset-0 z-[120] hidden items-center justify-center bg-black/55 p-4';
+            modal.innerHTML = `
+                <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+                    <h3 id="app-modal-title" class="text-lg font-extrabold text-gray-900 mb-2">Уведомление</h3>
+                    <p id="app-modal-message" class="text-sm text-gray-600 leading-relaxed mb-6"></p>
+                    <button id="app-modal-ok" type="button" class="w-full rounded-xl bg-red-600 py-3 text-white font-bold hover:bg-red-700 transition-colors">Отлично</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const titleEl = modal.querySelector('#app-modal-title');
+        const messageEl = modal.querySelector('#app-modal-message');
+        const okBtn = modal.querySelector('#app-modal-ok');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const close = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            okBtn.removeEventListener('click', onOk);
+            modal.removeEventListener('click', onBackdrop);
+            resolve(true);
+        };
+
+        const onOk = () => close();
+        const onBackdrop = (event) => {
+            if (event.target === modal) close();
+        };
+
+        okBtn.addEventListener('click', onOk);
+        modal.addEventListener('click', onBackdrop);
+    });
+}
+
+
 function resolveImageSrc(image) {
     if (!image) return '';
     const trimmed = String(image).trim();
@@ -189,7 +234,7 @@ async function saveProduct(event) {
 }
 
 async function deleteProduct(id) {
-    const ok = window.confirm('Удалить этот товар?');
+    const ok = await showAppModal('Удалить этот товар?', 'Подтвердите действие');
     if (!ok) return;
 
     const response = await authFetch(`/api/menu/${id}`, { method: 'DELETE' });
@@ -205,7 +250,7 @@ addProductBtn.addEventListener('click', async () => {
     try {
         await openModal('create');
     } catch (error) {
-        alert(error.message);
+        showAppModal(error.message, 'Ошибка');
     }
 });
 closeModalBtn.addEventListener('click', closeModal);
@@ -214,7 +259,7 @@ productForm.addEventListener('submit', async (event) => {
     try {
         await saveProduct(event);
     } catch (error) {
-        alert(error.message);
+        showAppModal(error.message, 'Ошибка');
     }
 });
 
@@ -227,7 +272,7 @@ productsBody.addEventListener('click', async (event) => {
             try {
                 await openModal('edit', product);
             } catch (error) {
-                alert(error.message);
+                showAppModal(error.message, 'Ошибка');
             }
         }
         return;
@@ -239,7 +284,7 @@ productsBody.addEventListener('click', async (event) => {
         try {
             await deleteProduct(id);
         } catch (error) {
-            alert(error.message);
+            showAppModal(error.message, 'Ошибка');
         }
     }
 });

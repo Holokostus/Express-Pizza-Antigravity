@@ -87,13 +87,9 @@
                     <span>+375 44 589-11-11</span>
                 </a>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="header-icons flex items-center gap-3">
                 <button onclick="handleProfileClick()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Профиль">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                </button>
-                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle Dark Mode">
-                    <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden dark:block text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    <svg id="theme-toggle-dark-icon" class="w-5 h-5 block dark:hidden text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 </button>
             </div>
         </div>
@@ -110,9 +106,6 @@
                 <div id="coins-header-badge" class="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-full text-xs font-bold">
                     <span id="coins-count">0</span>
                 </div>
-                <button id="theme-toggle-mobile" class="p-2 rounded-full" aria-label="Toggle Dark Mode">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                </button>
             </div>
         </div>
     </header>
@@ -153,7 +146,7 @@
         <nav id="menu"
             class="sticky top-14 z-30 bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2.5">
             <div class="px-3 lg:container lg:mx-auto lg:px-6">
-                <div id="category-tabs-container" class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                <div id="category-tabs-container" class="category-tabs flex items-center gap-2 overflow-x-auto hide-scrollbar">
                     <!-- Categories will be injected from /api/menu -->
                 </div>
             </div>
@@ -177,7 +170,7 @@
                 <div>
                     <h2 class="font-display font-black text-xl uppercase tracking-tight">Корзина</h2>
                     <div id="cart-coins-line" class="flex items-center gap-1.5 mt-1 text-xs font-bold text-red-600 dark:text-red-400">
-                        <span class="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600">C</span><span>Баланс: <span id="cart-coins-val">0</span> ExpressCoins</span>
+                        <span class="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600">C</span><span>Ваш баланс: <span id="cart-coins-val">0</span> бонусных баллов</span>
                     </div>
                 </div>
                 <button id="close-cart"
@@ -259,17 +252,14 @@
                     <div class="pt-2">
                         <p class="text-xs font-bold uppercase text-textMutedLight dark:text-textMutedDark mb-2">Способ
                             оплаты</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label id="payment-cash-label"
-                                class="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
-                                <input type="radio" name="payment" id="payment-cash-radio" value="cash" checked
-                                    class="accent-primary">
-                                <span class="font-bold text-sm">Наличными</span>
+                        <div class="segmented-control">
+                            <label id="payment-cash-label" class="segment-option is-active">
+                                <input type="radio" name="payment" id="payment-cash-radio" value="cash" checked>
+                                Наличными
                             </label>
-                            <label
-                                class="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-primary/50 transition-all group">
-                                <input type="radio" name="payment" value="card" class="accent-primary">
-                                <span class="font-bold text-sm">Картой онлайн</span>
+                            <label class="segment-option">
+                                <input type="radio" name="payment" value="card">
+                                Картой
                             </label>
                         </div>
                         <p id="cash-limit-warning" class="hidden text-xs text-primary mt-2">Наличные недоступны для
@@ -277,22 +267,22 @@
                     </div>
 
                     <!-- Legal consent checkbox (Belarus law requirement) -->
-                    <label class="flex items-start gap-3 mt-4 cursor-pointer group">
+                    <label class="consent-wrap flex items-start gap-3 mt-6 mb-6 cursor-pointer group">
                         <input type="checkbox" id="consent-checkbox" required
                             class="mt-0.5 w-4 h-4 accent-primary rounded flex-shrink-0">
                         <span class="text-[11px] leading-relaxed text-textMutedLight dark:text-textMutedDark">
                             Я согласен(-а) с условиями
                             <a href="/oferta" target="_blank" rel="noopener noreferrer"
-                                class="text-primary underline hover:no-underline">публичного договора</a>
+                                class="text-[var(--brand-primary)] underline hover:no-underline">публичного договора</a>
                             и даю согласие на
                             <a href="/oferta#privacy" target="_blank" rel="noopener noreferrer"
-                                class="text-primary underline hover:no-underline">обработку персональных данных</a>
+                                class="text-[var(--brand-primary)] underline hover:no-underline">обработку персональных данных</a>
                             в соответствии с Законом Республики Беларусь «О защите персональных данных».
                         </span>
                     </label>
 
                     <button type="button" id="btn-request-otp" onclick="requestOTP()"
-                        class="checkout-cta w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-red mt-4">
+                        class="checkout-cta w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-5 rounded-2xl transition-all shadow-glow-red mt-4 leading-tight">
                         Оформить заказ
                     </button>
                     <p class="text-center text-xs text-textMutedLight dark:text-textMutedDark mt-2">Бесплатная доставка от 30 BYN</p>
@@ -656,9 +646,16 @@
 
     <!-- Toast Notification -->
     <div id="toast"
-        class="fixed bottom-24 lg:bottom-10 left-1/2 -translate-x-1/2 transform translate-y-[150%] opacity-0 bg-gray-900 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] min-w-[280px] justify-center backdrop-blur-md border border-gray-800">
-        <span id="toast-icon" class="text-lg"></span>
-        <span id="toast-message" class="font-bold text-sm tracking-wide"></span>
+        class="fixed left-1/2 -translate-x-1/2 bottom-6 opacity-0 pointer-events-none translate-y-3 bg-black/75 text-white px-4 py-2.5 rounded-full shadow-lg transition-all duration-300 z-[110] backdrop-blur-sm">
+        <span id="toast-message" class="text-sm font-medium tracking-tight whitespace-nowrap"></span>
+    </div>
+
+    <div id="app-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/55 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <h3 id="app-modal-title" class="text-lg font-extrabold text-gray-900 mb-2">Уведомление</h3>
+            <p id="app-modal-message" class="text-sm text-gray-600 leading-relaxed mb-6"></p>
+            <button id="app-modal-ok" type="button" class="w-full rounded-xl bg-red-600 py-3 text-white font-bold hover:bg-red-700 transition-colors">Отлично</button>
+        </div>
     </div>
 
     <!-- Scripts -->
