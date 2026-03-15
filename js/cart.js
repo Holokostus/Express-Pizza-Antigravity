@@ -203,7 +203,7 @@ function renderCartUI(serverData) {
                         categorySlug: item?._meta?.categorySlug,
                     });
                     const imageHtml = imageSrc
-                        ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">`
+                        ? `<img src="${imageSrc}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="bg-gray-50 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800" loading="lazy" onerror="this.onerror=null;this.src='${window.resolveMenuItemImage({ categorySlug: item?._meta?.categorySlug })}'">`
                         : `<div class="w-[50px] h-[50px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm"><svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
 
                     return `
@@ -247,6 +247,8 @@ function renderCartUI(serverData) {
         const discount = Number(serverData?.discount ?? 0);
         const total = Number(serverData?.total ?? subtotal);
         const promo = serverData?.promo || null;
+        const freeDeliveryThreshold = 30;
+        const amountLeft = Math.max(freeDeliveryThreshold - total, 0);
 
         let html = '';
         if (promo && discount > 0) {
@@ -271,7 +273,11 @@ function renderCartUI(serverData) {
                 </div>`;
         }
 
-        totalsArea.innerHTML = html;
+        const deliveryHint = amountLeft > 0
+            ? `<p id="free-delivery-hint" class="free-delivery-hint free-delivery-hint--pending">Добавьте еще на ${amountLeft.toFixed(2)} BYN для бесплатной доставки</p>`
+            : '<p id="free-delivery-hint" class="free-delivery-hint free-delivery-hint--free">✅ Доставка бесплатная!</p>';
+
+        totalsArea.innerHTML = `${html}${deliveryHint}`;
         evaluateRisk(total);
     }
 
@@ -489,7 +495,7 @@ window.openCustomizer = (itemId) => {
                             <input type="checkbox" class="cust-mod-cb" data-mod-id="${m.id}" data-mod-price="${m.price}" data-mod-name="${m.name}" onchange="updateCustomizerTotal()">
                             <div class="card-content modifier-card-inner">
                                 <span class="modifier-checkmark">✓</span>
-                                <img src="${window.resolveModifierImage(m)}" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+                                <img src="${window.resolveModifierImage(m)}" class="modifier-image" alt="${m.name}" onerror="this.onerror=null;this.src='${window.resolveMenuItemImage({ categorySlug: itemInfo.categorySlug })}'">
                                 <span class="name">${m.name}</span>
                                 <span class="price">+ ${parseFloat(m.price || 0).toFixed(2)} BYN</span>
                                 <span class="tap-hint">Нажмите, чтобы добавить</span>
@@ -509,7 +515,7 @@ window.openCustomizer = (itemId) => {
     sheet.innerHTML = `
             <div class="grid md:grid-cols-2 gap-0 flex-grow overflow-y-auto hide-scrollbar">
                 <div class="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
-                    <img src="${window.resolveMenuItemImage(itemInfo)}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+                    <img src="${window.resolveMenuItemImage(itemInfo)}" alt="${itemInfo.name}" class="w-full aspect-square object-cover rounded-2xl mb-4" onerror="this.onerror=null;this.src='${window.resolveMenuItemImage({ categorySlug: itemInfo.categorySlug })}'">
                     <h3 class="font-display font-black text-2xl leading-tight">${itemInfo.name}</h3>
                     <p class="text-sm text-textMutedLight dark:text-textMutedDark mt-1">${itemInfo.description || ''}</p>
                 </div>
@@ -833,10 +839,10 @@ function renderUpsells() {
         const imageSrc = window.resolveMenuItemImage(item);
         return `
         <div class="upsell-card flex-shrink-0 w-28 bg-white dark:bg-bgElementDark rounded-xl p-2 border border-gray-100 dark:border-gray-800 shadow-sm text-center hover:border-primary transition-colors">
-            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" class="upsell-card-image mx-auto mb-1.5" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">
+            <img src="${imageSrc}" alt="${escapeHtml(item.name)}" class="upsell-card-image mx-auto mb-1.5" loading="lazy" onerror="this.onerror=null;this.src='${window.resolveMenuItemImage({ categorySlug: item.categorySlug })}'">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
             <div class="mt-1 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
-            <button type="button" class="upsell-add-btn mt-1.5" onclick="addToCart(${item.id}); event.stopPropagation();">В корзину · ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</button>
+            <button type="button" class="upsell-add-btn mt-1.5" onclick="addToCart(${item.id}); event.stopPropagation();">В корзину</button>
         </div>
     `}).join('');
 }

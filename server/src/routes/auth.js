@@ -104,7 +104,7 @@ async function handleSendOtp(req, res) {
         const emailRateLimit = await consumeRateLimit(`email:${email}`, OTP_RATE_LIMIT_EMAIL_MAX, OTP_RATE_LIMIT_EMAIL_WINDOW_MS);
         if (emailRateLimit.limited) {
             return res.status(429).json({
-                error: 'Слишком много запросов OTP для этого email. Попробуйте позже.',
+                error: 'Слишком много запросов кода подтверждения для этого email. Попробуйте позже.',
                 retryAfterMs: emailRateLimit.retryAfterMs,
             });
         }
@@ -141,16 +141,16 @@ async function handleSendOtp(req, res) {
             if (canUseDebugOtp(req)) {
                 return res.json({
                     success: true,
-                    message: 'SMTP недоступен. OTP доступен в debug-режиме для локальной среды.',
+                    message: 'SMTP недоступен. Код подтверждения доступен в debug-режиме для локальной среды.',
                     debugCode: code,
                     isDevFallback: true,
                 });
             }
 
-            return res.status(502).json({ error: 'Не удалось отправить OTP. Попробуйте позже.' });
+            return res.status(502).json({ error: 'Не удалось отправить код подтверждения. Попробуйте позже.' });
         }
 
-        const payload = { success: true, message: 'OTP sent to email' };
+        const payload = { success: true, message: 'Код подтверждения отправлен на email' };
         if (canUseDebugOtp(req)) {
             payload.debugCode = code;
             payload.isDevFallback = false;
@@ -158,7 +158,7 @@ async function handleSendOtp(req, res) {
         return res.json(payload);
     } catch (err) {
         console.error('[Auth] Send OTP email error:', err?.message || err);
-        return res.status(500).json({ error: 'Не удалось сгенерировать OTP' });
+        return res.status(500).json({ error: 'Не удалось сгенерировать код подтверждения' });
     }
 }
 
@@ -203,12 +203,12 @@ async function handleVerifyOtp(req, res) {
 
         const otpData = await prisma.otpCode.findUnique({ where: { email } });
         if (!otpData) {
-            return res.status(400).json({ error: 'No OTP requested or code expired' });
+            return res.status(400).json({ error: 'Код подтверждения не запрошен или срок действия истёк' });
         }
 
         if (Date.now() > new Date(otpData.expiresAt).getTime()) {
             await prisma.otpCode.delete({ where: { email } }).catch(() => null);
-            return res.status(400).json({ error: 'OTP code expired. Request a new one.' });
+            return res.status(400).json({ error: 'Срок действия кода подтверждения истёк. Запросите новый.' });
         }
 
         if (otpData.attempts >= OTP_MAX_ATTEMPTS) {

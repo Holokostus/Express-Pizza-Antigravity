@@ -155,6 +155,50 @@ async function refetchBadProductImages() {
     }
 }
 
+
+
+function buildCategoryRefetchQuery(product) {
+    const slug = String(product?.category?.slug || '').toLowerCase();
+    if (slug === 'juice' || slug === 'juices') {
+        return `${product.name} +"упаковка сока изолированный фон"`;
+    }
+    if (slug === 'drinks' || slug === 'drink') {
+        return `${product.name} +"бутылка газировки изолированный фон"`;
+    }
+    return `${product.name} +"закрытая пицца кальцоне на белом фоне"`;
+}
+
+async function refetchDrinksAndCalzones() {
+    const products = await prisma.product.findMany({
+        where: {
+            category: {
+                slug: { in: ['juice', 'juices', 'drinks', 'drink', 'togo', 'calzone'] },
+            },
+        },
+        select: { id: true, name: true, category: { select: { slug: true } } },
+    });
+
+    for (const product of products) {
+        const query = buildCategoryRefetchQuery(product);
+        try {
+            const foundUrl = await findImageUrl(query);
+            if (!/^https?:\/\//i.test(foundUrl)) {
+                throw new Error('Found URL is not absolute');
+            }
+
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { image: foundUrl },
+            });
+            console.log(`✅ Re-fetched category image for product#${product.id} (${product.name})`);
+        } catch (error) {
+            console.warn(`⚠️ Category re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+}
+
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
         return true;
@@ -275,5 +319,6 @@ module.exports = {
     isImageFetchEndpointEnabled,
     triggerImageFetchJobByAdmin,
     refetchBadProductImages,
+    refetchDrinksAndCalzones,
     JobConflictError,
 };

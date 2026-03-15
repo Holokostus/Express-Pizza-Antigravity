@@ -53,7 +53,7 @@ const stockService = require('./services/stockService');
 const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
-const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, refetchBadProductImages, JobConflictError } = require('./services/adminImageFetchService');
+const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, refetchBadProductImages, refetchDrinksAndCalzones, JobConflictError } = require('./services/adminImageFetchService');
 
 const rateLimit = require('express-rate-limit');
 const { requireAuth, checkRole } = require('./middleware/auth');
@@ -103,6 +103,19 @@ app.get('/api/refetch-bad-images', async (req, res) => {
     });
 });
 
+
+
+app.get('/api/refetch-drinks-calzones', async (req, res) => {
+    res.json({ success: true, message: 'Фотографии напитков и кальцоне отправлены на обновление' });
+
+    setImmediate(async () => {
+        try {
+            await refetchDrinksAndCalzones();
+        } catch (error) {
+            console.error('❌ Failed to re-fetch drinks and calzones images:', error);
+        }
+    });
+});
 
 // ---- Health Check ----
 app.get('/api/health', async (req, res) => {

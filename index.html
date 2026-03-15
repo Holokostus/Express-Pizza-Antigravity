@@ -103,7 +103,7 @@
                 <span class="font-display font-black text-lg tracking-tight"><span class="text-red-600">EXPRESS</span> PIZZA</span>
             </div>
             <div class="header-icons flex items-center gap-1">
-                <div id="coins-header-badge" class="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-full text-xs font-bold">
+                <div id="coins-header-badge" class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold balance-neutral">
                     <span id="coins-count">0</span>
                 </div>
             </div>
@@ -169,8 +169,8 @@
             <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div>
                     <h2 class="font-display font-black text-xl uppercase tracking-tight">Корзина</h2>
-                    <div id="cart-coins-line" class="flex items-center gap-1.5 mt-1 text-xs font-bold text-red-600 dark:text-red-400">
-                        <span class="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600">C</span><span>Ваш баланс: <span id="cart-coins-val">0</span> бонусных баллов</span>
+                    <div id="cart-coins-line" class="flex items-center gap-1.5 mt-1 text-xs font-bold balance-neutral">
+                        <span class="balance-coin-icon flex items-center justify-center w-5 h-5 rounded-full">C</span><span>Ваш баланс: <span id="cart-coins-val">0</span> бонусных баллов</span>
                     </div>
                 </div>
                 <button id="close-cart"
@@ -217,6 +217,7 @@
 
                 <!-- Totals (dynamically rendered by JS) -->
                 <div id="cart-totals-area" class="mb-5">
+                    <p id="free-delivery-hint" class="free-delivery-hint free-delivery-hint--pending">Добавьте еще на 30.00 BYN для бесплатной доставки</p>
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-lg">Итого:</span>
                         <span class="font-display font-black text-2xl text-primary" id="cart-total-display">0 BYN</span>
@@ -613,7 +614,15 @@
                     <p>УНП: 101237697. Зарегистрировано Минским горисполкомом 08.04.1997 г.</p>
                     <p>Юридический адрес: 220033, г. Минск, пр-т Партизанский, 19, ком. 2.</p>
                     <p>Регистрация в Торговом реестре РБ: №290530 от 05.02.2017.</p>
-                    <p id="delivery-info">Телефоны доставки: +375 44 589-11-11, +375 33 389-11-11</p>
+                    <p id="delivery-info">Телефоны доставки:
+                        <a class="contact-phone-link" href="tel:+375445891111">+375 44 589-11-11</a>,
+                        <a class="contact-phone-link" href="tel:+375333891111">+375 33 389-11-11</a>
+                    </p>
+                    <div class="contact-socials" aria-label="Социальные сети">
+                        <a href="#" class="contact-social-link" aria-label="Instagram">Instagram</a>
+                        <a href="#" class="contact-social-link" aria-label="Telegram">Telegram</a>
+                        <a href="#" class="contact-social-link" aria-label="VK">VK</a>
+                    </div>
                 </div>
                 <div class="pt-2">
                     <a href="#" class="inline-flex text-sm text-accent hover:text-yellow-300 underline underline-offset-4 transition-colors">Публичная оферта</a>
