@@ -19,6 +19,8 @@ router.post('/webhook', async (req, res) => {
     const signature = req.headers['content-signature'];
     const rawBody = req.rawBody; // raw buffer from express.json verify
 
+    try {
+
         if (!isWebhookSecretConfigured()) {
             console.error('[Webhook] BEPAID_WEBHOOK_SECRET is not configured. Rejecting webhook.');
             return res.status(500).json({ error: 'Webhook verification misconfigured' });
