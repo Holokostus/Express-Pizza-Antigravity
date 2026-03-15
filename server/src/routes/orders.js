@@ -12,6 +12,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
 const { sendTelegramMessage } = require('../services/telegramService');
+const { appendEvent, EventTypes } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -303,16 +304,15 @@ router.post('/checkout', requireAuth, async (req, res) => {
             }
 
             // C. Create EventLog entry (Event Sourcing)
-            const event = await tx.eventLog.create({
-                data: {
-                    eventType: 'ORDER_PLACED',
-                    aggregateType: 'Order',
-                    aggregateId: externalOrderId,
-                    idempotencyKey,
-                    restaurantId: restaurant?.id ?? null,
-                    payload: order // The snapshot of the order at creation time
-                }
-            });
+            const event = await appendEvent(
+                EventTypes.ORDER_PLACED,
+                'Order',
+                externalOrderId,
+                order, // The snapshot of the order at creation time
+                { restaurantId: restaurant?.id ?? null },
+                idempotencyKey,
+                tx
+            );
 
             return [order, event];
         });
