@@ -14,6 +14,9 @@ const { z } = require('zod');
 const { sendTelegramMessage } = require('../services/telegramService');
 
 const router = express.Router();
+const CHECKOUT_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+
+const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * POST /api/orders/calculate
@@ -74,13 +77,17 @@ const checkoutSchema = z.object({
     paymentStatus: z.string().optional(),
     transactionId: z.string().optional(),
     spentPoints: z.number().int().nonnegative().optional(),
-    clientOrderId: z.string().optional()
+    clientOrderId: z.string().uuid().refine((value) => uuidV4Regex.test(value), {
+        message: 'clientOrderId must be UUIDv4'
+    }).optional()
 }).refine(data => data.address || data.customerAddress, {
     message: "Address is required",
     path: ["address"]
 });
 
 router.post('/checkout', requireAuth, async (req, res) => {
+    let resolvedIdempotencyKey = null;
+
     try {
         const validation = checkoutSchema.safeParse(req.body);
         if (!validation.success) {
@@ -128,26 +135,29 @@ router.post('/checkout', requireAuth, async (req, res) => {
             : await prisma.restaurant.findFirst({ where: { isActive: true } });
 
         // 2. Generate Idempotency Key
-        let idempotencyKey;
-        if (clientOrderId) {
-            idempotencyKey = "checkout_" + clientOrderId;
-        } else {
-            const timeWindow = Math.floor(Date.now() / 10000); // 10 second window
-            const hashInput = `${customerPhone}-${JSON.stringify(items)}-${timeWindow}`;
-            idempotencyKey = crypto.createHash('sha256').update(hashInput).digest('hex');
-        }
+        const requestToken = clientOrderId || crypto.randomBytes(32).toString('hex');
+        const idempotencyKey = `checkout_${requestToken}`;
+        resolvedIdempotencyKey = idempotencyKey;
+        const ttlExpiresAt = new Date(Date.now() + CHECKOUT_IDEMPOTENCY_TTL_MS);
 
-        // Check if EventLog already has this idempotency key (deduplication)
-        const duplicateEvent = await prisma.eventLog.findUnique({
+        // Check dedicated idempotency table first to avoid accidental long-term deduplication
+        const existingIdempotency = await prisma.checkoutIdempotency.findUnique({
             where: { idempotencyKey }
         });
 
-        if (duplicateEvent) {
-            console.log(`[Order] Debounced duplicate order`);
+        if (existingIdempotency && existingIdempotency.expiresAt > new Date() && existingIdempotency.orderExternalId) {
+            console.log(`[Order] Idempotent replay detected for key ${idempotencyKey}`);
             return res.status(200).json({
                 success: true,
                 message: 'Order already processed',
-                orderId: duplicateEvent.aggregateId // Returned UUID of existing order
+                orderId: existingIdempotency.orderExternalId,
+                idempotentReplay: true
+            });
+        }
+
+        if (existingIdempotency && existingIdempotency.expiresAt <= new Date()) {
+            await prisma.checkoutIdempotency.delete({
+                where: { idempotencyKey }
             });
         }
 
@@ -155,7 +165,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const externalOrderId = crypto.randomUUID();
 
         // 3. Prisma $transaction (Atomicity)
-        const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
+        const [createdOrder] = await prisma.$transaction(async (tx) => {
             
             let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
             
@@ -236,7 +246,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
             }
 
             // C. Create EventLog entry (Event Sourcing)
-            const event = await tx.eventLog.create({
+            await tx.eventLog.create({
                 data: {
                     eventType: 'ORDER_PLACED',
                     aggregateType: 'Order',
@@ -247,7 +257,15 @@ router.post('/checkout', requireAuth, async (req, res) => {
                 }
             });
 
-            return [order, event];
+            await tx.checkoutIdempotency.create({
+                data: {
+                    idempotencyKey,
+                    orderExternalId: externalOrderId,
+                    expiresAt: ttlExpiresAt
+                }
+            });
+
+            return [order];
         });
 
         // 4. Integrations: Payments & Notifications
@@ -291,10 +309,28 @@ router.post('/checkout', requireAuth, async (req, res) => {
             total: createdOrder.total,
             status: createdOrder.status,
             checkoutUrl, // Will be null for CASH
-            message: 'Order placed, event logged'
+            message: 'Order placed, event logged',
+            idempotentReplay: false
         });
 
     } catch (error) {
+        const uniqueTarget = Array.isArray(error.meta?.target) ? error.meta.target.join(',') : String(error.meta?.target || '');
+
+        if (error.code === 'P2002' && resolvedIdempotencyKey && uniqueTarget.includes('idempotencyKey')) {
+            const duplicate = await prisma.checkoutIdempotency.findUnique({
+                where: { idempotencyKey: resolvedIdempotencyKey }
+            });
+
+            if (duplicate?.orderExternalId) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Order already processed',
+                    orderId: duplicate.orderExternalId,
+                    idempotentReplay: true
+                });
+            }
+        }
+
         console.error('[Checkout Error]', error);
         res.status(400).json({ error: error.message || 'Checkout failed' });
     }
