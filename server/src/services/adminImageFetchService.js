@@ -199,6 +199,49 @@ async function refetchDrinksAndCalzones() {
     }
 }
 
+
+async function refetchCriticalImages() {
+    const queryByName = {
+        'Аппетитная': 'пицца Аппетитная на белом фоне -суши -роллы',
+        'Охотничья': 'пицца мясная на белом фоне -курьер -велосипед -человек',
+        'Ранчо': 'пицца мясная на белом фоне -курьер -велосипед -человек',
+        'Сырная': 'пицца 4 сыра на белом фоне -тарелка -виноград',
+        'Маринара': 'пицца на белом фоне -watermark -logo -minaki.ru -stock',
+        'Баварская': 'пицца на белом фоне -watermark -logo -minaki.ru -stock',
+        'Пикник': 'комбо набор пицц -круассаны -вафли',
+        'Чизбургер': 'пицца чизбургер на белом фоне -checkerboard',
+        'Кока-кола': 'бутылка coca cola изолированный фон -checkerboard',
+    };
+
+    const productNames = Object.keys(queryByName);
+    const products = await prisma.product.findMany({
+        where: { name: { in: productNames } },
+        select: { id: true, name: true },
+    });
+
+    for (const product of products) {
+        const query = queryByName[product.name];
+        if (!query) continue;
+
+        try {
+            const foundUrl = await findImageUrl(query);
+            if (!/^https?:\/\//i.test(foundUrl)) {
+                throw new Error('Found URL is not absolute');
+            }
+
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { image: foundUrl },
+            });
+            console.log(`✅ Critical image refreshed for product#${product.id} (${product.name})`);
+        } catch (error) {
+            console.warn(`⚠️ Critical re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+}
+
 function isImageFetchEndpointEnabled() {
     if (process.env.NODE_ENV !== 'production') {
         return true;
@@ -320,5 +363,6 @@ module.exports = {
     triggerImageFetchJobByAdmin,
     refetchBadProductImages,
     refetchDrinksAndCalzones,
+    refetchCriticalImages,
     JobConflictError,
 };

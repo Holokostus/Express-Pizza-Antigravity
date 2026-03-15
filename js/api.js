@@ -138,6 +138,21 @@ window.resolveModifierImage = function resolveModifierImage(modifier) {
     return byGroup || 'https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg?auto=compress&cs=tinysrgb&w=800';
 };
 
+window.resolveModifierEmoji = function resolveModifierEmoji(modifierOrName) {
+    const normalizedName = String(
+        typeof modifierOrName === 'string' ? modifierOrName : (modifierOrName?.name || '')
+    ).trim().toLowerCase();
+
+    if (!normalizedName) return '🍕';
+
+    if (normalizedName.includes('халапень')) return '🌶️';
+    if (normalizedName.includes('ветчин') || normalizedName.includes('бекон')) return '🥓';
+    if (normalizedName.includes('сырный бортик') || normalizedName.includes('сыр')) return '🧀';
+    if (normalizedName.includes('гриб')) return '🍄';
+
+    return '🍕';
+};
+
 function safeLocalStorageGetJson(key, fallback = null) {
     try {
         const raw = localStorage.getItem(key);

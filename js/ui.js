@@ -15,6 +15,15 @@ window.escapeHtml = function(str) {
         .replace(/'/g, '&#039;');
 };
 
+
+window.formatModifierLabel = function formatModifierLabel(modifierName) {
+    const safeName = escapeHtml(modifierName || '');
+    const emoji = typeof window.resolveModifierEmoji === 'function'
+        ? window.resolveModifierEmoji(modifierName)
+        : '🍕';
+    return `${emoji} ${safeName}`.trim();
+};
+
 // ── Skeleton Loader ──
 function showSkeletons(count = 8) {
     const menuGrid = $('menu-grid');

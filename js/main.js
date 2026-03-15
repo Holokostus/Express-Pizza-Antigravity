@@ -73,6 +73,83 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     syncPaymentSegment();
 
+
+    const submitOrderWithCurrentForm = async ({ needsCallConfirmation = false } = {}) => {
+        const email = $('user-email') ? $('user-email').value.trim().toLowerCase() : '';
+        const customerPhone = $('user-phone') ? $('user-phone').value : '';
+        const name = $('user-name') ? $('user-name').value : '';
+        const address = $('user-address') ? $('user-address').value : '';
+
+        const checkoutTotal = Number(serverCalculation?.total ?? cart.reduce((sum, item) => {
+            const unit = Number(item?._meta?.finalPrice ?? item?._display?.price ?? 0);
+            const qty = Number(item?.quantity ?? 0);
+            return sum + ((Number.isFinite(unit) ? unit : 0) * qty);
+        }, 0));
+
+        if (selectedPaymentMethod === 'card') {
+            await window.simulateSandboxCardPayment(checkoutTotal);
+        }
+
+        const payload = {
+            items: cart.map(i => ({
+                productSizeId: i.productSizeId,
+                modifierIds: i.modifierIds || [],
+                quantity: i.quantity,
+            })),
+            promoCodeString: appliedPromoCode || undefined,
+            customerName: name,
+            customerAddress: address,
+            payment: selectedPaymentMethod === 'card' ? 'BEPAID_ONLINE' : 'CASH_IKASSA',
+            paymentMethod: selectedPaymentMethod,
+            paymentStatus: selectedPaymentMethod === 'card' ? 'paid' : 'pending',
+            transactionId: selectedPaymentMethod === 'card' ? 'sb_' + Date.now() : undefined,
+            restaurantId: 1,
+            clientOrderId: crypto.randomUUID(),
+            customerPhone,
+            source: needsCallConfirmation ? 'PHONE' : 'WEBSITE',
+            otpFallback: needsCallConfirmation,
+            customerComment: needsCallConfirmation
+                ? 'OTP fallback: сеть недоступна, нужен прозвон для подтверждения заказа.'
+                : undefined,
+            customerEmail: email || undefined,
+        };
+
+        return api('/api/orders/checkout', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    };
+
+    const finalizeCheckoutSuccess = (orderResult, verifyBtn, otpInput) => {
+        if (orderResult.offline) {
+            showToast('success', '🌐 Нет сети. Ваш заказ сохранен и будет отправлен автоматически, как только появится интернет!', 5000);
+        } else {
+            showOrderTracker(orderResult.orderNumber || orderResult.orderId);
+
+            if (orderResult.checkoutUrl) {
+                window.location.href = orderResult.checkoutUrl;
+                return;
+            }
+
+            if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', orderResult.order);
+            console.log('[Order] Checkout successful, backend will notify Telegram.');
+        }
+
+        cart = [];
+        appliedPromoCode = null;
+        serverCalculation = null;
+        renderCartUI(null);
+
+        setTimeout(() => {
+            if (orderForm) { orderForm.reset(); orderForm.classList.remove('hidden'); }
+            const otpStep = $('otp-step');
+            if (otpStep) otpStep.classList.add('hidden');
+            const reqBtn = $('btn-request-otp');
+            if (reqBtn) { reqBtn.disabled = false; reqBtn.innerHTML = 'Оформить заказ'; }
+            if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.innerHTML = '<span>Подтвердить и Заказать</span>'; }
+            if (otpInput) otpInput.value = '';
+        }, 1000);
+    };
     window.requestOTP = async () => {
         if (!orderForm.checkValidity()) {
             orderForm.reportValidity();
@@ -104,10 +181,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (otpInput) otpInput.focus();
         } catch (err) {
             console.error('[Auth] Send confirmation code error:', err);
-            const backendDetails = err?.message || 'Не удалось отправить код подтверждения. Проверьте email и попробуйте позже';
-            showAppModal(backendDetails, 'Ошибка');
-            showToast('error', backendDetails);
-            if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
+            showToast('error', 'Проблемы с сетью. Заказ будет оформлен, оператор перезвонит для подтверждения.');
+
+            const otpStep = $('otp-step');
+            if (otpStep) otpStep.classList.add('hidden');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = 'Оформляем заказ...';
+            }
+
+            try {
+                const orderResult = await submitOrderWithCurrentForm({ needsCallConfirmation: true });
+                finalizeCheckoutSuccess(orderResult, null, null);
+            } catch (checkoutError) {
+                showToast('error', checkoutError.message || 'Ошибка оформления заказа');
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
+            }
         }
     };
 
@@ -115,7 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const otpInput = $('otp-input');
         const code = otpInput ? otpInput.value : '';
         const email = $('user-email') ? $('user-email').value.trim().toLowerCase() : '';
-        const customerPhone = $('user-phone') ? $('user-phone').value : '';
         const name = $('user-name') ? $('user-name').value : '';
 
         if (!code || code.length < 4) {
@@ -139,75 +227,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn('[Auth] Failed to persist auth token:', storageError);
             }
 
-            const address = $('user-address') ? $('user-address').value : '';
-            const checkoutTotal = Number(serverCalculation?.total ?? cart.reduce((sum, item) => {
-                const unit = Number(item?._meta?.finalPrice ?? item?._display?.price ?? 0);
-                const qty = Number(item?.quantity ?? 0);
-                return sum + ((Number.isFinite(unit) ? unit : 0) * qty);
-            }, 0));
-
-            if (selectedPaymentMethod === 'card') {
-                await window.simulateSandboxCardPayment(checkoutTotal);
-            }
-
             if (verifyBtn) verifyBtn.innerHTML = 'Оформляем заказ...';
-
-            const payload = {
-                items: cart.map(i => ({
-                    productSizeId: i.productSizeId,
-                    modifierIds: i.modifierIds || [],
-                    quantity: i.quantity,
-                })),
-                promoCodeString: appliedPromoCode || undefined,
-                customerName: name,
-                customerAddress: address,
-                payment: selectedPaymentMethod === 'card' ? 'BEPAID_ONLINE' : 'CASH_IKASSA',
-                paymentMethod: selectedPaymentMethod,
-                paymentStatus: selectedPaymentMethod === 'card' ? 'paid' : 'pending',
-                transactionId: selectedPaymentMethod === 'card' ? 'sb_' + Date.now() : undefined,
-                restaurantId: 1,
-                clientOrderId: crypto.randomUUID(),
-                customerPhone
-            };
-
-            const orderResult = await api('/api/orders/checkout', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-
-            if (orderResult.offline) {
-                showToast('success', '🌐 Нет сети. Ваш заказ сохранен и будет отправлен автоматически, как только появится интернет!', 5000);
-            } else {
-                showOrderTracker(orderResult.orderNumber || orderResult.orderId);
-
-                if (orderResult.checkoutUrl) {
-                    window.location.href = orderResult.checkoutUrl;
-                    return;
-                }
-
-                if (typeof eventBus !== 'undefined') eventBus.emit('ORDER_PLACED', orderResult.order);
-
-                // Telegram Notification (Removed from frontend)
-                // Notifications are now handled purely on the backend via telegramService.js
-                console.log('[Order] Checkout successful, backend will notify Telegram.');
-            }
-
-            // Reset
-            cart = [];
-            appliedPromoCode = null;
-            serverCalculation = null;
-            renderCartUI(null);
-
-            setTimeout(() => {
-                if (orderForm) { orderForm.reset(); orderForm.classList.remove('hidden'); }
-                const otpStep = $('otp-step');
-                if (otpStep) otpStep.classList.add('hidden');
-                const reqBtn = $('btn-request-otp');
-                if (reqBtn) { reqBtn.disabled = false; reqBtn.innerHTML = 'Оформить заказ'; }
-                if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.innerHTML = '<span>Подтвердить и Заказать</span>'; }
-                if (otpInput) otpInput.value = '';
-            }, 1000);
-
+            const orderResult = await submitOrderWithCurrentForm();
+            finalizeCheckoutSuccess(orderResult, verifyBtn, otpInput);
         } catch (err) {
             showToast('error', err.message || 'Ошибка оформления заказа');
             if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.innerHTML = '<span>Подтвердить и Заказать</span>'; }

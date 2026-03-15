@@ -9,7 +9,7 @@ const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
 const { normalizeOrderStatus, assertKnownOrderStatus, assertAllowedStatusTransition } = require('../services/orderStatusPolicy');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, optionalAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
 const { sendTelegramMessage } = require('../services/telegramService');
@@ -153,11 +153,17 @@ const checkoutSchema = z.object({
     path: ["address"]
 });
 
-router.post('/checkout', requireAuth, async (req, res) => {
+router.post('/checkout', optionalAuth, async (req, res) => {
     let resolvedIdempotencyKey = null;
 
     try {
         const normalizedPayload = normalizeCheckoutEnums(req.body);
+        const isOtpFallbackCheckout = normalizedPayload.otpFallback === true || normalizedPayload.otpFallback === 'true';
+
+        if (!req.user && !isOtpFallbackCheckout) {
+            return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+        }
+
         const validation = checkoutSchema.safeParse(normalizedPayload);
         if (!validation.success) {
             return res.status(422).json({ error: 'Validation failed', details: validation.error.issues });
@@ -189,6 +195,10 @@ router.post('/checkout', requireAuth, async (req, res) => {
         // Extract verified phone from JWT token
         const customerPhoneJwt = req.user?.phone;
         const customerPhone = customerPhoneJwt || req.body.customerPhone;
+
+        if (!customerPhone) {
+            return res.status(422).json({ error: 'Validation failed', details: [{ path: ['customerPhone'], message: 'Phone is required' }] });
+        }
 
         if (!items || items.length === 0) {
             return res.status(400).json({ error: 'Cart is empty' });
