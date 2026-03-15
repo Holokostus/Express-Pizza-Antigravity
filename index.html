@@ -23,7 +23,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Tailwind CSS -->
@@ -44,8 +44,8 @@
                         textMutedDark: '#9ca3af',
                     },
                     fontFamily: {
-                        sans: ['Nunito', 'sans-serif'],
-                        display: ['Nunito', 'sans-serif'],
+                        sans: ['Manrope', 'sans-serif'],
+                        display: ['Manrope', 'sans-serif'],
                     },
                     boxShadow: {
                         'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
@@ -72,15 +72,20 @@
                 <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center text-white font-display font-bold text-lg shadow-glow-red group-hover:scale-105 transition-transform">EP</div>
                 <span class="font-display font-black text-xl tracking-tight"><span class="brand-express">Express</span> Pizza</span>
             </a>
+            <nav class="hidden lg:flex items-center gap-2">
+                <a href="#menu-section" class="header-nav-link">Меню</a>
+                <a href="#delivery-info" class="header-nav-link">Доставка</a>
+                <a href="#contacts" class="header-nav-link">Контакты</a>
+            </nav>
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-full font-medium text-sm">
                     <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span id="delivery-timer">Среднее время: 24 мин</span>
                 </div>
-                <div class="flex flex-col text-sm font-semibold">
-                    <a href="tel:+375445891111" class="hover:text-red-600 transition-colors">+375 44 589 11 11</a>
-                    <a href="tel:+375333891111" class="hover:text-red-600 transition-colors text-textMutedLight dark:text-textMutedDark">+375 33 389 11 11</a>
-                </div>
+                <a href="tel:+375445891111" class="header-phone-link" aria-label="Позвонить +375 44 589-11-11">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a2 2 0 011.94 1.515l.544 2.178a2 2 0 01-.58 1.94L8.62 10.19a16.03 16.03 0 006.19 6.19l1.558-1.558a2 2 0 011.94-.58l2.178.544A2 2 0 0121 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <span>+375 44 589-11-11</span>
+                </a>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="handleProfileClick()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Профиль">
@@ -114,6 +119,15 @@
 
     <!-- Main Content -->
     <main class="pb-20 lg:pb-0">
+
+        <section class="hero-banner mx-3 lg:mx-auto lg:container lg:px-6 mt-3 lg:mt-5 mb-4 rounded-3xl p-6 lg:p-10 overflow-hidden relative">
+            <div class="hero-waves" aria-hidden="true"></div>
+            <div class="relative z-10 max-w-2xl">
+                <p class="text-xs uppercase tracking-[0.24em] text-textMutedLight dark:text-textMutedDark font-bold mb-3">Премиальная доставка в Минске</p>
+                <h1 class="font-display font-extrabold text-2xl md:text-4xl leading-tight mb-5">Express Pizza. Быстрее пули. Вкуснее, чем в Италии.</h1>
+                <a href="#menu-section" class="hero-cta">Смотреть меню</a>
+            </div>
+        </section>
 
         <!-- Stories / Promotions Carousel -->
         <section class="px-3 pt-3 pb-1">
@@ -158,7 +172,7 @@
         <div id="cart-overlay"
             class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none" onclick="document.getElementById('close-cart').click()"></div>
         <div id="cart-panel"
-            class="bg-white dark:bg-bgElementDark text-textMainLight dark:text-textMainDark w-full rounded-t-3xl lg:rounded-none lg:rounded-l-3xl h-[90vh] lg:h-full lg:w-[420px] lg:ml-auto max-h-[100vh] flex flex-col shadow-2xl relative transform translate-y-full lg:translate-x-full lg:translate-y-0 transition-transform duration-300 pointer-events-auto">
+            class="cart-panel-premium bg-white dark:bg-bgElementDark text-textMainLight dark:text-textMainDark w-full rounded-t-3xl lg:rounded-none lg:rounded-l-3xl h-[90vh] lg:h-full lg:w-[420px] lg:ml-auto max-h-[100vh] flex flex-col shadow-2xl relative transform translate-y-full lg:translate-x-full lg:translate-y-0 transition-transform duration-300 pointer-events-auto">
             <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div>
                     <h2 class="font-display font-black text-xl uppercase tracking-tight">Корзина</h2>
@@ -278,9 +292,10 @@
                     </label>
 
                     <button type="button" id="btn-request-otp" onclick="requestOTP()"
-                        class="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-red mt-4">
+                        class="checkout-cta w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-display font-black text-lg py-4 rounded-2xl transition-all shadow-glow-red mt-4">
                         Оформить заказ
                     </button>
+                    <p class="text-center text-xs text-textMutedLight dark:text-textMutedDark mt-2">Бесплатная доставка от 30 BYN</p>
                 </form>
 
                 <!-- OTP Step (Phase 5.1) -->
@@ -600,7 +615,7 @@
     </div>
 
     <!-- Legal Footer (Belarus compliance) -->
-    <footer class="bg-gray-900 border-t border-gray-800 mt-16 py-8 px-4 text-textMutedDark">
+    <footer id="contacts" class="bg-gray-900 border-t border-gray-800 mt-16 py-8 px-4 text-textMutedDark">
         <div class="max-w-5xl mx-auto">
             <div class="flex flex-col gap-4 text-sm leading-relaxed">
                 <p class="font-display font-black text-lg text-white">Готовим для вас с 1997 года!</p>
@@ -610,7 +625,7 @@
                     <p>УНП: 101237697. Зарегистрировано Минским горисполкомом 08.04.1997 г.</p>
                     <p>Юридический адрес: 220033, г. Минск, пр-т Партизанский, 19, ком. 2.</p>
                     <p>Регистрация в Торговом реестре РБ: №290530 от 05.02.2017.</p>
-                    <p>Телефоны доставки: +375 44 589-11-11, +375 33 389-11-11</p>
+                    <p id="delivery-info">Телефоны доставки: +375 44 589-11-11, +375 33 389-11-11</p>
                 </div>
                 <div class="pt-2">
                     <a href="#" class="inline-flex text-sm text-accent hover:text-yellow-300 underline underline-offset-4 transition-colors">Публичная оферта</a>
