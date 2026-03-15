@@ -166,7 +166,7 @@ function renderCartUI(serverData) {
             : cart.map((item, idx) => {
                 try {
                     const sd = displayItems[idx];
-                    if (!item || isNaN(Number(sd?.unitPrice ?? item.price))) {
+                    if (!item) {
                         return '';
                     }
                     const name = sd?.name || item._display.name;
@@ -224,8 +224,17 @@ function renderCartUI(serverData) {
 
     // Totals area
     const totalsArea = $('cart-totals-area');
-    if (totalsArea && serverData) {
-        const { subtotal, discount, total, promo } = serverData;
+    if (totalsArea) {
+        const localSubtotal = cart.reduce((sum, item) => {
+            const itemQty = Number(item.quantity || 0);
+            const unit = Number(item._meta?.finalPrice || item._display?.price || 0);
+            return sum + (Number.isFinite(unit) ? unit * itemQty : 0);
+        }, 0);
+        const subtotal = Number(serverData?.subtotal ?? localSubtotal);
+        const discount = Number(serverData?.discount ?? 0);
+        const total = Number(serverData?.total ?? subtotal);
+        const promo = serverData?.promo || null;
+
         let html = '';
         if (promo && discount > 0) {
             html = `
@@ -248,14 +257,9 @@ function renderCartUI(serverData) {
                     <span class="font-display font-black text-2xl text-primary">${total.toFixed(2)} BYN</span>
                 </div>`;
         }
+
         totalsArea.innerHTML = html;
         evaluateRisk(total);
-    } else if (totalsArea && cart.length === 0) {
-        totalsArea.innerHTML = `
-            <div class="flex items-center justify-between">
-                <span class="font-bold text-lg">Итого:</span>
-                <span class="font-display font-black text-2xl text-primary">0.00 BYN</span>
-            </div>`;
     }
 
     safeLocalStorageSetJson('ep_cart', cart);
