@@ -5,6 +5,7 @@
 const WebSocket = require('ws');
 const prisma = require('../lib/prisma');
 const loyaltyService = require('./loyaltyService');
+const { verifyToken } = require('../utils/jwt');
 
 let wss = null;
 
@@ -17,6 +18,58 @@ const pendingAcks = new Map();
 
 const ACK_TIMEOUT_MS = 5000;
 const MAX_RETRIES = 5;
+const RATE_LIMIT_WINDOW_MS = 10000;
+const RATE_LIMIT_MAX_MESSAGES = 30;
+
+function extractBearerToken(req, url) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const queryToken = url.searchParams.get('token');
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.slice('Bearer '.length).trim();
+    }
+
+    if (queryToken) {
+        return queryToken.trim();
+    }
+
+    return null;
+}
+
+function hasRestaurantAccess(decodedToken, restaurantId) {
+    if (!decodedToken) return false;
+    if (decodedToken.role === 'ADMIN') return true;
+
+    const explicitRestaurantId = Number(decodedToken.restaurantId);
+    if (Number.isInteger(explicitRestaurantId)) {
+        return explicitRestaurantId === restaurantId;
+    }
+
+    if (Array.isArray(decodedToken.restaurantIds)) {
+        const allowedRestaurants = decodedToken.restaurantIds
+            .map((id) => Number(id))
+            .filter(Number.isInteger);
+
+        return allowedRestaurants.includes(restaurantId);
+    }
+
+    // Backward compatibility: older tokens may not contain restaurant scope.
+    return true;
+}
+
+function isRateLimited(ws) {
+    const now = Date.now();
+
+    if (!ws.rateLimitState || (now - ws.rateLimitState.windowStart) > RATE_LIMIT_WINDOW_MS) {
+        ws.rateLimitState = {
+            windowStart: now,
+            count: 0
+        };
+    }
+
+    ws.rateLimitState.count += 1;
+    return ws.rateLimitState.count > RATE_LIMIT_MAX_MESSAGES;
+}
 
 function getAckKey(restaurantId, orderId) {
     return `${parseInt(restaurantId)}:${parseInt(orderId)}`;
@@ -106,14 +159,43 @@ function broadcastStatusSync(restaurantId, payloadData) {
 }
 
 function initKDSWebSocket(server) {
-    wss = new WebSocket.Server({ server, path: '/ws/kds' });
+    wss = new WebSocket.Server({
+        server,
+        path: '/ws/kds',
+        verifyClient: (info, done) => {
+            try {
+                const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+                const restaurantId = Number.parseInt(url.searchParams.get('restaurantId'), 10);
+
+                if (!Number.isInteger(restaurantId) || restaurantId <= 0) {
+                    return done(false, 400, 'Invalid restaurantId');
+                }
+
+                const token = extractBearerToken(info.req, url);
+                if (!token) {
+                    return done(false, 401, 'Missing auth token');
+                }
+
+                const decoded = verifyToken(token);
+                if (!hasRestaurantAccess(decoded, restaurantId)) {
+                    return done(false, 403, 'Restaurant access denied');
+                }
+
+                info.req.auth = decoded;
+                info.req.restaurantId = restaurantId;
+                return done(true);
+            } catch (err) {
+                console.warn('[KDS] WebSocket handshake rejected:', err.message);
+                return done(false, 401, 'Invalid auth token');
+            }
+        }
+    });
 
     console.log('[KDS] WebSocket server initialized on /ws/kds');
 
     wss.on('connection', (ws, req) => {
-        // Simple auth/routing based on query param: /ws/kds?restaurantId=1
-        const url = new URL(req.url, `http://${req.headers.host}`);
-        const restaurantId = parseInt(url.searchParams.get('restaurantId')) || 1;
+        const restaurantId = req.restaurantId;
+        const user = req.auth;
 
         if (!clients.has(restaurantId)) {
             clients.set(restaurantId, new Set());
@@ -121,14 +203,31 @@ function initKDSWebSocket(server) {
         clients.get(restaurantId).add(ws);
 
         ws.restaurantId = restaurantId;
-        console.log(`[KDS] Client connected for restaurant ${restaurantId}`);
+        ws.user = user;
+        console.log(`[KDS] Client connected for restaurant ${restaurantId} (role: ${user?.role || 'unknown'})`);
 
         // Send connection ACK
         ws.send(JSON.stringify({ type: 'CONNECTED', data: { restaurantId } }));
 
         ws.on('message', async (messageAsString) => {
+            if (isRateLimited(ws)) {
+                console.warn(`[KDS] Rate limit exceeded for user ${ws.user?.userId || 'unknown'} at restaurant ${restaurantId}`);
+                ws.close(1008, 'Rate limit exceeded');
+                return;
+            }
+
             try {
-                const message = JSON.parse(messageAsString);
+                if (typeof messageAsString !== 'string' && !Buffer.isBuffer(messageAsString)) {
+                    console.warn('[KDS] Unsupported message type received');
+                    return;
+                }
+
+                const rawMessage = Buffer.isBuffer(messageAsString) ? messageAsString.toString('utf-8') : messageAsString;
+                const message = JSON.parse(rawMessage);
+                if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
+                    console.warn('[KDS] Invalid message payload structure');
+                    return;
+                }
 
                 if (message.type === 'KDS_ACK' && message.orderId) {
                     const ackKey = getAckKey(restaurantId, message.orderId);
@@ -141,11 +240,35 @@ function initKDSWebSocket(server) {
 
                 // Allow KDS clients to update status
                 if (message.type === 'STATUS_UPDATE') {
+                    if (!['COOK', 'ADMIN'].includes(ws.user?.role)) {
+                        console.warn(`[KDS] Unauthorized STATUS_UPDATE attempt by role ${ws.user?.role || 'unknown'} at restaurant ${restaurantId}`);
+                        ws.close(1008, 'Forbidden operation');
+                        return;
+                    }
+
+                    if (!message.data || typeof message.data !== 'object') {
+                        console.warn('[KDS] STATUS_UPDATE rejected: missing data object');
+                        return;
+                    }
+
                     const { orderId, status } = message.data;
-                    await updateOrderStatus(orderId, status);
+                    if (!Number.isInteger(Number(orderId)) || typeof status !== 'string' || status.length === 0) {
+                        console.warn('[KDS] STATUS_UPDATE rejected: invalid payload');
+                        return;
+                    }
+
+                    await updateOrderStatus(Number(orderId), status, {
+                        actorUserId: ws.user?.userId,
+                        restaurantId: ws.restaurantId
+                    });
                 }
             } catch (err) {
-                console.error('[KDS] Error parsing message:', err);
+                if (err instanceof SyntaxError) {
+                    console.warn('[KDS] Invalid JSON received from client');
+                    return;
+                }
+
+                console.error('[KDS] Error handling message:', err);
             }
         });
 
@@ -167,7 +290,7 @@ function broadcastOrderToKDS(restaurantId, orderData) {
 /**
  * Chef updates order status from the KDS tablet
  */
-async function updateOrderStatus(orderId, newStatus) {
+async function updateOrderStatus(orderId, newStatus, context = {}) {
     try {
         const existingOrder = await prisma.order.findUnique({
             where: { id: orderId },
@@ -184,6 +307,10 @@ async function updateOrderStatus(orderId, newStatus) {
 
         if (!existingOrder) {
             throw new Error(`Order ${orderId} not found`);
+        }
+
+        if (context.restaurantId && existingOrder.restaurantId !== context.restaurantId) {
+            throw new Error(`Restaurant scope mismatch for order ${orderId}`);
         }
 
         const order = await prisma.order.update({
