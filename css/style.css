@@ -714,6 +714,72 @@ button.bg-primary:hover,
     box-shadow: none !important;
 }
 
+
+.empty-cart-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 36px 20px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,245,241,0.95) 100%);
+    border: 1px solid rgba(255, 75, 58, 0.16);
+    box-shadow: 0 10px 24px rgba(255, 75, 58, 0.12);
+}
+
+.empty-cart-state__icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    background: rgba(255, 75, 58, 0.12);
+    margin-bottom: 14px;
+}
+
+.empty-cart-state__title {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin: 0;
+}
+
+.empty-cart-state__subtitle {
+    margin: 8px 0 0;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.empty-cart-state__btn {
+    margin-top: 16px;
+    width: 100%;
+    max-width: 240px;
+    min-height: 48px;
+    border-radius: 999px;
+    background: linear-gradient(120deg, #ff4b3a 0%, #ff6b34 100%);
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 12px 24px rgba(255, 75, 58, 0.24);
+}
+
+.menu-card-add-btn,
+.upsell-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 14px;
+    white-space: nowrap;
+    box-shadow: none !important;
+}
+
+[data-theme="dark"] .empty-cart-state {
+    background: linear-gradient(180deg, rgba(36,36,36,0.96) 0%, rgba(26,26,26,0.96) 100%);
+    border-color: rgba(255, 75, 58, 0.35);
+}
+
 .menu-item-desc {
     color: var(--text-muted) !important;
     display: -webkit-box;

@@ -36,6 +36,17 @@ function toggleCart(show) {
 }
 
 
+
+window.goToMenuFromCart = function goToMenuFromCart() {
+    toggleCart(false);
+    setTimeout(() => {
+        const menuSection = document.getElementById('menu');
+        if (menuSection) {
+            menuSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 180);
+};
+
 function loadCart() {
     try {
         const raw = localStorage.getItem('ep_cart') ?? localStorage.getItem('cart');
@@ -159,12 +170,11 @@ function renderCartUI(serverData) {
     if (cartItemsContainer) {
         try {
             cartItemsContainer.innerHTML = cart.length === 0
-            ? `<div class="text-center py-12">
-                    <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
-                        <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                    </div>
-                    <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
-                    <button type="button" data-action="close-cart" onclick="toggleCart(false);" class="mt-4 text-primary font-bold hover:underline">Вернуться в меню</button>
+            ? `<div class="empty-cart-state">
+                    <div class="empty-cart-state__icon" aria-hidden="true">📦🍕</div>
+                    <h3 class="empty-cart-state__title">Ваша корзина пуста</h3>
+                    <p class="empty-cart-state__subtitle">Добавьте сюда что-нибудь вкусное!</p>
+                    <button type="button" class="empty-cart-state__btn" onclick="goToMenuFromCart()">Перейти в меню</button>
                </div>`
             : cart.map((item, idx) => {
                 try {
@@ -826,7 +836,7 @@ function renderUpsells() {
             <img src="${imageSrc}" alt="${escapeHtml(item.name)}" class="upsell-card-image mx-auto mb-1.5" loading="lazy" onerror="this.onerror=null;this.src='/images/icon.jpg'">
             <p class="text-[10px] font-bold leading-tight line-clamp-2 min-h-[24px]">${escapeHtml(item.name)}</p>
             <div class="mt-1 text-primary text-[10px] font-bold">+ ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</div>
-            <button type="button" class="upsell-add-btn mt-1.5" onclick="addToCart(${item.id}); event.stopPropagation();">+ Добавить</button>
+            <button type="button" class="upsell-add-btn mt-1.5" onclick="addToCart(${item.id}); event.stopPropagation();">В корзину · ${parseFloat(item.sizes?.[0]?.price || 0).toFixed(2)} BYN</button>
         </div>
     `}).join('');
 }

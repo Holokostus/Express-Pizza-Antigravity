@@ -77,8 +77,9 @@ function renderMenu() {
                 <div class="menu-card-footer">
                     <span data-role="price-text" class="menu-card-price">${parseFloat(activeSize.price).toFixed(2)} BYN</span>
                     <button onclick="event.stopPropagation(); addToCart(${item.id})"
-                        class="menu-card-add-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl transition-all active:scale-95 text-sm">
-                        В корзину +
+                        class="menu-card-add-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl transition-all active:scale-95 text-sm"
+                        aria-label="Добавить в корзину ${escapeHtml(item.name)} за ${parseFloat(activeSize.price).toFixed(2)} BYN">
+                        В корзину · ${parseFloat(activeSize.price).toFixed(2)} BYN
                     </button>
                 </div>
             </div>
@@ -165,7 +166,7 @@ if (!window.__promoCardClickBound) {
         if (!p) return;
 
         const promoTitle = p.dataset.promoTitle || 'Акция';
-        const promoDescription = p.dataset.promoDescription || 'Подробности акции уточняйте у оператора.';
+        const promoDescription = p.dataset.promoDescription || 'Подробности акции применены к вашему заказу.';
         showAppModal(promoDescription, promoTitle);
     });
 }
@@ -386,7 +387,7 @@ window.requestLoginCode = async function () {
         if (data.success) {
             $('login-step-1').classList.add('hidden');
             $('login-step-2').classList.remove('hidden');
-            showToast('success', 'Код отправлен на email');
+            showToast('success', 'Код подтверждения отправлен на email');
         } else {
             const details = data.details ? ` (${data.details})` : '';
             const message = `${data.error || 'Ошибка'}${details}`;
@@ -417,7 +418,7 @@ window.verifyLoginCode = async function () {
             showToast('success', 'Вход успешен');
             renderProfileView();
         } else {
-            showToast('error', data.error || 'Неверный код');
+            showToast('error', data.error || 'Неверный код подтверждения');
         }
     } catch (e) {
         showToast('error', e.message || 'Ошибка сети');

@@ -183,13 +183,11 @@
 
             <div id="cart-items" class="flex-grow overflow-y-auto p-6 space-y-6">
                 <!-- Cart items will be injected here -->
-                <div id="empty-cart" class="text-center py-12">
-                    <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
-                        <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                    </div>
-                    <p class="text-textMutedLight dark:text-textMutedDark">Ваша корзина пуста</p>
-                    <button id="back-to-menu" class="mt-4 text-primary font-bold hover:underline">Вернуться в
-                        меню</button>
+                <div id="empty-cart" class="empty-cart-state">
+                    <div class="empty-cart-state__icon" aria-hidden="true">📦🍕</div>
+                    <h3 class="empty-cart-state__title">Ваша корзина пуста</h3>
+                    <p class="empty-cart-state__subtitle">Добавьте сюда что-нибудь вкусное!</p>
+                    <button id="back-to-menu" type="button" class="empty-cart-state__btn" onclick="goToMenuFromCart()">Перейти в меню</button>
                 </div>
             </div>
 
@@ -241,7 +239,7 @@
                 <form id="order-form" class="space-y-3">
                     <input type="text" id="user-name" placeholder="Ваше имя" required
                         class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
-                    <input type="email" id="user-email" placeholder="Email для OTP" required
+                    <input type="email" id="user-email" placeholder="Email для кода подтверждения" required
                         class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
                     <input type="tel" id="user-phone" placeholder="Телефон для курьера (+375...)" required
                         class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
@@ -288,7 +286,7 @@
                     <p class="text-center text-xs text-textMutedLight dark:text-textMutedDark mt-2">Бесплатная доставка от 30 BYN</p>
                 </form>
 
-                <!-- OTP Step (Phase 5.1) -->
+                <!-- Шаг кода подтверждения -->
                 <div id="otp-step" class="hidden space-y-4 pt-4 text-center">
                     <p class="font-bold text-lg">Подтверждение email</p>
                     <p class="text-sm text-textMutedLight dark:text-textMutedDark">Мы отправили код на email
