@@ -14,6 +14,32 @@ if (!SHOP_ID || !SECRET_KEY) {
     console.warn('[bePaid] BEPAID_SHOP_ID or BEPAID_SECRET_KEY environment variables are missing. Payments will run in fallback mode.');
 }
 
+if (process.env.NODE_ENV === 'production' && !WEBHOOK_SECRET) {
+    throw new Error('[bePaid] Missing required BEPAID_WEBHOOK_SECRET in production environment.');
+}
+
+if (process.env.NODE_ENV !== 'production' && !WEBHOOK_SECRET) {
+    console.warn('[bePaid] BEPAID_WEBHOOK_SECRET is missing. Webhook signature verification will fail.');
+}
+
+function normalizeSignature(signature = '') {
+    const normalized = String(signature)
+        .trim()
+        .toLowerCase()
+        .replace(/^(sha256=|hmac-sha256=)/, '');
+
+    if (!normalized) {
+        return null;
+    }
+
+    // Hex-encoded SHA-256 signature
+    if (!/^[a-f0-9]{64}$/.test(normalized)) {
+        return null;
+    }
+
+    return normalized;
+}
+
 /**
  * Creates a bePaid checkout session URL
  * @param {string} externalOrderId UUID of the order
@@ -90,21 +116,17 @@ async function createPaymentSession(externalOrderId, amount, customer = {}) {
  */
 function verifyWebhookSignature(payload, signature) {
     if (!WEBHOOK_SECRET) {
-        console.error('[bePaid] Configuration error: BEPAID_WEBHOOK_SECRET is missing. Webhook signature verification disabled.');
-        return false;
+        return { isValid: false, reason: 'webhook_secret_not_configured' };
     }
 
-    if (typeof payload !== 'string' && !Buffer.isBuffer(payload)) {
-        return false;
+    if (!payload || !(Buffer.isBuffer(payload) || typeof payload === 'string')) {
+        return { isValid: false, reason: 'invalid_payload' };
     }
 
-    if (typeof signature !== 'string') {
-        return false;
-    }
+    const normalizedSignature = normalizeSignature(signature);
 
-    const normalizedSignature = signature.trim().toLowerCase();
-    if (!/^[a-f0-9]{64}$/.test(normalizedSignature)) {
-        return false;
+    if (!normalizedSignature) {
+        return { isValid: false, reason: 'invalid_signature_format' };
     }
 
     // bePaid signature logic: HMAC-SHA256 of the raw JSON body
@@ -115,14 +137,19 @@ function verifyWebhookSignature(payload, signature) {
         .update(payload)
         .digest('hex');
 
-    if (hash.length !== normalizedSignature.length) {
-        return false;
+    const expectedBuffer = Buffer.from(hash, 'hex');
+    const providedBuffer = Buffer.from(normalizedSignature, 'hex');
+
+    if (expectedBuffer.length !== providedBuffer.length) {
+        return { isValid: false, reason: 'signature_length_mismatch' };
     }
 
-    return crypto.timingSafeEqual(
-        Buffer.from(hash, 'hex'),
-        Buffer.from(normalizedSignature, 'hex')
-    );
+    const isValid = crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+
+    return {
+        isValid,
+        reason: isValid ? null : 'signature_mismatch'
+    };
 }
 
 module.exports = {
