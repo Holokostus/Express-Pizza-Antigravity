@@ -279,7 +279,7 @@ html {
 /* Dodo-style modifier tiles */
 .modifiers-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 14px;
 }
 
@@ -304,30 +304,30 @@ html {
     align-items: flex-start;
     justify-content: flex-start;
     gap: 8px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
+    background: linear-gradient(165deg, #ffffff 0%, #fff4f1 45%, #fef2f2 100%);
+    border: 2px solid #ffd4cd;
+    border-radius: 18px;
     padding: 12px;
     cursor: pointer;
-    transition: 0.22s ease;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    transition: 0.2s ease;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.12);
     position: relative;
-    min-height: 170px;
+    min-height: 185px;
     text-align: left;
 }
 
 .modifier-image {
     width: 100%;
-    height: 72px;
+    height: 84px;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 2px;
-    background: #eef2ff;
+    background: #fef2f2;
 }
 
 .modifier-card span.name {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.2;
     color: #111827;
     min-height: 34px;
@@ -335,8 +335,15 @@ html {
 
 .modifier-card span.price {
     font-size: 18px;
-    font-weight: 800;
-    color: #111827;
+    font-weight: 900;
+    color: #dc2626;
+}
+
+.modifier-card .tap-hint {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
 }
 
 .modifier-checkmark {
@@ -359,13 +366,15 @@ html {
 }
 
 .modifier-card:hover .modifier-card-inner {
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.01);
+    border-color: #f87171;
 }
 
 .modifier-card:has(input[type="checkbox"]:checked) .modifier-card-inner,
 .modifier-card.active .modifier-card-inner {
     border-color: #ef4444;
-    box-shadow: 0 0 0 1px #ef4444, 0 10px 20px rgba(239, 68, 68, 0.18);
+    box-shadow: 0 0 0 2px #ef4444, 0 12px 24px rgba(239, 68, 68, 0.24);
+    background: linear-gradient(170deg, #fff1f2 0%, #ffe4e6 100%);
 }
 
 .modifier-card:has(input[type="checkbox"]:checked) .modifier-checkmark,
@@ -375,16 +384,28 @@ html {
 }
 
 [data-theme="dark"] .modifier-card-inner {
-    background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
-    border-color: #1f2937;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, #1f2937 0%, #0f172a 100%);
+    border-color: #334155;
+    box-shadow: 0 8px 22px rgba(2, 6, 23, 0.65);
 }
 
-[data-theme="dark"] .modifier-card span.name,
-[data-theme="dark"] .modifier-card span.price {
+[data-theme="dark"] .modifier-card span.name {
     color: #f8fafc;
+}
+
+[data-theme="dark"] .modifier-card span.price {
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .modifier-card .tap-hint {
+    color: #94a3b8;
 }
 
 [data-theme="dark"] .modifier-image {
     background: #0b1222;
 }
+
+
+.sandbox-pay-field::placeholder { color: #94a3b8; }
+[data-theme="dark"] .sandbox-pay-field { color: #f8fafc !important; }
+[data-theme="dark"] .sandbox-pay-field::placeholder { color: #64748b; }

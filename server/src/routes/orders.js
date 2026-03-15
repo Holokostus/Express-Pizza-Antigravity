@@ -36,7 +36,10 @@ router.post('/calculate', async (req, res) => {
             promo: cartResult.validPromo ? { label: cartResult.validPromo.code } : null,
             items: cartResult.validatedItems.map(item => ({
                 productId: item.productId,
+                name: item.productName,
+                image: item.productImage,
                 productSizeId: item.productSizeId,
+                sizeLabel: item.sizeLabel,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 note: item.note,
@@ -64,7 +67,7 @@ const checkoutSchema = z.object({
     customerAddress: z.string().min(1).optional(),
     items: z.array(z.any()).min(1, "Cart is empty"),
     promoCodeString: z.string().optional(),
-    restaurantId: z.number().int().optional(),
+    restaurantId: z.union([z.number().int(), z.string().regex(/^\d+$/).transform((v) => parseInt(v, 10))]).optional(),
     source: z.string().optional(),
     payment: z.string().optional(),
     paymentMethod: z.string().optional(),
@@ -119,13 +122,10 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const cartResult = await calculateCartTotal(items, promoCodeString);
 
 
-        const restaurant = restaurantId
-            ? await prisma.restaurant.findUnique({ where: { id: restaurantId } })
-            : await prisma.restaurant.findFirst();
-
-        if (!restaurant) {
-            return res.status(500).json({ error: 'Ресторан не найден в БД' });
-        }
+        const normalizedRestaurantId = Number.isFinite(Number(restaurantId)) ? Number(restaurantId) : null;
+        const restaurant = normalizedRestaurantId
+            ? await prisma.restaurant.findUnique({ where: { id: normalizedRestaurantId } })
+            : await prisma.restaurant.findFirst({ where: { isActive: true } });
 
         // 2. Generate Idempotency Key
         let idempotencyKey;
@@ -206,7 +206,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     subtotal: cartResult.subtotal,
                     discount: cartResult.discount + finalSpentPoints,
                     total: finalTotal,
-                    restaurantId: restaurant.id,
+                    restaurantId: restaurant?.id ?? null,
                     promoCodeId: cartResult.validPromo ? cartResult.validPromo.id : null,
                     // Create items and their modifiers in nested write
                     items: {
@@ -242,7 +242,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
                     aggregateType: 'Order',
                     aggregateId: externalOrderId,
                     idempotencyKey,
-                    restaurantId: restaurant.id,
+                    restaurantId: restaurant?.id ?? null,
                     payload: order // The snapshot of the order at creation time
                 }
             });
@@ -277,7 +277,9 @@ router.post('/checkout', requireAuth, async (req, res) => {
         }
 
         // Push order to Kitchen Display System instantly for ALL orders
-        broadcastOrderToKDS(restaurant.id, createdOrder);
+        if (restaurant?.id) {
+            broadcastOrderToKDS(restaurant.id, createdOrder);
+        }
 
         console.log(`[Order] Successfully created! externalOrderId: ${externalOrderId}, Total: ${cartResult.total} BYN`);
 

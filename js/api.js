@@ -46,6 +46,10 @@ const PRODUCT_IMAGE_BY_NAME = {
     'бонаква': 'https://images.unsplash.com/photo-1564419439260-858f4c6740d7?w=1200&q=80&auto=format&fit=crop',
     'rich': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=1200&q=80&auto=format&fit=crop',
     'сок': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=1200&q=80&auto=format&fit=crop',
+    'апельсин': 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=1200&q=80&auto=format&fit=crop',
+    'томатный': 'https://images.unsplash.com/photo-1571680322279-a226e6a4cc2a?w=1200&q=80&auto=format&fit=crop',
+    'яблочный': 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=1200&q=80&auto=format&fit=crop',
+    'мультифрукт': 'https://images.unsplash.com/photo-1497534446932-c925b458314e?w=1200&q=80&auto=format&fit=crop',
     'кальцоне': 'https://images.unsplash.com/photo-1515516969-d4008cc6241a?w=1200&q=80&auto=format&fit=crop',
     'соус': 'https://images.unsplash.com/photo-1598514983318-2f64f8f4796c?w=1200&q=80&auto=format&fit=crop',
     'сет': 'https://images.unsplash.com/photo-1608039755401-742074f0548d?w=1200&q=80&auto=format&fit=crop',
@@ -67,6 +71,10 @@ const MODIFIER_IMAGE_BY_NAME = {
     'без лука': 'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=80&auto=format&fit=crop',
     'дополнительный соус': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=800&q=80&auto=format&fit=crop',
     'двойной пепперони': 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop',
+    'доп сыр': 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=800&q=80&auto=format&fit=crop',
+    'грибы': 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?w=800&q=80&auto=format&fit=crop',
+    'бекон': 'https://images.unsplash.com/photo-1528607929212-2636ec44253e?w=800&q=80&auto=format&fit=crop',
+    'соус': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=800&q=80&auto=format&fit=crop',
 };
 
 function normalizeImagePath(imagePath) {

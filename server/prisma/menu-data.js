@@ -22,9 +22,10 @@ const promotions = [
 
 
 const defaultPizzaModifiers = [
-  { name: 'Сырный бортик', price: 3.5, image: '/images/mod_cheese.jpg' },
-  { name: 'Халапеньо', price: 1.5, image: '/images/mod_jalapeno.jpg' },
-  { name: 'Ветчина', price: 2.5, image: '/images/mod_ham.jpg' },
+  { name: 'Сырный бортик', price: 3.5, image: 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=1200&q=80&auto=format&fit=crop' },
+  { name: 'Халапеньо', price: 1.5, image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=1200&q=80&auto=format&fit=crop' },
+  { name: 'Ветчина', price: 2.5, image: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=1200&q=80&auto=format&fit=crop' },
+  { name: 'Двойной сыр', price: 3.2, image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=80&auto=format&fit=crop' },
 ];
 
 const products = [
