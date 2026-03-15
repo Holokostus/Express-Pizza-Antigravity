@@ -5,6 +5,25 @@
 // Depends on: api.js (loaded first)
 // ============================================================
 
+
+(function initThemeMode() {
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem('ep_theme');
+    const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    const theme = savedTheme || (prefersDark ? 'dark' : 'dark');
+    root.setAttribute('data-theme', theme);
+})();
+
+window.toggleTheme = function toggleTheme() {
+    const root = document.documentElement;
+    const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ep_theme', next);
+    return next;
+};
+
 window.escapeHtml = function(str) {
     if (!str) return '';
     return String(str)

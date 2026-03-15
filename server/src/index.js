@@ -64,11 +64,6 @@ const globalLimiter = rateLimit({
     message: { error: 'Слишком много запросов, пожалуйста, попробуйте позже.' }
 });
 
-const authLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 5,
-    message: { error: 'Слишком много попыток входа. Подождите 1 минуту.' }
-});
 
 const imageFetchLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
@@ -81,7 +76,7 @@ const imageFetchLimiter = rateLimit({
 
 // ---- Mount Routes ----
 app.use('/api/', globalLimiter);
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/aggregators', aggregatorRoutes);
