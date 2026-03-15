@@ -8,12 +8,17 @@ const { calculateCartTotal } = require('../services/cartService');
 const { createPaymentSession } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 const { broadcastOrderToKDS, updateOrderStatus } = require('../services/kdsService');
+const { normalizeOrderStatus, assertKnownOrderStatus, assertAllowedStatusTransition } = require('../services/orderStatusPolicy');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { z } = require('zod');
 const { sendTelegramMessage } = require('../services/telegramService');
+const { appendEvent, EventTypes } = require('../services/eventService');
 
 const router = express.Router();
+const CHECKOUT_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+
+const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ORDER_SOURCE_ENUM = ['WEBSITE', 'DELIVIO', 'WOLT', 'PHONE', 'LOCAL_NODE'];
 const PAYMENT_METHOD_ENUM = ['BEPAID_ONLINE', 'OPLATI_QR', 'CASH_IKASSA'];
@@ -140,13 +145,17 @@ const checkoutSchema = z.object({
     paymentStatus: z.enum(PAYMENT_STATUS_ENUM).optional(),
     transactionId: z.string().optional(),
     spentPoints: z.number().int().nonnegative().optional(),
-    clientOrderId: z.string().optional()
+    clientOrderId: z.string().uuid().refine((value) => uuidV4Regex.test(value), {
+        message: 'clientOrderId must be UUIDv4'
+    }).optional()
 }).refine(data => data.address || data.customerAddress, {
     message: "Address is required",
     path: ["address"]
 });
 
 router.post('/checkout', requireAuth, async (req, res) => {
+    let resolvedIdempotencyKey = null;
+
     try {
         const normalizedPayload = normalizeCheckoutEnums(req.body);
         const validation = checkoutSchema.safeParse(normalizedPayload);
@@ -195,26 +204,29 @@ router.post('/checkout', requireAuth, async (req, res) => {
             : await prisma.restaurant.findFirst({ where: { isActive: true } });
 
         // 2. Generate Idempotency Key
-        let idempotencyKey;
-        if (clientOrderId) {
-            idempotencyKey = "checkout_" + clientOrderId;
-        } else {
-            const timeWindow = Math.floor(Date.now() / 10000); // 10 second window
-            const hashInput = `${customerPhone}-${JSON.stringify(items)}-${timeWindow}`;
-            idempotencyKey = crypto.createHash('sha256').update(hashInput).digest('hex');
-        }
+        const requestToken = clientOrderId || crypto.randomBytes(32).toString('hex');
+        const idempotencyKey = `checkout_${requestToken}`;
+        resolvedIdempotencyKey = idempotencyKey;
+        const ttlExpiresAt = new Date(Date.now() + CHECKOUT_IDEMPOTENCY_TTL_MS);
 
-        // Check if EventLog already has this idempotency key (deduplication)
-        const duplicateEvent = await prisma.eventLog.findUnique({
+        // Check dedicated idempotency table first to avoid accidental long-term deduplication
+        const existingIdempotency = await prisma.checkoutIdempotency.findUnique({
             where: { idempotencyKey }
         });
 
-        if (duplicateEvent) {
-            console.log(`[Order] Debounced duplicate order`);
+        if (existingIdempotency && existingIdempotency.expiresAt > new Date() && existingIdempotency.orderExternalId) {
+            console.log(`[Order] Idempotent replay detected for key ${idempotencyKey}`);
             return res.status(200).json({
                 success: true,
                 message: 'Order already processed',
-                orderId: duplicateEvent.aggregateId // Returned UUID of existing order
+                orderId: existingIdempotency.orderExternalId,
+                idempotentReplay: true
+            });
+        }
+
+        if (existingIdempotency && existingIdempotency.expiresAt <= new Date()) {
+            await prisma.checkoutIdempotency.delete({
+                where: { idempotencyKey }
             });
         }
 
@@ -222,7 +234,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         const externalOrderId = crypto.randomUUID();
 
         // 3. Prisma $transaction (Atomicity)
-        const [createdOrder, createdEvent] = await prisma.$transaction(async (tx) => {
+        const [createdOrder] = await prisma.$transaction(async (tx) => {
             
             let finalSpentPoints = Math.min(spentPoints || 0, Math.floor(cartResult.total));
             
@@ -261,6 +273,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
             const order = await tx.order.create({
                 data: {
                     externalOrderId,
+                    userId: req.user.userId,
                     source,
                     customerName,
                     customerPhone,
@@ -303,18 +316,25 @@ router.post('/checkout', requireAuth, async (req, res) => {
             }
 
             // C. Create EventLog entry (Event Sourcing)
-            const event = await tx.eventLog.create({
+            const event = await appendEvent(
+                EventTypes.ORDER_PLACED,
+                'Order',
+                externalOrderId,
+                order, // The snapshot of the order at creation time
+                { restaurantId: restaurant?.id ?? null },
+                idempotencyKey,
+                tx
+            );
+
+            await tx.checkoutIdempotency.create({
                 data: {
-                    eventType: 'ORDER_PLACED',
-                    aggregateType: 'Order',
-                    aggregateId: externalOrderId,
                     idempotencyKey,
-                    restaurantId: restaurant?.id ?? null,
-                    payload: order // The snapshot of the order at creation time
+                    orderExternalId: externalOrderId,
+                    expiresAt: ttlExpiresAt
                 }
             });
 
-            return [order, event];
+            return [order];
         });
 
         // 4. Integrations: Payments & Notifications
@@ -358,10 +378,28 @@ router.post('/checkout', requireAuth, async (req, res) => {
             total: createdOrder.total,
             status: createdOrder.status,
             checkoutUrl, // Will be null for CASH
-            message: 'Order placed, event logged'
+            message: 'Order placed, event logged',
+            idempotentReplay: false
         });
 
     } catch (error) {
+        const uniqueTarget = Array.isArray(error.meta?.target) ? error.meta.target.join(',') : String(error.meta?.target || '');
+
+        if (error.code === 'P2002' && resolvedIdempotencyKey && uniqueTarget.includes('idempotencyKey')) {
+            const duplicate = await prisma.checkoutIdempotency.findUnique({
+                where: { idempotencyKey: resolvedIdempotencyKey }
+            });
+
+            if (duplicate?.orderExternalId) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Order already processed',
+                    orderId: duplicate.orderExternalId,
+                    idempotentReplay: true
+                });
+            }
+        }
+
         console.error('[Checkout Error]', error);
         if (error instanceof z.ZodError) {
             return res.status(422).json({ error: 'Validation failed', details: error.issues });
@@ -376,9 +414,25 @@ router.post('/checkout', requireAuth, async (req, res) => {
  */
 router.get('/my', requireAuth, async (req, res) => {
     try {
+        const userId = req.user?.userId;
         const phone = req.user.phone;
+
+        if (!userId && !phone) {
+            return res.status(400).json({ error: 'User identity is missing' });
+        }
+
         const orders = await prisma.order.findMany({
-            where: { customerPhone: phone },
+            where: {
+                OR: [
+                    userId ? { userId } : null,
+                    phone
+                        ? {
+                            customerPhone: phone,
+                            userId: null
+                        }
+                        : null
+                ].filter(Boolean)
+            },
             orderBy: { createdAt: 'desc' },
             include: {
                 items: {
@@ -462,15 +516,8 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
             return res.status(400).json({ error: 'Invalid orderId or status' });
         }
 
-        const statusMap = {
-            'new': 'NEW',
-            'cooking': 'COOKING',
-            'baking': 'BAKING',
-            'delivery': 'DELIVERY',
-            'completed': 'COMPLETED',
-            'cancelled': 'CANCELLED'
-        };
-        const dbStatus = statusMap[status.toLowerCase()] || status.toUpperCase();
+        const dbStatus = normalizeOrderStatus(status);
+        assertKnownOrderStatus(dbStatus);
 
         const order = await prisma.order.findUnique({
             where: { id: orderId },
@@ -486,11 +533,16 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), async (req, res
             return res.status(404).json({ error: 'Order not found' });
         }
 
+        assertAllowedStatusTransition(order.status, dbStatus);
+
         await updateOrderStatus(orderId, dbStatus);
 
         res.json({ success: true, status: dbStatus });
     } catch (err) {
         console.error('[Admin Status Update]', err);
+        if (err.statusCode === 400) {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to update order status' });
     }
 });

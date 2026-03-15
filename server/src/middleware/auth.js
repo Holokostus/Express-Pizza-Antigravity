@@ -2,7 +2,8 @@
 // Express Pizza — JWT Auth Middleware (Sprint 5)
 // ============================================================
 
-const { verifyToken, JWT_SECRET } = require('../utils/jwt');
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../utils/jwt');
 
 /**
  * Middleware: Requires a valid JWT token in Authorization header
