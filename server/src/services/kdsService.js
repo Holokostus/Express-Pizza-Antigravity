@@ -3,6 +3,7 @@
 // ============================================================
 
 const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const loyaltyService = require('./loyaltyService');
 const { appendEvent, EventTypes } = require('./eventService');
@@ -18,6 +19,69 @@ const pendingAcks = new Map();
 
 const ACK_TIMEOUT_MS = 5000;
 const MAX_RETRIES = 5;
+const STATUS_TRANSITIONS = {
+    NEW: ['CONFIRMED', 'CANCELLED'],
+    CONFIRMED: ['COOKING', 'CANCELLED'],
+    COOKING: ['BAKING', 'READY', 'CANCELLED'],
+    BAKING: ['READY', 'CANCELLED'],
+    READY: ['DELIVERY', 'COMPLETED', 'CANCELLED'],
+    DELIVERY: ['COMPLETED', 'CANCELLED'],
+    COMPLETED: [],
+    CANCELLED: []
+};
+
+function extractToken(req, url) {
+    const queryToken = url.searchParams.get('token');
+    if (queryToken) return queryToken;
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+
+    const wsProtocolHeader = req.headers['sec-websocket-protocol'];
+    if (typeof wsProtocolHeader === 'string' && wsProtocolHeader.trim().length > 0) {
+        const protocols = wsProtocolHeader.split(',').map((part) => part.trim()).filter(Boolean);
+
+        const bearerProtocol = protocols.find((protocol) => protocol.startsWith('Bearer '));
+        if (bearerProtocol) {
+            return bearerProtocol.slice('Bearer '.length).trim();
+        }
+
+        const tokenProtocol = protocols.find((protocol) => protocol.startsWith('token.'));
+        if (tokenProtocol) {
+            return tokenProtocol.slice('token.'.length).trim();
+        }
+
+        if (protocols.length === 1) {
+            return protocols[0];
+        }
+    }
+
+    return null;
+}
+
+function hasRestaurantAccess(user, restaurantId) {
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
+
+    if (Number(user.restaurantId) === restaurantId) return true;
+
+    if (Array.isArray(user.restaurantIds)) {
+        return user.restaurantIds.some((id) => Number(id) === restaurantId);
+    }
+
+    if (Array.isArray(user.restaurants)) {
+        return user.restaurants.some((restaurant) => {
+            if (typeof restaurant === 'number' || typeof restaurant === 'string') {
+                return Number(restaurant) === restaurantId;
+            }
+            return Number(restaurant?.id) === restaurantId;
+        });
+    }
+
+    return false;
+}
 
 function getAckKey(restaurantId, orderId) {
     return `${parseInt(restaurantId)}:${parseInt(orderId)}`;
@@ -112,9 +176,28 @@ function initKDSWebSocket(server) {
     console.log('[KDS] WebSocket server initialized on /ws/kds');
 
     wss.on('connection', (ws, req) => {
-        // Simple auth/routing based on query param: /ws/kds?restaurantId=1
         const url = new URL(req.url, `http://${req.headers.host}`);
-        const restaurantId = parseInt(url.searchParams.get('restaurantId')) || 1;
+        const restaurantId = parseInt(url.searchParams.get('restaurantId'), 10);
+        const token = extractToken(req, url);
+
+        if (!restaurantId || !token) {
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
+
+        let user;
+        try {
+            user = jwt.verify(token, JWT_SECRET);
+        } catch (err) {
+            console.error('[KDS] Token verification failed:', err.message);
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
+
+        if (!hasRestaurantAccess(user, restaurantId)) {
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
 
         if (!clients.has(restaurantId)) {
             clients.set(restaurantId, new Set());
@@ -122,6 +205,7 @@ function initKDSWebSocket(server) {
         clients.get(restaurantId).add(ws);
 
         ws.restaurantId = restaurantId;
+        ws.user = user;
         console.log(`[KDS] Client connected for restaurant ${restaurantId}`);
 
         // Send connection ACK
@@ -142,8 +226,17 @@ function initKDSWebSocket(server) {
 
                 // Allow KDS clients to update status
                 if (message.type === 'STATUS_UPDATE') {
+                    if (!['ADMIN', 'COOK'].includes(ws.user?.role)) {
+                        ws.close(1008, 'Unauthorized');
+                        return;
+                    }
+
                     const { orderId, status } = message.data;
-                    await updateOrderStatus(orderId, status);
+                    await updateOrderStatus(orderId, status, {
+                        actorUserId: ws.user?.userId,
+                        actorRole: ws.user?.role,
+                        restaurantId: ws.restaurantId
+                    });
                 }
             } catch (err) {
                 console.error('[KDS] Error parsing message:', err);
@@ -168,10 +261,19 @@ function broadcastOrderToKDS(restaurantId, orderData) {
 /**
  * Chef updates order status from the KDS tablet
  */
-async function updateOrderStatus(orderId, newStatus) {
+async function updateOrderStatus(orderId, newStatus, context = {}) {
     try {
+        const normalizedOrderId = parseInt(orderId, 10);
+        if (!normalizedOrderId) {
+            throw new Error('Invalid orderId');
+        }
+
+        if (typeof newStatus !== 'string' || !STATUS_TRANSITIONS[newStatus]) {
+            throw new Error(`Invalid status: ${newStatus}`);
+        }
+
         const existingOrder = await prisma.order.findUnique({
-            where: { id: orderId },
+            where: { id: normalizedOrderId },
             select: {
                 id: true,
                 orderNumber: true,
@@ -184,11 +286,20 @@ async function updateOrderStatus(orderId, newStatus) {
         });
 
         if (!existingOrder) {
-            throw new Error(`Order ${orderId} not found`);
+            throw new Error(`Order ${normalizedOrderId} not found`);
+        }
+
+        if (context.restaurantId && Number(context.restaurantId) !== existingOrder.restaurantId) {
+            throw new Error('Unauthorized restaurant access');
+        }
+
+        const allowedNextStatuses = STATUS_TRANSITIONS[existingOrder.status] || [];
+        if (!allowedNextStatuses.includes(newStatus)) {
+            throw new Error(`Invalid status transition: ${existingOrder.status} -> ${newStatus}`);
         }
 
         const order = await prisma.order.update({
-            where: { id: orderId },
+            where: { id: normalizedOrderId },
             data: {
                 status: newStatus,
                 completedAt: newStatus === 'COMPLETED' ? new Date() : null
