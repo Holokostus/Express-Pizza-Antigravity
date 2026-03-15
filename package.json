@@ -6,8 +6,7 @@
   "scripts": {
     "build": "mkdir -p dist && cp -r index.html admin.html kds.html pos.html order-success.html oferta.html css js images dist/ 2>/dev/null || true",
     "test": "node --check server/src/index.js",
-    "postinstall": "npm --prefix server run prisma:generate",
-    "fetch-images": "node scripts/fetch-images.js"
+    "postinstall": "npm --prefix server run prisma:generate"
   },
   "repository": {
     "type": "git",
