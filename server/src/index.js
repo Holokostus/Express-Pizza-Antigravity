@@ -266,7 +266,7 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-app.get(['/api/fetch-images', '/fetch-images'], async (req, res) => {
+app.get('/api/fetch-images', async (req, res) => {
     res.json({
         success: true,
         message: 'Процесс поиска картинок запущен в фоновом режиме. Обновите страницу через пару минут.',
@@ -276,16 +276,6 @@ app.get(['/api/fetch-images', '/fetch-images'], async (req, res) => {
         runImageFetchJob().catch((error) => {
             console.error('❌ Background image fetch dispatcher failed:', error);
         });
-    });
-});
-
-app.get(['/api/fetch-images/status', '/fetch-images/status'], async (req, res) => {
-    res.json({
-        success: true,
-        isRunning: isImageFetchRunning,
-        message: isImageFetchRunning
-            ? 'Фоновый процесс поиска изображений выполняется.'
-            : 'Фоновый процесс поиска изображений не запущен.',
     });
 });
 
