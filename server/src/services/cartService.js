@@ -38,7 +38,15 @@ async function calculateCartTotal(items, promoCodeString = null) {
     // 2. Batch fetch product sizes and modifiers
     const productSizes = await prisma.productSize.findMany({
         where: { id: { in: productSizeIds } },
-        include: { product: true }
+        include: {
+            product: {
+                include: {
+                    modifiers: {
+                        select: { id: true }
+                    }
+                }
+            }
+        }
     });
 
     const modifiers = modifierIds.length > 0
@@ -57,12 +65,27 @@ async function calculateCartTotal(items, promoCodeString = null) {
             throw new Error(`Item ${item.productId || item.productSizeId} is unavailable or size invalid`);
         }
 
+        const productAllowedModifierIds = new Set(
+            (productSize.product.modifiers || []).map((modifier) => modifier.id)
+        );
+
         let itemUnitPrice = Number(productSize.price);
         const validatedModifiers = [];
 
         // Check modifiers
         if (item.modifierIds && item.modifierIds.length > 0) {
+            const seenModifierIds = new Set();
+
             for (const modId of item.modifierIds) {
+                if (seenModifierIds.has(modId)) {
+                    throw new Error(`Duplicate modifier ID ${modId} is not allowed for item with productSizeId ${item.productSizeId}`);
+                }
+                seenModifierIds.add(modId);
+
+                if (!productAllowedModifierIds.has(modId)) {
+                    throw new Error(`Modifier ID ${modId} is not allowed for productId ${productSize.productId}`);
+                }
+
                 const modifier = modifierMap.get(modId);
                 if (!modifier) throw new Error(`Invalid modifier ID ${modId}`);
 
