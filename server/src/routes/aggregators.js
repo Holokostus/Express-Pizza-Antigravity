@@ -20,15 +20,24 @@ const { appendEvent, EventTypes } = require('../services/eventService');
 // ============================================================
 
 function verifySignature(rawBody, signature, secret) {
-    if (!secret || secret.startsWith('change-me')) {
-        return true; // Dev mode — accept all
+    const normalizedSecret = typeof secret === 'string' ? secret.trim() : '';
+
+    if (!normalizedSecret || normalizedSecret.startsWith('change-me')) {
+        return { isValid: false, isMisconfigured: true };
     }
-    const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-    try {
-        return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-    } catch {
-        return false;
+
+    const expected = crypto.createHmac('sha256', normalizedSecret).update(rawBody).digest('hex');
+    const expectedBuffer = Buffer.from(expected, 'utf8');
+    const signatureBuffer = Buffer.from(String(signature || ''), 'utf8');
+
+    if (expectedBuffer.length !== signatureBuffer.length) {
+        return { isValid: false, isMisconfigured: false };
     }
+
+    return {
+        isValid: crypto.timingSafeEqual(expectedBuffer, signatureBuffer),
+        isMisconfigured: false,
+    };
 }
 
 // ============================================================
@@ -45,7 +54,13 @@ router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) =
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-delivio-signature'] || '';
 
-        if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
+        const verification = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (verification.isMisconfigured) {
+            console.error('[Delivio] Misconfiguration: aggregator_channels.webhookSecret is empty or default. Rejecting webhook.');
+            return res.status(500).json({ error: 'Webhook channel misconfiguration' });
+        }
+
+        if (!verification.isValid) {
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
@@ -75,7 +90,13 @@ router.post('/wolt/webhook', express.raw({ type: '*/*' }), async (req, res) => {
         const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
         const sig = req.headers['x-wolt-signature'] || '';
 
-        if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
+        const verification = verifySignature(rawBody, sig, channel.webhookSecret);
+        if (verification.isMisconfigured) {
+            console.error('[Wolt] Misconfiguration: aggregator_channels.webhookSecret is empty or default. Rejecting webhook.');
+            return res.status(500).json({ error: 'Webhook channel misconfiguration' });
+        }
+
+        if (!verification.isValid) {
             return res.status(403).json({ error: 'Invalid signature' });
         }
 

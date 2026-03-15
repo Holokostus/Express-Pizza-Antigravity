@@ -859,7 +859,13 @@ npm install
 npm start       # → http://localhost:3001
 ```
 
-### 11.4 Health Monitoring
+### 11.4 Aggregator Webhook Security
+
+- `AggregatorChannel.webhookSecret` must be explicitly configured with a non-default secret for every active aggregator channel.
+- Webhooks are rejected when `aggregator_channels.webhookSecret` is empty or uses a placeholder (for example `change-me...`).
+- Deployment checklist: before exposing `/api/aggregators/{delivio,wolt}/webhook`, verify valid per-channel secrets in DB and rotate them via secure secret management.
+
+### 11.5 Health Monitoring
 
 `monitorService.js` checks every 60 seconds:
 
