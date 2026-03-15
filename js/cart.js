@@ -197,7 +197,7 @@ function renderCartUI(serverData) {
                 <div class="flex items-center gap-4 animate-fade-in group relative">
                     ${imageHtml}
                     <div class="flex-grow min-w-0 pr-2">
-                        <h4 class="font-bold text-sm mb-0.5 truncate">${escapeHtml(name)}</h4>
+                        <h4 class="font-bold text-sm mb-0.5 truncate flex items-center gap-1.5"><span class="cart-item-icon" aria-hidden="true">🍕</span><span class="truncate">${escapeHtml(name)}</span></h4>
                         <div class="flex flex-col gap-0.5">
                             ${sizeLabel ? `<span class="text-[11px] text-textMutedLight dark:text-textMutedDark">${escapeHtml(sizeLabel)}</span>` : ''}
                             ${modsHtml}
