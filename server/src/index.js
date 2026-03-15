@@ -53,7 +53,7 @@ const stockService = require('./services/stockService');
 const kdsService = require('./services/kdsService');
 const { calculateETA, checkSpillover, createYandexDelivery } = require('./services/etaService');
 const printerService = require('./services/printerService');
-const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, refetchBadProductImages, refetchDrinksAndCalzones, JobConflictError } = require('./services/adminImageFetchService');
+const { triggerImageFetchJobByAdmin, isImageFetchEndpointEnabled, refetchBadProductImages, refetchDrinksAndCalzones, refetchCriticalImages, JobConflictError } = require('./services/adminImageFetchService');
 
 const rateLimit = require('express-rate-limit');
 const { requireAuth, checkRole } = require('./middleware/auth');
@@ -104,6 +104,19 @@ app.get('/api/refetch-bad-images', async (req, res) => {
 });
 
 
+
+
+app.get('/api/refetch-critical-images', async (req, res) => {
+    res.json({ success: true, message: 'Мусорные фото отправлены на перекачку' });
+
+    setImmediate(async () => {
+        try {
+            await refetchCriticalImages();
+        } catch (error) {
+            console.error('❌ Failed to re-fetch critical product images:', error);
+        }
+    });
+});
 
 app.get('/api/refetch-drinks-calzones', async (req, res) => {
     res.json({ success: true, message: 'Фотографии напитков и кальцоне отправлены на обновление' });
