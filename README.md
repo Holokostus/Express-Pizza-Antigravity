@@ -58,7 +58,33 @@ The Admin dashboard (`admin.html`) is secured by JWT and requires the `ADMIN` da
 
 ## 📡 Integrations Configuration
 
+*   **Demo-only integrations:** `demo/IntegrationManager.demo.js` and `demo/api-integrations.demo.js` are **deprecated/demo-only** mocks. They are intentionally excluded from `index.html` production scripts to avoid accidental use as working integrations.
 *   **CORS:** By default, Express is configured with `cors()` with wide-open origins for MVP phase. Secure this in `app.use(cors({ origins: [...] }))` prior to serious production load.
 *   **Payments (bePaid):** Ensure `BEPAID_SHOP_ID` and `BEPAID_SECRET_KEY` are placed in `.env` to enable secure card acquiring sessions.
 *   **KDS (Kitchen Display System):** The dashboard relies on `ws` / `socket.io` for real-time kitchen tracking.
 *   **Thermal Printers:** The backend printerService natively talks TCP on port 9100. Provide a `PRINTER_IP` in your `.env`. If no printer exists locally, it safely debounces queues to prevent event-loop freezing.
+
+
+## 🔐 API Authorization Matrix
+
+Для чувствительных endpoint-ов теперь обязательно передавать `Authorization: Bearer <JWT>`; ответы `401/403` возвращаются централизованно через middleware `requireAuth` + `checkRole(...)`.
+
+### Protected endpoints
+
+* `GET /api/fetch-images` — `ADMIN`
+* `POST /api/stock/out` — `COOK`, `ADMIN`
+* `POST /api/stock/back` — `COOK`, `ADMIN`
+* `GET /api/stock/stop-list/:restaurantId` — `COOK`, `ADMIN`
+* `POST /api/pos/retry` — `ADMIN`
+* `POST /api/print/service` — `COOK`, `ADMIN`
+* `POST /api/print/kitchen` — `COOK`, `ADMIN`
+* `POST /api/print/reprint/:receiptId` — `COOK`, `ADMIN`
+
+### Public read-only endpoints
+
+Публичными оставлены только безопасные read-only endpoint-ы (по бизнес-решению), включая:
+
+* `GET /api/menu`
+* `GET /api/health`
+
+Остальные endpoint-ы с операциями управления, синхронизации, печати и back-office должны вызываться только авторизованными пользователями с подходящей ролью.
