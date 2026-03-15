@@ -194,6 +194,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
             const order = await tx.order.create({
                 data: {
                     externalOrderId,
+                    userId: req.user.userId,
                     source,
                     customerName,
                     customerPhone,
@@ -306,9 +307,25 @@ router.post('/checkout', requireAuth, async (req, res) => {
  */
 router.get('/my', requireAuth, async (req, res) => {
     try {
+        const userId = req.user?.userId;
         const phone = req.user.phone;
+
+        if (!userId && !phone) {
+            return res.status(400).json({ error: 'User identity is missing' });
+        }
+
         const orders = await prisma.order.findMany({
-            where: { customerPhone: phone },
+            where: {
+                OR: [
+                    userId ? { userId } : null,
+                    phone
+                        ? {
+                            customerPhone: phone,
+                            userId: null
+                        }
+                        : null
+                ].filter(Boolean)
+            },
             orderBy: { createdAt: 'desc' },
             include: {
                 items: {
