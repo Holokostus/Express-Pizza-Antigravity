@@ -7,22 +7,6 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
-    // ── Theme Toggle ──
-    const htmlTag = document.documentElement;
-    const themeToggleBtn = $('theme-toggle');
-    const themeToggleMobile = $('theme-toggle-mobile');
-
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        htmlTag.setAttribute('data-theme', 'dark');
-    }
-    function toggleTheme() {
-        const isDark = htmlTag.getAttribute('data-theme') === 'dark';
-        htmlTag.setAttribute('data-theme', isDark ? 'light' : 'dark');
-        localStorage.theme = isDark ? 'light' : 'dark';
-    }
-    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
-    if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
-
     // ── Immortal modal buttons (single global delegation) ──
     if (!window.__uiModalDelegationBound) {
         window.__uiModalDelegationBound = true;
@@ -76,12 +60,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedPaymentMethod = 'cash';
 
     const paymentInputs = document.querySelectorAll('input[name="payment"]');
-    paymentInputs.forEach(input => {
-        if (input.checked) selectedPaymentMethod = input.value;
-        input.addEventListener('change', () => {
+    const syncPaymentSegment = () => {
+        paymentInputs.forEach((input) => {
+            const option = input.closest('.segment-option');
+            if (option) option.classList.toggle('is-active', input.checked);
             if (input.checked) selectedPaymentMethod = input.value;
         });
+    };
+
+    paymentInputs.forEach((input) => {
+        input.addEventListener('change', syncPaymentSegment);
     });
+    syncPaymentSegment();
 
     window.requestOTP = async () => {
         if (!orderForm.checkValidity()) {
@@ -115,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error('[OTP] Send email error:', err);
             const backendDetails = err?.message || 'Ошибка отправки кода';
-            alert(`Ошибка отправки кода: ${backendDetails}`);
+            showAppModal(`Ошибка отправки кода: ${backendDetails}`, 'Ошибка');
             showToast('error', backendDetails);
             if (btn) { btn.disabled = false; btn.innerHTML = 'Оформить заказ'; }
         }

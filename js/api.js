@@ -203,36 +203,55 @@ async function api(path, options = {}) {
 }
 
 // ── Toast ──
-window.showToast = function (type, message, duration = 3000) {
+window.showToast = function (type, message, duration = 2000) {
     const el = $('toast');
-    const icon = $('toast-icon');
     const msg = $('toast-message');
-    if (!el || !icon || !msg) return;
+    if (!el || !msg) return;
 
-    icon.textContent = type === 'success' ? '✅' : '❌';
     msg.textContent = message;
-
-    el.style.position = 'fixed';
-    el.style.bottom = '20px';
-    el.style.left = '50%';
-    el.style.transform = 'translateX(-50%) translateY(24px)';
-    el.style.background = '#333';
-    el.style.color = '#fff';
-    el.style.borderRadius = '30px';
-    el.style.boxShadow = '0 10px 20px rgba(0,0,0,0.5)';
-    el.style.opacity = '0';
-    el.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
-
-    requestAnimationFrame(() => {
-        el.style.opacity = '1';
-        el.style.transform = 'translateX(-50%) translateY(0)';
-    });
+    el.classList.add('is-visible');
 
     clearTimeout(window._toastTimer);
     window._toastTimer = setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(-50%) translateY(12px)';
+        el.classList.remove('is-visible');
     }, duration);
+};
+
+// ── App modal (replaces alert/confirm) ──
+window.showAppModal = function showAppModal(message, title = 'Уведомление') {
+    return new Promise((resolve) => {
+        const modal = $('app-modal');
+        const titleEl = $('app-modal-title');
+        const messageEl = $('app-modal-message');
+        const okBtn = $('app-modal-ok');
+
+        if (!modal || !titleEl || !messageEl || !okBtn) {
+            console.warn('[Modal] Missing modal elements');
+            resolve(true);
+            return;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const close = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            okBtn.removeEventListener('click', onOk);
+            modal.removeEventListener('click', onBackdrop);
+            resolve(true);
+        };
+
+        const onOk = () => close();
+        const onBackdrop = (event) => {
+            if (event.target === modal) close();
+        };
+
+        okBtn.addEventListener('click', onOk);
+        modal.addEventListener('click', onBackdrop);
+    });
 };
 
 // ── Fetch Menu (categories + items) ──
