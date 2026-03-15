@@ -2,12 +2,7 @@
 // Express Pizza — JWT Auth Middleware (Sprint 5)
 // ============================================================
 
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is missing.');
-}
+const { verifyToken, JWT_SECRET } = require('../utils/jwt');
 
 /**
  * Middleware: Requires a valid JWT token in Authorization header
@@ -23,7 +18,7 @@ function requireAuth(req, res, next) {
     const token = authHeader.split(' ')[1];
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = verifyToken(token);
         req.user = decoded; // { userId: 1, phone: '+375...', role: 'CUSTOMER' }
         next();
     } catch (err) {
@@ -42,7 +37,7 @@ function optionalAuth(req, res, next) {
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
         try {
-            req.user = jwt.verify(token, JWT_SECRET);
+            req.user = verifyToken(token);
         } catch (err) {
             // Ignore token errors for optional auth, just leave req.user undefined
         }
