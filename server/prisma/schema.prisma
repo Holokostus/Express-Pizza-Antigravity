@@ -136,6 +136,30 @@ model User {
   @@map("users")
 }
 
+model OtpCode {
+  email      String   @id
+  code       String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  lastSentAt DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+model OtpRateLimit {
+  key             String   @id
+  hits            Int      @default(0)
+  windowExpiresAt DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([windowExpiresAt])
+  @@map("otp_rate_limits")
+}
+
 
 // =====================================================================================
 // 2. RESTAURANT — Multi-location support
