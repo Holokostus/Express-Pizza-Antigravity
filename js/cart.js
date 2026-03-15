@@ -134,6 +134,25 @@ function evaluateRisk(total) {
     }
 }
 
+
+function countPromoEligiblePizzas() {
+    const menu = db.getMenu();
+
+    return cart.reduce((count, cartItem) => {
+        const menuItem = menu.find((item) => item.sizes?.some((size) => size.id === cartItem.productSizeId));
+        const categoryName = String(menuItem?.categoryName || '').toLowerCase();
+        const categorySlug = String(menuItem?.categorySlug || '').toLowerCase();
+        const isPizzaCategory = categorySlug.includes('pizza') || categoryName.includes('пиц');
+        if (!isPizzaCategory) return count;
+
+        const sizeLabel = String(cartItem?._display?.sizeLabel || '').toLowerCase();
+        const isPromoSize = sizeLabel.includes('30') || sizeLabel.includes('36');
+        if (!isPromoSize) return count;
+
+        return count + Number(cartItem.quantity || 0);
+    }, 0);
+}
+
 // ── Cart UI Render ──
 function renderCartUI(serverData) {
     const cartBadge = $('cart-badge');
@@ -169,6 +188,13 @@ function renderCartUI(serverData) {
 
     if (cartItemsContainer) {
         try {
+            const promoPizzaCount = countPromoEligiblePizzas();
+            const pizzaPromoBanner = promoPizzaCount === 1
+                ? '<div class="mb-3 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">🔥 Добавьте еще одну пиццу, и мы отдадим ее за полцены!</div>'
+                : (promoPizzaCount >= 2
+                    ? '<div class="mb-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">✅ Акция применена: скидка 50% на вторую пиццу!</div>'
+                    : '');
+
             cartItemsContainer.innerHTML = cart.length === 0
             ? `<div class="empty-cart-state">
                     <div class="empty-cart-state__icon" aria-hidden="true">📦🍕</div>
@@ -176,7 +202,7 @@ function renderCartUI(serverData) {
                     <p class="empty-cart-state__subtitle">Добавьте сюда что-нибудь вкусное!</p>
                     <button type="button" class="empty-cart-state__btn" onclick="goToMenuFromCart()">Перейти в меню</button>
                </div>`
-            : cart.map((item, idx) => {
+            : `${pizzaPromoBanner}${cart.map((item, idx) => {
                 try {
                     const sd = displayItems[idx];
                     if (!item) {
@@ -229,7 +255,7 @@ function renderCartUI(serverData) {
                     console.warn('[Cart] Skipping broken cart item while rendering:', itemError, item);
                     return '';
                 }
-            }).join('');
+            }).join('')}`;
         } catch (e) {
             console.error(e);
         }
@@ -460,6 +486,11 @@ window.openCustomizer = (itemId) => {
 
     currentCustomizerItem = itemInfo;
     customizerState.sizeIdx = selectedSizeIndex[itemId] || 0;
+
+    const categoryName = String(itemInfo.categoryName || '').toLowerCase();
+    const categorySlug = String(itemInfo.categorySlug || '').toLowerCase();
+    const isCalzone = categoryName.includes('кальцоне') || categoryName.includes('calzone') || categorySlug.includes('calzone');
+
     customizerState.doughType = 'traditional';
 
     const size = itemInfo.sizes[customizerState.sizeIdx] || itemInfo.sizes[0];
@@ -525,7 +556,7 @@ window.openCustomizer = (itemId) => {
                         <p class="font-bold mb-2">Размер</p>
                         <div class="segmented-control">${sizesHtml}</div>
                     </div>
-                    <div class="mb-5">
+                    <div class="mb-5 dough-selector ${isCalzone ? 'hidden' : ''}">
                         <p class="font-bold mb-2">Тип теста</p>
                         <div class="segmented-control">
                             <label class="segment-option is-active" id="dough-traditional">
@@ -636,6 +667,12 @@ window.addCustomizedItem = () => {
     const parsedPrice = parseFloat(finalPriceLabel.replace(/[^\d.]/g, ''));
     const finalPrice = parseFloat(parsedPrice) || parseFloat(customizerBasePrice) || 0;
 
+    const isCalzone = String(currentCustomizerItem?.categorySlug || '').toLowerCase().includes('calzone')
+        || String(currentCustomizerItem?.categoryName || '').toLowerCase().includes('кальцоне')
+        || String(currentCustomizerItem?.categoryName || '').toLowerCase().includes('calzone');
+
+    const doughLabel = customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное';
+
     const item = {
         id: currentCustomizerItem.id || Date.now(),
         productSizeId: size.id,
@@ -644,8 +681,8 @@ window.addCustomizedItem = () => {
         price: finalPrice,
         finalPrice,
         size: size.label,
-        sizeLabel: `${size.label}, ${customizerState.doughType === 'thin' ? 'Тонкое' : 'Традиционное'}`,
-        dough: customizerState.doughType,
+        sizeLabel: isCalzone ? `${size.label}` : `${size.label}, ${doughLabel}`,
+        dough: isCalzone ? 'traditional' : customizerState.doughType,
         doughType: customizerState.doughType,
         modifiers: selectedModifiers,
         modifierIds,

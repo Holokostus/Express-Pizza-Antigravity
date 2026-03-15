@@ -165,7 +165,7 @@ function buildCategoryRefetchQuery(product) {
     if (slug === 'drinks' || slug === 'drink') {
         return `${product.name} +"бутылка газировки изолированный фон"`;
     }
-    return `${product.name} +"закрытая пицца кальцоне на белом фоне"`;
+    return `${product.name} +"закрытая пицца кальцоне фото меню -кусок -открытая -разрез изолированный белый фон"`;
 }
 
 async function refetchDrinksAndCalzones() {
@@ -193,6 +193,41 @@ async function refetchDrinksAndCalzones() {
             console.log(`✅ Re-fetched category image for product#${product.id} (${product.name})`);
         } catch (error) {
             console.warn(`⚠️ Category re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+}
+
+
+async function refetchCalzonesOnly() {
+    const products = await prisma.product.findMany({
+        where: {
+            category: {
+                slug: { in: ['calzone', 'calzones'] },
+            },
+        },
+        select: { id: true, name: true },
+    });
+
+    const strictCalzoneQuery = 'закрытая пицца кальцоне фото меню -кусок -открытая -разрез изолированный белый фон';
+
+    for (const product of products) {
+        const query = `${product.name} +"${strictCalzoneQuery}"`;
+
+        try {
+            const foundUrl = await findImageUrl(query);
+            if (!/^https?:\/\//i.test(foundUrl)) {
+                throw new Error('Found URL is not absolute');
+            }
+
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { image: foundUrl },
+            });
+            console.log(`✅ Re-fetched calzone image for product#${product.id} (${product.name})`);
+        } catch (error) {
+            console.warn(`⚠️ Calzone re-fetch failed for product#${product.id} (${product.name}): ${error.message}`);
         }
 
         await new Promise((resolve) => setTimeout(resolve, 350));
@@ -363,6 +398,7 @@ module.exports = {
     triggerImageFetchJobByAdmin,
     refetchBadProductImages,
     refetchDrinksAndCalzones,
+    refetchCalzonesOnly,
     refetchCriticalImages,
     JobConflictError,
 };

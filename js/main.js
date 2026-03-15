@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.simulateSandboxCardPayment(checkoutTotal);
         }
 
+        const currentUser = window.currentUser || safeLocalStorageGetJson('ep_current_user', null) || null;
+        const userId = currentUser?.id || null;
+
         const payload = {
             items: cart.map(i => ({
                 productSizeId: i.productSizeId,
@@ -106,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             restaurantId: 1,
             clientOrderId: crypto.randomUUID(),
             customerPhone,
+            userId,
             source: needsCallConfirmation ? 'PHONE' : 'WEBSITE',
             otpFallback: needsCallConfirmation,
             customerComment: needsCallConfirmation
@@ -113,6 +117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : undefined,
             customerEmail: email || undefined,
         };
+
+        if (!userId) {
+            delete payload.userId;
+        }
 
         return api('/api/orders/checkout', {
             method: 'POST',
