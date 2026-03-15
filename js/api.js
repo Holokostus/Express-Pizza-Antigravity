@@ -36,6 +36,9 @@ const CATEGORY_FALLBACK_IMAGES = {
     sauce: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=1200&q=80&auto=format&fit=crop',
     juice: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=1200&q=80&auto=format&fit=crop',
     drinks: 'https://images.unsplash.com/photo-1543253687-c931c8e01820?w=1200&q=80&auto=format&fit=crop',
+    deserts: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=1200&q=80&auto=format&fit=crop',
+    dessert: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=1200&q=80&auto=format&fit=crop',
+    snacks: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1200&q=80&auto=format&fit=crop',
 };
 
 const PRODUCT_IMAGE_BY_NAME = {
@@ -75,6 +78,18 @@ const MODIFIER_IMAGE_BY_NAME = {
     'доп сыр': 'https://images.pexels.com/photos/4109084/pexels-photo-4109084.jpeg?auto=compress&cs=tinysrgb&w=800',
     'грибы': 'https://images.pexels.com/photos/255469/pexels-photo-255469.jpeg?auto=compress&cs=tinysrgb&w=800',
     'соус': 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'доп': 'https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'моцарелла': 'https://images.pexels.com/photos/821365/pexels-photo-821365.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'чеддер': 'https://images.pexels.com/photos/4109947/pexels-photo-4109947.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'оливки': 'https://images.pexels.com/photos/1583884/pexels-photo-1583884.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'пармезан': 'https://images.pexels.com/photos/821365/pexels-photo-821365.jpeg?auto=compress&cs=tinysrgb&w=800',
+};
+
+const PROMOTION_IMAGE_BY_NAME = {
+    '1+1': 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?w=1200&q=80&auto=format&fit=crop',
+    'комбо': 'https://images.unsplash.com/photo-1600891964599-f61ba0e24092?w=1200&q=80&auto=format&fit=crop',
+    'пицца': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&auto=format&fit=crop',
+    'напит': 'https://images.unsplash.com/photo-1551024709-8f23befc6cf7?w=1200&q=80&auto=format&fit=crop',
 };
 
 function normalizeImagePath(imagePath) {
@@ -99,6 +114,16 @@ window.resolveMenuItemImage = function resolveMenuItemImage(item) {
     return categoryImage;
 };
 
+
+window.resolvePromotionImage = function resolvePromotionImage(promo) {
+    const normalizedOriginal = normalizeImagePath(promo?.imageUrl);
+    if (normalizedOriginal) return normalizedOriginal;
+
+    const normalizedTitle = `${promo?.title || ''} ${promo?.subtitle || ''}`.trim().toLowerCase();
+    const byName = Object.entries(PROMOTION_IMAGE_BY_NAME).find(([key]) => normalizedTitle.includes(key))?.[1];
+    return byName || '/images/hero_banner.png';
+};
+
 window.resolveModifierImage = function resolveModifierImage(modifier) {
     const normalizedOriginal = normalizeImagePath(modifier?.image);
     if (normalizedOriginal) return normalizedOriginal;
@@ -106,7 +131,11 @@ window.resolveModifierImage = function resolveModifierImage(modifier) {
     const normalizedName = String(modifier?.name || '').trim().toLowerCase();
     const byName = MODIFIER_IMAGE_BY_NAME[normalizedName]
         || Object.entries(MODIFIER_IMAGE_BY_NAME).find(([key]) => normalizedName.includes(key))?.[1];
-    return byName || '/images/icon.jpg';
+    if (byName) return byName;
+
+    const groupName = String(modifier?.groupName || modifier?.category || '').toLowerCase();
+    const byGroup = Object.entries(MODIFIER_IMAGE_BY_NAME).find(([key]) => groupName.includes(key))?.[1];
+    return byGroup || 'https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg?auto=compress&cs=tinysrgb&w=800';
 };
 
 function safeLocalStorageGetJson(key, fallback = null) {
