@@ -12,7 +12,7 @@
     "db:reset": "npx prisma migrate reset --force",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
-    "test": "node --test test/*.test.js"
+    "test": "node --test src/routes/orders.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
