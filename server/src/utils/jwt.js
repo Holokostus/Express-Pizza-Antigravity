@@ -3,8 +3,6 @@
 // ============================================================
 
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
-
 function getJwtSecret() {
     const jwtSecret = process.env.JWT_SECRET;
     if (jwtSecret) return jwtSecret;
