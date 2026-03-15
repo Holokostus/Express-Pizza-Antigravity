@@ -7,9 +7,9 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { JWT_SECRET } = require('../utils/jwt');
 const { sendOtpEmail } = require('../services/emailService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_jwt_secret_change_me';
 const otpStore = new Map();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
