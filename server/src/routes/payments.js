@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyWebhookSignature } = require('../services/paymentService');
+const { verifyWebhookSignature, isWebhookSecretConfigured } = require('../services/paymentService');
 const { sendOrderAlert } = require('../services/notificationService');
 
 // ============================================================
@@ -18,6 +18,11 @@ router.post('/webhook', async (req, res) => {
     try {
         const signature = req.headers['content-signature'];
         const rawBody = req.rawBody; // raw buffer from express.json verify
+
+        if (!isWebhookSecretConfigured()) {
+            console.error('[Webhook] BEPAID_WEBHOOK_SECRET is not configured. Rejecting webhook.');
+            return res.status(500).json({ error: 'Webhook verification misconfigured' });
+        }
 
         // 1. Verify HMAC Signature
         if (!verifyWebhookSignature(rawBody, signature)) {
