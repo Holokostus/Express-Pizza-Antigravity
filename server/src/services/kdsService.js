@@ -5,6 +5,7 @@
 const WebSocket = require('ws');
 const prisma = require('../lib/prisma');
 const loyaltyService = require('./loyaltyService');
+const { normalizeOrderStatus, assertKnownOrderStatus, assertAllowedStatusTransition } = require('./orderStatusPolicy');
 
 let wss = null;
 
@@ -169,6 +170,9 @@ function broadcastOrderToKDS(restaurantId, orderData) {
  */
 async function updateOrderStatus(orderId, newStatus) {
     try {
+        const normalizedStatus = normalizeOrderStatus(newStatus);
+        assertKnownOrderStatus(normalizedStatus);
+
         const existingOrder = await prisma.order.findUnique({
             where: { id: orderId },
             select: {
@@ -186,15 +190,17 @@ async function updateOrderStatus(orderId, newStatus) {
             throw new Error(`Order ${orderId} not found`);
         }
 
+        assertAllowedStatusTransition(existingOrder.status, normalizedStatus);
+
         const order = await prisma.order.update({
             where: { id: orderId },
             data: {
-                status: newStatus,
-                completedAt: newStatus === 'COMPLETED' ? new Date() : null
+                status: normalizedStatus,
+                completedAt: normalizedStatus === 'COMPLETED' ? new Date() : null
             }
         });
 
-        console.log(`[KDS] Order #${order.orderNumber} status updated to ${newStatus}`);
+        console.log(`[KDS] Order #${order.orderNumber} status updated to ${normalizedStatus}`);
 
         // Log to Event Sourcing table
         await prisma.eventLog.create({
@@ -202,15 +208,15 @@ async function updateOrderStatus(orderId, newStatus) {
                 eventType: 'ORDER_STATUS_CHANGED',
                 aggregateType: 'Order',
                 aggregateId: order.externalOrderId,
-                idempotencyKey: `status_${order.externalOrderId}_${newStatus}_${Date.now()}`,
+                idempotencyKey: `status_${order.externalOrderId}_${normalizedStatus}_${Date.now()}`,
                 restaurantId: order.restaurantId,
-                payload: { oldStatus: existingOrder.status, newStatus }
+                payload: { oldStatus: existingOrder.status, newStatus: normalizedStatus }
             }
         });
 
         let loyaltyPoints = null;
 
-        if (newStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
+        if (normalizedStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
             const baseAmount = Math.max(0, Number(existingOrder.total ?? 0));
             const cashbackAmount = Math.floor(baseAmount * 0.05);
 
@@ -234,7 +240,7 @@ async function updateOrderStatus(orderId, newStatus) {
         broadcastStatusSync(order.restaurantId, {
             orderId: order.id,
             externalOrderId: order.externalOrderId,
-            status: newStatus,
+            status: normalizedStatus,
             userId: existingOrder.userId,
             loyaltyPoints
         });
