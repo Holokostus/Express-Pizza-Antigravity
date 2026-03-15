@@ -3,9 +3,10 @@
 // ============================================================
 
 const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const loyaltyService = require('./loyaltyService');
-const { verifyToken } = require('../utils/jwt');
+const { appendEvent, EventTypes } = require('./eventService');
 
 let wss = null;
 
@@ -18,57 +19,68 @@ const pendingAcks = new Map();
 
 const ACK_TIMEOUT_MS = 5000;
 const MAX_RETRIES = 5;
-const RATE_LIMIT_WINDOW_MS = 10000;
-const RATE_LIMIT_MAX_MESSAGES = 30;
+const STATUS_TRANSITIONS = {
+    NEW: ['CONFIRMED', 'CANCELLED'],
+    CONFIRMED: ['COOKING', 'CANCELLED'],
+    COOKING: ['BAKING', 'READY', 'CANCELLED'],
+    BAKING: ['READY', 'CANCELLED'],
+    READY: ['DELIVERY', 'COMPLETED', 'CANCELLED'],
+    DELIVERY: ['COMPLETED', 'CANCELLED'],
+    COMPLETED: [],
+    CANCELLED: []
+};
 
-function extractBearerToken(req, url) {
-    const authHeader = req.headers.authorization || req.headers.Authorization;
+function extractToken(req, url) {
     const queryToken = url.searchParams.get('token');
+    if (queryToken) return queryToken;
 
+    const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.slice('Bearer '.length).trim();
+        return authHeader.split(' ')[1];
     }
 
-    if (queryToken) {
-        return queryToken.trim();
+    const wsProtocolHeader = req.headers['sec-websocket-protocol'];
+    if (typeof wsProtocolHeader === 'string' && wsProtocolHeader.trim().length > 0) {
+        const protocols = wsProtocolHeader.split(',').map((part) => part.trim()).filter(Boolean);
+
+        const bearerProtocol = protocols.find((protocol) => protocol.startsWith('Bearer '));
+        if (bearerProtocol) {
+            return bearerProtocol.slice('Bearer '.length).trim();
+        }
+
+        const tokenProtocol = protocols.find((protocol) => protocol.startsWith('token.'));
+        if (tokenProtocol) {
+            return tokenProtocol.slice('token.'.length).trim();
+        }
+
+        if (protocols.length === 1) {
+            return protocols[0];
+        }
     }
 
     return null;
 }
 
-function hasRestaurantAccess(decodedToken, restaurantId) {
-    if (!decodedToken) return false;
-    if (decodedToken.role === 'ADMIN') return true;
+function hasRestaurantAccess(user, restaurantId) {
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
 
-    const explicitRestaurantId = Number(decodedToken.restaurantId);
-    if (Number.isInteger(explicitRestaurantId)) {
-        return explicitRestaurantId === restaurantId;
+    if (Number(user.restaurantId) === restaurantId) return true;
+
+    if (Array.isArray(user.restaurantIds)) {
+        return user.restaurantIds.some((id) => Number(id) === restaurantId);
     }
 
-    if (Array.isArray(decodedToken.restaurantIds)) {
-        const allowedRestaurants = decodedToken.restaurantIds
-            .map((id) => Number(id))
-            .filter(Number.isInteger);
-
-        return allowedRestaurants.includes(restaurantId);
+    if (Array.isArray(user.restaurants)) {
+        return user.restaurants.some((restaurant) => {
+            if (typeof restaurant === 'number' || typeof restaurant === 'string') {
+                return Number(restaurant) === restaurantId;
+            }
+            return Number(restaurant?.id) === restaurantId;
+        });
     }
 
-    // Backward compatibility: older tokens may not contain restaurant scope.
-    return true;
-}
-
-function isRateLimited(ws) {
-    const now = Date.now();
-
-    if (!ws.rateLimitState || (now - ws.rateLimitState.windowStart) > RATE_LIMIT_WINDOW_MS) {
-        ws.rateLimitState = {
-            windowStart: now,
-            count: 0
-        };
-    }
-
-    ws.rateLimitState.count += 1;
-    return ws.rateLimitState.count > RATE_LIMIT_MAX_MESSAGES;
+    return false;
 }
 
 function getAckKey(restaurantId, orderId) {
@@ -194,8 +206,28 @@ function initKDSWebSocket(server) {
     console.log('[KDS] WebSocket server initialized on /ws/kds');
 
     wss.on('connection', (ws, req) => {
-        const restaurantId = req.restaurantId;
-        const user = req.auth;
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const restaurantId = parseInt(url.searchParams.get('restaurantId'), 10);
+        const token = extractToken(req, url);
+
+        if (!restaurantId || !token) {
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
+
+        let user;
+        try {
+            user = jwt.verify(token, JWT_SECRET);
+        } catch (err) {
+            console.error('[KDS] Token verification failed:', err.message);
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
+
+        if (!hasRestaurantAccess(user, restaurantId)) {
+            ws.close(1008, 'Unauthorized');
+            return;
+        }
 
         if (!clients.has(restaurantId)) {
             clients.set(restaurantId, new Set());
@@ -204,7 +236,7 @@ function initKDSWebSocket(server) {
 
         ws.restaurantId = restaurantId;
         ws.user = user;
-        console.log(`[KDS] Client connected for restaurant ${restaurantId} (role: ${user?.role || 'unknown'})`);
+        console.log(`[KDS] Client connected for restaurant ${restaurantId}`);
 
         // Send connection ACK
         ws.send(JSON.stringify({ type: 'CONNECTED', data: { restaurantId } }));
@@ -240,25 +272,15 @@ function initKDSWebSocket(server) {
 
                 // Allow KDS clients to update status
                 if (message.type === 'STATUS_UPDATE') {
-                    if (!['COOK', 'ADMIN'].includes(ws.user?.role)) {
-                        console.warn(`[KDS] Unauthorized STATUS_UPDATE attempt by role ${ws.user?.role || 'unknown'} at restaurant ${restaurantId}`);
-                        ws.close(1008, 'Forbidden operation');
-                        return;
-                    }
-
-                    if (!message.data || typeof message.data !== 'object') {
-                        console.warn('[KDS] STATUS_UPDATE rejected: missing data object');
+                    if (!['ADMIN', 'COOK'].includes(ws.user?.role)) {
+                        ws.close(1008, 'Unauthorized');
                         return;
                     }
 
                     const { orderId, status } = message.data;
-                    if (!Number.isInteger(Number(orderId)) || typeof status !== 'string' || status.length === 0) {
-                        console.warn('[KDS] STATUS_UPDATE rejected: invalid payload');
-                        return;
-                    }
-
-                    await updateOrderStatus(Number(orderId), status, {
+                    await updateOrderStatus(orderId, status, {
                         actorUserId: ws.user?.userId,
+                        actorRole: ws.user?.role,
                         restaurantId: ws.restaurantId
                     });
                 }
@@ -292,8 +314,17 @@ function broadcastOrderToKDS(restaurantId, orderData) {
  */
 async function updateOrderStatus(orderId, newStatus, context = {}) {
     try {
+        const normalizedOrderId = parseInt(orderId, 10);
+        if (!normalizedOrderId) {
+            throw new Error('Invalid orderId');
+        }
+
+        if (typeof newStatus !== 'string' || !STATUS_TRANSITIONS[newStatus]) {
+            throw new Error(`Invalid status: ${newStatus}`);
+        }
+
         const existingOrder = await prisma.order.findUnique({
-            where: { id: orderId },
+            where: { id: normalizedOrderId },
             select: {
                 id: true,
                 orderNumber: true,
@@ -306,38 +337,43 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
         });
 
         if (!existingOrder) {
-            throw new Error(`Order ${orderId} not found`);
+            throw new Error(`Order ${normalizedOrderId} not found`);
         }
 
-        if (context.restaurantId && existingOrder.restaurantId !== context.restaurantId) {
-            throw new Error(`Restaurant scope mismatch for order ${orderId}`);
+        if (context.restaurantId && Number(context.restaurantId) !== existingOrder.restaurantId) {
+            throw new Error('Unauthorized restaurant access');
         }
+
+        const allowedNextStatuses = STATUS_TRANSITIONS[existingOrder.status] || [];
+        if (!allowedNextStatuses.includes(newStatus)) {
+            throw new Error(`Invalid status transition: ${existingOrder.status} -> ${newStatus}`);
+        }
+
+        assertAllowedStatusTransition(existingOrder.status, normalizedStatus);
 
         const order = await prisma.order.update({
-            where: { id: orderId },
+            where: { id: normalizedOrderId },
             data: {
-                status: newStatus,
-                completedAt: newStatus === 'COMPLETED' ? new Date() : null
+                status: normalizedStatus,
+                completedAt: normalizedStatus === 'COMPLETED' ? new Date() : null
             }
         });
 
-        console.log(`[KDS] Order #${order.orderNumber} status updated to ${newStatus}`);
+        console.log(`[KDS] Order #${order.orderNumber} status updated to ${normalizedStatus}`);
 
         // Log to Event Sourcing table
-        await prisma.eventLog.create({
-            data: {
-                eventType: 'ORDER_STATUS_CHANGED',
-                aggregateType: 'Order',
-                aggregateId: order.externalOrderId,
-                idempotencyKey: `status_${order.externalOrderId}_${newStatus}_${Date.now()}`,
-                restaurantId: order.restaurantId,
-                payload: { oldStatus: existingOrder.status, newStatus }
-            }
-        });
+        await appendEvent(
+            EventTypes.ORDER_STATUS_CHANGED,
+            'Order',
+            order.externalOrderId,
+            { oldStatus: existingOrder.status, newStatus },
+            { restaurantId: order.restaurantId },
+            `status_${order.externalOrderId}_${newStatus}_${Date.now()}`
+        );
 
         let loyaltyPoints = null;
 
-        if (newStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
+        if (normalizedStatus === 'COMPLETED' && existingOrder.status !== 'COMPLETED' && existingOrder.userId) {
             const baseAmount = Math.max(0, Number(existingOrder.total ?? 0));
             const cashbackAmount = Math.floor(baseAmount * 0.05);
 
@@ -361,7 +397,7 @@ async function updateOrderStatus(orderId, newStatus, context = {}) {
         broadcastStatusSync(order.restaurantId, {
             orderId: order.id,
             externalOrderId: order.externalOrderId,
-            status: newStatus,
+            status: normalizedStatus,
             userId: existingOrder.userId,
             loyaltyPoints
         });
