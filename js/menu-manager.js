@@ -45,7 +45,7 @@ function showAppModal(message, title = 'Уведомление') {
                 <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
                     <h3 id="app-modal-title" class="text-lg font-extrabold text-gray-900 mb-2">Уведомление</h3>
                     <p id="app-modal-message" class="text-sm text-gray-600 leading-relaxed mb-6"></p>
-                    <button id="app-modal-ok" type="button" class="w-full rounded-xl bg-red-600 py-3 text-white font-bold hover:bg-red-700 transition-colors">Отлично</button>
+                    <button id="app-modal-ok" type="button" class="w-full rounded-xl bg-red-600 py-3 text-white font-bold hover:bg-red-700 transition-colors">ОК</button>
                 </div>
             `;
             document.body.appendChild(modal);

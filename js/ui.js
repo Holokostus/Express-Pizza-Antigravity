@@ -104,7 +104,7 @@ window.renderCategories = (categories = menuCategories) => {
 
     container.innerHTML = categories.map(({ slug, name }) => {
         const activeClasses = slug === currentCategory ? 'active' : '';
-        return `<button class="menu-tab category-btn ${activeClasses} px-4 py-2 font-bold text-sm whitespace-nowrap transition-all cursor-pointer" data-category="${slug}">${escapeHtml(name)}</button>`;
+        return `<button class="menu-tab ${activeClasses} px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer" data-category="${slug}">${escapeHtml(name)}</button>`;
     }).join('');
 
     document.querySelectorAll('.menu-tab').forEach((tab) => {
@@ -165,7 +165,7 @@ if (!window.__promoCardClickBound) {
         if (!p) return;
 
         const promoTitle = p.dataset.promoTitle || 'Акция';
-        const promoDescription = p.dataset.promoDescription || 'Скидка применена к вашему заказу!';
+        const promoDescription = p.dataset.promoDescription || 'Подробности акции уточняйте у оператора.';
         showAppModal(promoDescription, promoTitle);
     });
 }
