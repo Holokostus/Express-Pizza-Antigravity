@@ -35,21 +35,31 @@ function verifySignature(rawBody, signature, secret) {
 // POST /api/aggregators/delivio/webhook
 // ============================================================
 
-router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+router.post('/delivio/webhook', async (req, res) => {
     try {
         const channel = await prisma.aggregatorChannel.findUnique({ where: { name: 'delivio' } });
         if (!channel || !channel.isActive) {
             return res.status(404).json({ error: 'Channel inactive' });
         }
 
-        const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
+        const rawBody = req.rawBody;
+        if (!Buffer.isBuffer(rawBody)) {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+
         const sig = req.headers['x-delivio-signature'] || '';
 
         if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
-        const payload = JSON.parse(rawBody);
+        let payload;
+        try {
+            payload = JSON.parse(rawBody.toString('utf8'));
+        } catch {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+
         const normalized = normalizeDelivioOrder(payload);
 
         const order = await createOrderFromAggregator(normalized, 'DELIVIO');
@@ -65,21 +75,31 @@ router.post('/delivio/webhook', express.raw({ type: '*/*' }), async (req, res) =
 // POST /api/aggregators/wolt/webhook
 // ============================================================
 
-router.post('/wolt/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+router.post('/wolt/webhook', async (req, res) => {
     try {
         const channel = await prisma.aggregatorChannel.findUnique({ where: { name: 'wolt' } });
         if (!channel || !channel.isActive) {
             return res.status(404).json({ error: 'Channel inactive' });
         }
 
-        const rawBody = typeof req.body === 'string' ? req.body : req.body.toString();
+        const rawBody = req.rawBody;
+        if (!Buffer.isBuffer(rawBody)) {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+
         const sig = req.headers['x-wolt-signature'] || '';
 
         if (!verifySignature(rawBody, sig, channel.webhookSecret)) {
             return res.status(403).json({ error: 'Invalid signature' });
         }
 
-        const payload = JSON.parse(rawBody);
+        let payload;
+        try {
+            payload = JSON.parse(rawBody.toString('utf8'));
+        } catch {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+
         const normalized = normalizeWoltOrder(payload);
 
         const order = await createOrderFromAggregator(normalized, 'WOLT');
