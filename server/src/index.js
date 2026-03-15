@@ -241,7 +241,7 @@ app.post('/api/stock/back', requireAuth, checkRole(['ADMIN']), async (req, res) 
     }
 });
 
-app.get('/api/stock/stop-list/:restaurantId', async (req, res) => {
+app.get('/api/stock/stop-list/:restaurantId', requireAuth, checkRole(['COOK', 'ADMIN']), async (req, res) => {
     try {
         const list = await stockService.getStopList(parseInt(req.params.restaurantId));
         res.json(list);
