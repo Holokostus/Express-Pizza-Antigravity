@@ -143,6 +143,24 @@ model User {
 // Each restaurant has its own POS type, printer, and KDS metrics.
 // Local Node connects to API via restaurantId.
 
+
+
+model OtpCode {
+  id         Int      @id @default(autoincrement())
+  identifier String   @unique
+  code       String
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now())
+  expiresAt  DateTime
+  lockedUntil DateTime?
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
 model Restaurant {
   id          Int       @id @default(autoincrement())
   name        String                                    // "Express Pizza — Партизанский"

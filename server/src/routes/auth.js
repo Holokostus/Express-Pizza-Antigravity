@@ -8,11 +8,11 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { sendOtpEmail } = require('../services/emailService');
+const { otpService } = require('../services/otpService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_jwt_secret_change_me';
-const otpStore = new Map();
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^\+?[0-9]{7,15}$/;
 
 function shouldUseOtpFallback() {
     if (process.env.OTP_ALLOW_DEBUG_FALLBACK === 'true') return true;
@@ -20,46 +20,87 @@ function shouldUseOtpFallback() {
     return process.env.NODE_ENV !== 'production' || !process.env.EMAIL_USER || !process.env.EMAIL_PASS;
 }
 
-async function handleSendOtp(req, res) {
-    try {
-        const email = String(req.body?.email || '').trim().toLowerCase();
+function shouldExposeDebugCode(req) {
+    if (process.env.NODE_ENV === 'production') {
+        return false;
+    }
 
-        if (!email || !EMAIL_RE.test(email)) {
-            return res.status(400).json({ error: 'Введите корректный email' });
+    const queryDebug = String(req.query?.debug || '').toLowerCase() === 'true';
+    const headerDebug = String(req.headers['x-debug-otp'] || '').toLowerCase() === 'true';
+    const bodyDebug = req.body?.debug === true || String(req.body?.debug || '').toLowerCase() === 'true';
+
+    return queryDebug || headerDebug || bodyDebug;
+}
+
+function resolveOtpTarget(req) {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const phone = String(req.body?.phone || '').trim();
+
+    if (email) {
+        if (!EMAIL_RE.test(email)) {
+            return { error: 'Введите корректный email' };
         }
 
-        const existing = otpStore.get(email);
-        if (existing?.lastSentAt && Date.now() - existing.lastSentAt < 10000) {
+        return { channel: 'email', id: email, email };
+    }
+
+    if (phone) {
+        if (!PHONE_RE.test(phone)) {
+            return { error: 'Введите корректный номер телефона' };
+        }
+
+        return { channel: 'sms', id: phone, phone };
+    }
+
+    return { error: 'Email или phone обязательны' };
+}
+
+async function handleSendOtp(req, res) {
+    try {
+        const target = resolveOtpTarget(req);
+        if (target.error) {
+            return res.status(400).json({ error: target.error });
+        }
+
+        await otpService.ensureReady();
+
+        const issueResult = await otpService.issueOtp(target.id);
+
+        if (issueResult.status === 'LOCKED') {
+            return res.status(429).json({ error: 'Слишком много попыток. Попробуйте позже.' });
+        }
+
+        if (issueResult.status === 'RATE_LIMIT') {
             return res.status(429).json({ error: 'Подождите 10 секунд перед повторной отправкой' });
         }
 
-        const code = Math.floor(1000 + Math.random() * 9000).toString();
-
-        otpStore.set(email, {
-            code,
-            attempts: 0,
-            expiresAt: Date.now() + 3 * 60 * 1000,
-            lastSentAt: Date.now(),
-        });
+        const code = issueResult.code;
 
         try {
-            await sendOtpEmail({ to: email, code });
+            if (target.channel === 'email') {
+                await sendOtpEmail({ to: target.email, code });
+            }
         } catch (mailError) {
             console.error('[Auth] Send OTP email error:', mailError);
             if (shouldUseOtpFallback()) {
-                return res.json({
+                const payload = {
                     success: true,
-                    message: 'OTP сохранен локально. Используйте debugCode для входа.',
-                    debugCode: code,
+                    message: 'OTP отправлен в debug-режиме',
                     isDevFallback: true,
-                });
+                };
+
+                if (shouldExposeDebugCode(req)) {
+                    payload.debugCode = code;
+                }
+
+                return res.json(payload);
             }
 
             return res.status(502).json({ error: 'Не удалось отправить OTP. Попробуйте позже.' });
         }
 
-        const payload = { success: true, message: 'OTP sent to email' };
-        if (process.env.NODE_ENV !== 'production') {
+        const payload = { success: true, message: 'OTP sent' };
+        if (shouldExposeDebugCode(req)) {
             payload.debugCode = code;
         }
         return res.json(payload);
@@ -71,7 +112,7 @@ async function handleSendOtp(req, res) {
 
 router.post('/send-email', handleSendOtp);
 router.post('/send-sms', (req, res) => {
-    req.body.email = req.body?.email || req.body?.phone;
+    req.body.phone = req.body?.phone || req.body?.email;
     return handleSendOtp(req, res);
 });
 
@@ -100,37 +141,34 @@ router.post('/grant-admin', requireAuth, async (req, res) => {
 
 async function handleVerifyOtp(req, res) {
     try {
-        const email = String(req.body?.email || '').trim().toLowerCase();
+        const target = resolveOtpTarget(req);
         const { code } = req.body;
         const otp = String(code || '').trim();
 
-        if (!email || !code) {
-            return res.status(400).json({ error: 'Email and code are required' });
+        if (target.error || !code) {
+            return res.status(400).json({ error: 'Email/phone и code обязательны' });
         }
 
-        const otpData = otpStore.get(email);
-        if (!otpData) {
+        await otpService.ensureReady();
+        const verification = await otpService.verifyOtp(target.id, otp);
+
+        if (verification.status === 'NOT_FOUND') {
             return res.status(400).json({ error: 'No OTP requested or code expired' });
         }
 
-        if (Date.now() > otpData.expiresAt) {
-            otpStore.delete(email);
-            return res.status(400).json({ error: 'OTP code expired. Request a new one.' });
+        if (verification.status === 'REPLAY') {
+            return res.status(400).json({ error: 'OTP уже использован. Запросите новый код.' });
         }
 
-        if (otpData.attempts >= 3) {
-            otpStore.delete(email);
+        if (verification.status === 'LOCKED') {
             return res.status(403).json({ error: 'Too many failed attempts. Try later.' });
         }
 
-        const isValid = otpData.code === otp;
-
-        if (!isValid) {
-            otpData.attempts += 1;
-            return res.status(400).json({ error: `Invalid code. ${3 - otpData.attempts} attempts remaining.` });
+        if (verification.status === 'INVALID') {
+            return res.status(400).json({ error: `Invalid code. ${verification.remainingAttempts} attempts remaining.` });
         }
 
-        otpStore.delete(email);
+        const email = target.email || `phone:${target.phone}`;
 
         let user = await prisma.user.findUnique({
             where: { email },
@@ -144,7 +182,7 @@ async function handleVerifyOtp(req, res) {
             user = await prisma.user.create({
                 data: {
                     email,
-                    phone: `email:${email}`,
+                    phone: target.phone || `email:${email}`,
                     role: initialRole,
                 },
                 include: { pointsBalance: true },
