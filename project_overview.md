@@ -567,7 +567,6 @@ d:\Pizza Express\
 ├── js/
 │   ├── app.js              (37 KB)  — Main SPA logic (32 functions)
 │   ├── database.js         (13 KB)  — Product catalog (local cache / fallback)
-│   ├── telegram.js         (1 KB)   — Stub (logic moved to server)
 │   ├── IntegrationManager.js (9 KB) — Frontend integration UI
 │   └── api-integrations.js (4 KB)   — API client helpers
 └── images/                          — Product images
