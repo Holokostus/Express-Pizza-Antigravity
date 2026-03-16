@@ -100,11 +100,16 @@ router.post('/calculate', async (req, res) => {
         }
 
         const cartResult = await calculateCartTotal(items, promoCodeString);
+        const promoLabel = cartResult.validPromo?.code
+            || cartResult.appliedPromotions?.[0]?.label
+            || null;
+
         res.json({
             subtotal: cartResult.subtotal,
             discount: cartResult.discount,
             total: cartResult.total,
-            promo: cartResult.validPromo ? { label: cartResult.validPromo.code } : null,
+            promo: promoLabel ? { label: promoLabel } : null,
+            promotions: cartResult.appliedPromotions || [],
             items: cartResult.validatedItems.map(item => ({
                 productId: item.productId,
                 name: item.productName,

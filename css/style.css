@@ -934,3 +934,33 @@ button.bg-primary:hover,
     background: rgba(18, 18, 18, 0.78);
     border: 1px solid #2A2A2A;
 }
+
+/* Category contrast refinements (dark theme) */
+[data-theme="dark"] .category-tabs .menu-tab {
+    background: #2A2A2A;
+    color: #B3B3B3;
+    border: 1px solid #333;
+}
+
+[data-theme="dark"] .category-tabs .menu-tab.active {
+    background: var(--brand-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
+/* Unified product visuals */
+.js-menu-card img,
+.product-card img,
+.upsell-card-image {
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.16));
+}
+
+/* Payment modal field isolation */
+#sandbox-payment-modal .sandbox-pay-field {
+    color: #1a1a1a !important;
+    background-color: #ffffff;
+}
+
+#sandbox-payment-modal .sandbox-pay-field::placeholder {
+    color: #9ca3af;
+}

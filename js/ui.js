@@ -214,7 +214,7 @@ if (!window.__promoCardClickBound) {
 
         const promoTitle = p.dataset.promoTitle || 'Акция';
         const promoDescription = p.dataset.promoDescription || 'Подробности акции применены к вашему заказу.';
-        showAppModal(promoDescription, promoTitle);
+        showAppModal(promoDescription, `${promoTitle} 🎉`, { icon: '🍕', buttonText: 'К покупкам' });
     });
 }
 
@@ -412,6 +412,7 @@ function renderLoginView() {
         <div id="login-step-1">
             <input type="email" id="login-email" placeholder="you@example.com" class="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 mb-4 focus:ring-2 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-textMainLight dark:text-textMainDark font-medium text-lg">
             <button onclick="requestLoginCode()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-glow-red cursor-pointer">Получить код</button>
+            <a href="https://t.me/ExpressPizzaBot" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 py-3 font-bold text-sky-700 transition-colors hover:bg-sky-100">💬 Войти через Telegram</a>
         </div>
         
         <div id="login-step-2" class="hidden">
