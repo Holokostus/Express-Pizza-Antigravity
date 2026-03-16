@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: express-pizza-api
+    env: node
+    rootDir: server
+    plan: free
+    buildCommand: npm ci && npx prisma generate && npx prisma db push
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: BEPAID_SHOP_ID
+        sync: false
+      - key: BEPAID_SECRET_KEY
+        sync: false
+      - key: BEPAID_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
