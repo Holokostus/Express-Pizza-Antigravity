@@ -113,12 +113,39 @@ async function calculateCartTotal(items, promoCodeString = null) {
             quantity: item.quantity,
             unitPrice: itemUnitPrice,
             note: item.note || '',
+            categorySlug: productSize.product.categorySlug || '',
+            categoryName: productSize.product.categoryName || '',
             validatedModifiers
         });
     }
 
-    // 3. Apply Promo Code (if any)
-    let discount = 0;
+    const appliedPromotions = [];
+
+    // 3. Auto promo: 50% on the second pizza (cheapest pizza gets 50% off)
+    const pizzaUnitPrices = validatedItems
+        .flatMap((item) => {
+            const categorySlug = String(item?.categorySlug || '').toLowerCase();
+            const categoryName = String(item?.categoryName || '').toLowerCase();
+            const isPizza = categorySlug.includes('pizza') || categoryName.includes('пиц');
+            if (!isPizza) return [];
+
+            return Array.from({ length: Number(item.quantity || 0) }, () => Number(item.unitPrice || 0));
+        })
+        .filter((price) => Number.isFinite(price) && price > 0)
+        .sort((a, b) => a - b);
+
+    let autoDiscount = 0;
+    if (pizzaUnitPrices.length >= 2) {
+        autoDiscount = pizzaUnitPrices[0] / 2;
+        appliedPromotions.push({
+            type: 'AUTO_SECOND_PIZZA_50',
+            label: 'Скидка 50% на вторую пиццу',
+            discount: autoDiscount,
+        });
+    }
+
+    // 4. Apply Promo Code (if any)
+    let discount = autoDiscount;
     let validPromo = null;
 
     if (promoCodeString) {
@@ -136,11 +163,19 @@ async function calculateCartTotal(items, promoCodeString = null) {
                     if (!promo.usageLimit || promo.usageCount < promo.usageLimit) {
 
                         validPromo = promo;
+                        let promoDiscount = 0;
                         if (promo.type === 'PERCENT') {
-                            discount = subtotal * (Number(promo.discount) / 100);
+                            promoDiscount = subtotal * (Number(promo.discount) / 100);
                         } else if (promo.type === 'FIXED') {
-                            discount = Number(promo.discount);
+                            promoDiscount = Number(promo.discount);
                         }
+
+                        discount += promoDiscount;
+                        appliedPromotions.push({
+                            type: 'PROMO_CODE',
+                            label: promo.code,
+                            discount: promoDiscount,
+                        });
                     }
                 }
             }
@@ -156,7 +191,8 @@ async function calculateCartTotal(items, promoCodeString = null) {
         discount: parseFloat(discount.toFixed(2)),
         total: parseFloat(total.toFixed(2)),
         validatedItems,
-        validPromo
+        validPromo,
+        appliedPromotions,
     };
 }
 

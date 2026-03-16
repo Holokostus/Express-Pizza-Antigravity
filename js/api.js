@@ -233,12 +233,13 @@ window.showToast = function (type, message, duration = 2000) {
 };
 
 // ── App modal (replaces alert/confirm) ──
-window.showAppModal = function showAppModal(message, title = 'Уведомление') {
+window.showAppModal = function showAppModal(message, title = 'Уведомление', options = {}) {
     return new Promise((resolve) => {
         const modal = $('app-modal');
         const titleEl = $('app-modal-title');
         const messageEl = $('app-modal-message');
         const okBtn = $('app-modal-ok');
+        const iconEl = $('app-modal-icon');
 
         if (!modal || !titleEl || !messageEl || !okBtn) {
             console.warn('[Modal] Missing modal elements');
@@ -248,6 +249,17 @@ window.showAppModal = function showAppModal(message, title = 'Уведомлен
 
         titleEl.textContent = title;
         messageEl.textContent = message;
+        okBtn.textContent = options.buttonText || 'Понятно';
+
+        if (iconEl) {
+            if (options.icon) {
+                iconEl.textContent = options.icon;
+                iconEl.classList.remove('hidden');
+            } else {
+                iconEl.classList.add('hidden');
+            }
+        }
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 

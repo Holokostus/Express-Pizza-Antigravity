@@ -772,10 +772,6 @@ window.simulateSandboxCardPayment = (total) => new Promise((resolve) => {
         el.addEventListener('blur', () => {
             el.style.borderBottomColor = '#e2e8f0';
         });
-        if (document.documentElement.getAttribute('data-theme') === 'dark') {
-            el.style.color = '#f8fafc';
-            el.style.borderBottomColor = '#334155';
-        }
     };
 
     if (cardNumberInput) {
