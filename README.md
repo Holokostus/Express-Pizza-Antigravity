@@ -39,6 +39,26 @@ npx serve .
 
 ---
 
+
+## 🚢 Render deployment (fix for build path errors)
+
+If Render logs show:
+- `fatal: could not read Username for 'https://github.com'`
+- `ENOENT ... /server/package.json`
+
+use Blueprint deploy with the included `render.yaml` from this repo root.
+
+### Required Render setup
+1. Connect GitHub repo access for Render (for private repos, grant org/repo access or use deploy key).
+2. Create service via **Blueprint** so Render reads `render.yaml`.
+3. Ensure service builds from `rootDir: server`.
+4. If you are not using Blueprint, set build command manually to: `cd server && npm ci && npx prisma db push`.
+
+### Why this fixes the error
+- `render.yaml` forces build/start in `server/` where backend `package.json` and Prisma schema actually live.
+- Build command explicitly runs `npm ci && prisma generate && prisma db push` in the correct directory.
+- Root `package.json` is now resilient: `postinstall` will skip gracefully when `server/package.json` is unavailable, so build logs are clearer.
+
 ## 🔐 Admin Dashboard Access Setup (Local Development)
 
 The Admin dashboard (`admin.html`) is secured by JWT and requires the `ADMIN` database role. For local development, follow these steps to bootstrap an admin user:
