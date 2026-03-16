@@ -6,7 +6,7 @@
   "scripts": {
     "build": "mkdir -p dist && cp -r index.html admin.html kds.html pos.html order-success.html oferta.html css js images dist/ 2>/dev/null || true",
     "test": "node --check server/src/index.js",
-    "postinstall": "npm --prefix server run prisma:generate"
+    "postinstall": "if [ -f server/package.json ]; then npm --prefix server run prisma:generate; else echo 'skip prisma: server/package.json not found'; fi"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,11 @@
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0"
+  },
+  "prisma": {
+    "schema": "server/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "prisma": "5.22.0"
   }
 }
